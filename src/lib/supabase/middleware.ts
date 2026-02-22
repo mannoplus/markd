@@ -1,13 +1,18 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import createMiddleware from 'next-intl/middleware';
+import { routing } from '@/i18n/routing';
+
+const handleI18nRouting = createMiddleware(routing);
 
 /**
- * Refresh the Supabase auth session on every request so the
- * server-side cookie stays in sync with the client.
+ * Refresh the Supabase auth session on every request and handle i18n routing.
  */
 export async function updateSession(request: NextRequest) {
-    let supabaseResponse = NextResponse.next({ request });
+    // 1. Run next-intl middleware to get the localized response (rewrite or redirect)
+    const response = handleI18nRouting(request);
 
+    // 2. Set up Supabase using the localized response
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -20,31 +25,32 @@ export async function updateSession(request: NextRequest) {
                     cookiesToSet.forEach(({ name, value }) =>
                         request.cookies.set(name, value)
                     );
-                    supabaseResponse = NextResponse.next({ request });
+                    // Mutate the existing localized response
                     cookiesToSet.forEach(({ name, value, options }) =>
-                        supabaseResponse.cookies.set(name, value, options)
+                        response.cookies.set(name, value, options)
                     );
                 },
             },
         }
     );
 
-    // Refresh the session — IMPORTANT: do not remove this line
+    // Refresh the session
     const {
         data: { user },
     } = await supabase.auth.getUser();
 
     // Protected routes — redirect to /login if not authenticated
-    const protectedPaths = ['/dashboard', '/library'];
-    const isProtected = protectedPaths.some((path) =>
-        request.nextUrl.pathname.startsWith(path)
+    // We check against the pathname, which might be /en/dashboard or /dashboard
+    const pathname = request.nextUrl.pathname;
+    const isProtected = ['/dashboard', '/library'].some((path) =>
+        pathname.includes(path)
     );
 
     if (isProtected && !user) {
         const url = request.nextUrl.clone();
-        url.pathname = '/login';
+        url.pathname = '/login'; // next-intl will handle prefixing the locale on the next request if needed
         return NextResponse.redirect(url);
     }
 
-    return supabaseResponse;
+    return response;
 }

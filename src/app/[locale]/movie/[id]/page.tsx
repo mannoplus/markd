@@ -1,28 +1,30 @@
 import { getFullMediaDetails, TMDB_IMAGE_BASE, IMAGE_SIZES } from '@/lib/tmdb';
 import { ProviderBadge } from '@/components/provider-badge';
 import { StatusSelector } from '@/components/status-selector';
-import { Star, Clock, Calendar, Tv } from 'lucide-react';
+import { Star, Clock, Calendar } from 'lucide-react';
 import Image from 'next/image';
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 import { notFound } from 'next/navigation';
 import { getUserMediaItem, upsertMediaItem, deleteMediaItem } from '@/app/actions';
+import { getTranslations } from 'next-intl/server';
 
-export default async function TVDetailsPage({
+export default async function MovieDetailsPage({
     params,
 }: {
     params: Promise<{ id: string }>;
 }) {
     const { id } = await params;
+    const t = await getTranslations('MediaDetails');
 
     if (!id || isNaN(Number(id))) {
         notFound();
     }
 
     try {
-        const tv = await getFullMediaDetails(Number(id), 'tv');
-        const { data: userItem } = await getUserMediaItem(Number(id), 'tv');
-        const { cast, providers } = tv;
-        const details = tv.details as any;
+        const movie = await getFullMediaDetails(Number(id), 'movie');
+        const { data: userItem } = await getUserMediaItem(Number(id), 'movie');
+        const { cast, providers } = movie;
+        const details = movie.details as any;
 
         const backdropUrl = details.backdrop_path
             ? `${IMAGE_SIZES.backdrop.original}${details.backdrop_path}`
@@ -32,17 +34,11 @@ export default async function TVDetailsPage({
             ? `${IMAGE_SIZES.poster.large}${details.poster_path}`
             : null;
 
-        const releaseYear = (details as any).first_air_date?.split('-')[0];
-
-        // For TV shows, runtime is usually an array of episode runtimes.
-        const runtimes = (details as any).episode_run_time || [];
-        const runtime = runtimes.length > 0 ? runtimes[0] : 0;
+        const releaseYear = details.release_date?.split('-')[0];
+        const runtime = (details as any).runtime || 0;
         const hours = Math.floor(runtime / 60);
         const minutes = runtime % 60;
-        const runtimeStr = hours > 0 ? `${hours}h ${minutes}m` : (minutes > 0 ? `${minutes}m` : null);
-
-        const numberOfSeasons = (details as any).number_of_seasons || 0;
-        const numberOfEpisodes = (details as any).number_of_episodes || 0;
+        const runtimeStr = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
 
         return (
             <div className="min-h-screen pb-16">
@@ -52,7 +48,7 @@ export default async function TVDetailsPage({
                         <>
                             <Image
                                 src={backdropUrl}
-                                alt={(details as any).name || ''}
+                                alt={details.title || ''}
                                 fill
                                 className="object-cover object-top"
                                 priority
@@ -73,7 +69,7 @@ export default async function TVDetailsPage({
                             {posterUrl ? (
                                 <Image
                                     src={posterUrl}
-                                    alt={(details as any).name || ''}
+                                    alt={details.title || ''}
                                     width={300}
                                     height={450}
                                     className="rounded-xl shadow-2xl glass-panel w-full"
@@ -88,8 +84,19 @@ export default async function TVDetailsPage({
                         <div className="flex-1 space-y-6 pt-4 md:pt-32">
                             <div>
                                 <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">
-                                    {(details as any).name}
+                                    {details.title}
                                 </h1>
+                                {movie.director && (
+                                    <div className="mt-2 text-foreground-muted font-medium">
+                                        {t('directedBy')}{' '}
+                                        <Link
+                                            href={`/person/${movie.director.id}`}
+                                            className="text-accent hover:underline focus:outline-none"
+                                        >
+                                            {movie.director.name}
+                                        </Link>
+                                    </div>
+                                )}
 
                                 <div className="flex flex-wrap items-center gap-4 text-foreground-muted mt-4 text-sm font-medium">
                                     {releaseYear && (
@@ -98,19 +105,10 @@ export default async function TVDetailsPage({
                                             <span>{releaseYear}</span>
                                         </div>
                                     )}
-                                    {runtimeStr && (
+                                    {runtime > 0 && (
                                         <div className="flex items-center gap-1.5">
                                             <Clock className="h-4 w-4" />
-                                            <span>{runtimeStr} / ep</span>
-                                        </div>
-                                    )}
-                                    {numberOfSeasons > 0 && (
-                                        <div className="flex items-center gap-1.5">
-                                            <Tv className="h-4 w-4" />
-                                            <span>
-                                                {numberOfSeasons} {numberOfSeasons === 1 ? 'Season' : 'Seasons'}
-                                                {' '}({numberOfEpisodes} EP)
-                                            </span>
+                                            <span>{runtimeStr}</span>
                                         </div>
                                     )}
                                     {details.vote_average > 0 && (
@@ -124,17 +122,33 @@ export default async function TVDetailsPage({
                                 {details.genres && details.genres.length > 0 && (
                                     <div className="flex flex-wrap gap-2 mt-4">
                                         {details.genres.map((g: any) => (
-                                            <span key={g.id} className="px-2.5 py-1 text-xs font-semibold rounded-full bg-background-elevated border border-border">
+                                            <Link
+                                                key={g.id}
+                                                href={`/genre/${g.id}?name=${encodeURIComponent(g.name)}&type=movie`}
+                                                className="px-2.5 py-1 text-xs font-semibold rounded-full bg-background-elevated border border-border hover:bg-background-card hover:border-accent transition-colors focus:outline-none focus:ring-2 focus:ring-accent"
+                                            >
                                                 {g.name}
-                                            </span>
+                                            </Link>
                                         ))}
                                     </div>
                                 )}
                             </div>
 
+                            {movie.trailer && (
+                                <div className="relative w-full max-w-2xl aspect-video rounded-xl overflow-hidden glass-panel border border-border mt-6">
+                                    <iframe
+                                        src={`https://www.youtube.com/embed/${movie.trailer.key}`}
+                                        title={`${details.title} Trailer`}
+                                        className="absolute top-0 left-0 w-full h-full"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowFullScreen
+                                    ></iframe>
+                                </div>
+                            )}
+
                             {details.overview && (
                                 <div className="space-y-2 max-w-3xl">
-                                    <h3 className="text-lg font-bold">Synopsis</h3>
+                                    <h3 className="text-lg font-bold">{t('synopsis')}</h3>
                                     <p className="text-foreground-muted leading-relaxed">
                                         {details.overview}
                                     </p>
@@ -142,20 +156,19 @@ export default async function TVDetailsPage({
                             )}
 
                             {/* Status Tracking */}
-                            <div className="pt-4 border-t border-border max-w-sm">
+                            <div className="pt-4 border-t border-border max-w-md">
                                 <StatusSelector
                                     currentStatus={userItem?.status as any || null}
                                     currentRating={userItem?.rating || null}
                                     currentSeason={userItem?.season_progress || null}
                                     currentEpisode={userItem?.episode_progress || null}
-                                    mediaType="tv"
-                                    totalSeasons={details.number_of_seasons}
+                                    mediaType="movie"
                                     onUpdate={async (data) => {
                                         'use server';
                                         return await upsertMediaItem({
                                             tmdb_id: details.id,
-                                            media_type: 'tv',
-                                            title: details.name,
+                                            media_type: 'movie',
+                                            title: details.title,
                                             poster_path: details.poster_path,
                                             ...data,
                                         });
@@ -163,7 +176,7 @@ export default async function TVDetailsPage({
                                     onRemove={
                                         async () => {
                                             'use server';
-                                            return await deleteMediaItem(details.id, 'tv');
+                                            return await deleteMediaItem(details.id, 'movie');
                                         }
                                     }
                                 />
@@ -172,11 +185,11 @@ export default async function TVDetailsPage({
                             {/* Watch Providers */}
                             {providers && (providers.flatrate || providers.rent || providers.buy) && (
                                 <div className="space-y-4 pt-6">
-                                    <h3 className="text-lg font-bold">Where to Watch</h3>
+                                    <h3 className="text-lg font-bold">{t('whereToWatch')}</h3>
                                     <div className="flex flex-wrap gap-6">
                                         {providers.flatrate && (
                                             <div className="space-y-2">
-                                                <span className="text-xs text-foreground-muted font-medium uppercase tracking-wider">Stream</span>
+                                                <span className="text-xs text-foreground-muted font-medium uppercase tracking-wider">{t('stream')}</span>
                                                 <div className="flex flex-wrap gap-2">
                                                     {providers.flatrate.map(p => (
                                                         <ProviderBadge key={p.provider_id} provider={p} link={providers.link} />
@@ -186,7 +199,7 @@ export default async function TVDetailsPage({
                                         )}
                                         {providers.rent && (
                                             <div className="space-y-2">
-                                                <span className="text-xs text-foreground-muted font-medium uppercase tracking-wider">Rent</span>
+                                                <span className="text-xs text-foreground-muted font-medium uppercase tracking-wider">{t('rent')}</span>
                                                 <div className="flex flex-wrap gap-2">
                                                     {providers.rent.map(p => (
                                                         <ProviderBadge key={p.provider_id} provider={p} link={providers.link} />
@@ -196,7 +209,7 @@ export default async function TVDetailsPage({
                                         )}
                                         {providers.buy && (
                                             <div className="space-y-2">
-                                                <span className="text-xs text-foreground-muted font-medium uppercase tracking-wider">Buy</span>
+                                                <span className="text-xs text-foreground-muted font-medium uppercase tracking-wider">{t('buy')}</span>
                                                 <div className="flex flex-wrap gap-2">
                                                     {providers.buy.map(p => (
                                                         <ProviderBadge key={p.provider_id} provider={p} link={providers.link} />
@@ -213,7 +226,7 @@ export default async function TVDetailsPage({
                     {/* Cast Section */}
                     {cast && cast.length > 0 && (
                         <div className="mt-16 space-y-6">
-                            <h2 className="text-2xl font-bold tracking-tight">Top Cast</h2>
+                            <h2 className="text-2xl font-bold tracking-tight">{t('topCast')}</h2>
                             <div className="flex overflow-x-auto gap-4 pb-6 snap-x -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
                                 {cast.map(person => (
                                     <Link key={person.id} href={`/person/${person.id}`} className="w-32 shrink-0 snap-start space-y-2 group fade-in transition-transform hover:scale-105 block">

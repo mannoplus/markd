@@ -1,23 +1,26 @@
 'use client';
 
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 import { usePathname } from 'next/navigation';
 import { Search, Library, LayoutDashboard, LogIn, Menu, X } from 'lucide-react';
 import { Logo } from '@/components/logo';
+import { LanguageSwitcher } from '@/components/language-switcher';
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
-
-const NAV_LINKS = [
-    { href: '/search', label: 'Search', icon: Search },
-    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/library', label: 'Library', icon: Library },
-];
+import { useTranslations } from 'next-intl';
 
 export function Navbar() {
+    const t = useTranslations('Navigation');
     const pathname = usePathname();
     const [user, setUser] = useState<User | null>(null);
     const [mobileOpen, setMobileOpen] = useState(false);
+
+    const NAV_LINKS = [
+        { href: '/search', label: t('searchLink'), icon: Search },
+        { href: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
+        { href: '/library', label: t('library'), icon: Library },
+    ];
 
     useEffect(() => {
         const supabase = createClient();
@@ -58,7 +61,7 @@ export function Navbar() {
                         return (
                             <Link
                                 key={href}
-                                href={href}
+                                href={href as any}
                                 className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-[var(--transition-fast)] ${isActive
                                     ? 'bg-accent-muted text-accent'
                                     : 'text-foreground-muted hover:bg-background-elevated hover:text-foreground'
@@ -73,6 +76,8 @@ export function Navbar() {
 
                 {/* Auth + Mobile toggle */}
                 <div className="flex items-center gap-3">
+                    <LanguageSwitcher />
+
                     {user ? (
                         <div className="hidden items-center gap-2 md:flex relative group/usermenu">
                             <button className="flex h-8 w-8 items-center justify-center rounded-full bg-foreground text-sm font-bold text-background transition-transform hover:scale-105 focus:outline-none">
@@ -87,7 +92,7 @@ export function Navbar() {
                                     </p>
                                 </div>
                                 <form action={async () => {
-                                    const { logout } = await import('@/app/login/actions');
+                                    const { logout } = await import('@/app/[locale]/login/actions');
                                     await logout();
                                 }}>
                                     <button
@@ -95,15 +100,15 @@ export function Navbar() {
                                         className="w-full text-left rounded-md px-2 py-1.5 text-sm text-foreground hover:bg-background transition-colors flex items-center gap-2"
                                     >
                                         <LogIn className="h-4 w-4 rotate-180" />
-                                        Sign Out
+                                        {t('signOut')}
                                     </button>
                                 </form>
                                 <div className="my-1 border-t border-border" />
                                 <form action={async () => {
                                     // Confirm before deleting
-                                    const confirmed = window.confirm("Are you sure you want to delete your account? This action cannot be undone.");
+                                    const confirmed = window.confirm(t('deleteAccount'));
                                     if (confirmed) {
-                                        const { deleteAccount } = await import('@/app/login/actions');
+                                        const { deleteAccount } = await import('@/app/[locale]/login/actions');
                                         await deleteAccount();
                                     }
                                 }}>
@@ -112,7 +117,7 @@ export function Navbar() {
                                         className="w-full text-left rounded-md px-2 py-1.5 text-sm font-medium transition-colors flex items-center gap-2 text-red-500 hover:text-red-600 hover:bg-red-500/10"
                                     >
                                         <X className="h-4 w-4" />
-                                        Delete Account
+                                        {t('deleteAccount')}
                                     </button>
                                 </form>
                             </div>
@@ -123,7 +128,7 @@ export function Navbar() {
                             className="hidden items-center gap-2 rounded-lg bg-foreground px-4 py-2 text-sm font-semibold text-background transition-all hover:bg-foreground-muted md:flex"
                         >
                             <LogIn className="h-4 w-4" />
-                            Sign In
+                            {t('signIn')}
                         </Link>
                     )}
 
@@ -147,7 +152,7 @@ export function Navbar() {
                             return (
                                 <Link
                                     key={href}
-                                    href={href}
+                                    href={href as any}
                                     className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${isActive
                                         ? 'bg-accent-muted text-accent'
                                         : 'text-foreground-muted hover:bg-background-elevated hover:text-foreground'
@@ -176,7 +181,7 @@ export function Navbar() {
                                 className="flex items-center gap-3 rounded-lg bg-foreground px-3 py-2.5 text-sm font-semibold text-background transition-all hover:bg-foreground-muted"
                             >
                                 <LogIn className="h-4 w-4" />
-                                Sign In
+                                {t('signIn')}
                             </Link>
                         )}
                     </div>

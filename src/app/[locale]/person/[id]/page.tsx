@@ -2,6 +2,7 @@ import Image from 'next/image';
 import { getPersonDetails, IMAGE_SIZES } from '@/lib/tmdb';
 import { MovieCard } from '@/components/movie-card';
 import { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
     const { id } = await params;
@@ -14,6 +15,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function PersonPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
+    const t = await getTranslations('Person');
     const person = await getPersonDetails(Number(id));
 
     // Dedup and sort credits by release date (descending)
@@ -49,24 +51,24 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
 
                     {/* Personal Info */}
                     <div className="space-y-4">
-                        <h2 className="text-xl font-bold">Personal Info</h2>
+                        <h2 className="text-xl font-bold">{t('personalInfo')}</h2>
                         <div className="space-y-3 text-sm">
                             <div>
-                                <h3 className="font-semibold text-foreground-muted">Known For</h3>
+                                <h3 className="font-semibold text-foreground-muted">{t('knownForItem')}</h3>
                                 <p>{person.known_for_department}</p>
                             </div>
                             <div>
-                                <h3 className="font-semibold text-foreground-muted">Born</h3>
+                                <h3 className="font-semibold text-foreground-muted">{t('born')}</h3>
                                 <p>{person.birthday ? new Date(person.birthday).toLocaleDateString() : '-'}</p>
                             </div>
                             {person.deathday && (
                                 <div>
-                                    <h3 className="font-semibold text-foreground-muted">Died</h3>
+                                    <h3 className="font-semibold text-foreground-muted">{t('died')}</h3>
                                     <p>{new Date(person.deathday).toLocaleDateString()}</p>
                                 </div>
                             )}
                             <div>
-                                <h3 className="font-semibold text-foreground-muted">Place of Birth</h3>
+                                <h3 className="font-semibold text-foreground-muted">{t('placeOfBirth')}</h3>
                                 <p>{person.place_of_birth || '-'}</p>
                             </div>
                         </div>
@@ -78,12 +80,12 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
                     {/* Biography */}
                     <div className="space-y-4">
                         <h1 className="text-4xl font-extrabold tracking-tight">{person.name}</h1>
-                        <h2 className="text-xl font-bold">Biography</h2>
+                        <h2 className="text-xl font-bold">{t('biography')}</h2>
                         <div className="prose prose-invert max-w-none text-foreground-muted">
                             {person.biography ? (
                                 <p className="whitespace-pre-wrap">{person.biography}</p>
                             ) : (
-                                <p>We don&apos;t have a biography for {person.name}.</p>
+                                <p>{t('noBio', { name: person.name })}</p>
                             )}
                         </div>
                     </div>
@@ -91,7 +93,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
                     {/* Known For (Filmography) */}
                     {uniqueCredits.length > 0 && (
                         <div className="space-y-6">
-                            <h2 className="text-2xl font-bold">Known For</h2>
+                            <h2 className="text-2xl font-bold">{t('knownForTitle')}</h2>
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-6">
                                 {uniqueCredits.map((credit) => (
                                     <MovieCard

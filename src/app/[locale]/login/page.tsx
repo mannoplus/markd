@@ -3,8 +3,10 @@
 import { useState } from 'react';
 import { login, signup } from './actions';
 import { Loader2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 export default function LoginPage() {
+    const t = useTranslations('Login');
     const [isLogin, setIsLogin] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [pending, setPending] = useState(false);
@@ -30,12 +32,10 @@ export default function LoginPage() {
 
                 <div className="relative z-10 text-center mb-8">
                     <h1 className="text-3xl font-extrabold tracking-tight">
-                        {isLogin ? 'Welcome Back' : 'Create Account'}
+                        {isLogin ? t('welcomeBack') : t('createAccount')}
                     </h1>
                     <p className="text-sm text-foreground-muted mt-2">
-                        {isLogin
-                            ? 'Enter your credentials to access your library.'
-                            : 'Sign up to start tracking your favorite movies and shows.'}
+                        {isLogin ? t('loginDesc') : t('signupDesc')}
                     </p>
                 </div>
 
@@ -49,27 +49,27 @@ export default function LoginPage() {
                     <div className="space-y-4 text-left">
                         <div className="space-y-1.5">
                             <label htmlFor="email" className="text-sm font-medium text-foreground-subtle">
-                                Email Address
+                                {t('emailLabel')}
                             </label>
                             <input
                                 id="email"
                                 name="email"
                                 type="email"
                                 required
-                                placeholder="you@example.com"
+                                placeholder={t('emailPlaceholder')}
                                 className="w-full px-4 py-2.5 bg-background-elevated border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all text-sm placeholder:text-foreground-muted/50"
                             />
                         </div>
                         <div className="space-y-1.5">
                             <label htmlFor="password" className="text-sm font-medium text-foreground-subtle">
-                                Password
+                                {t('passwordLabel')}
                             </label>
                             <input
                                 id="password"
                                 name="password"
                                 type="password"
                                 required
-                                placeholder="••••••••"
+                                placeholder={t('passwordPlaceholder')}
                                 className="w-full px-4 py-2.5 bg-background-elevated border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all text-sm placeholder:text-foreground-muted/50"
                             />
                         </div>
@@ -83,10 +83,10 @@ export default function LoginPage() {
                         {pending ? (
                             <>
                                 <Loader2 className="h-4 w-4 animate-spin" />
-                                {isLogin ? 'Signing in...' : 'Creating account...'}
+                                {isLogin ? t('signingIn') : t('creatingAccount')}
                             </>
                         ) : (
-                            isLogin ? 'Sign In' : 'Sign Up'
+                            isLogin ? t('signInBtn') : t('signUpBtn')
                         )}
                     </button>
 
@@ -95,7 +95,7 @@ export default function LoginPage() {
                             <div className="w-full border-t border-border"></div>
                         </div>
                         <div className="relative flex justify-center text-sm">
-                            <span className="px-2 bg-background-card text-foreground-muted">Or continue with</span>
+                            <span className="px-2 bg-background-card text-foreground-muted">{t('continueWith')}</span>
                         </div>
                     </div>
 
@@ -136,7 +136,7 @@ export default function LoginPage() {
                     </button>
 
                     <div className="pt-4 text-center text-sm text-foreground-muted">
-                        {isLogin ? "Don't have an account? " : "Already have an account? "}
+                        {isLogin ? t('noAccount') : t('hasAccount')}
                         <button
                             type="button"
                             onClick={() => {
@@ -145,11 +145,11 @@ export default function LoginPage() {
                             }}
                             className="font-semibold text-accent hover:underline focus:outline-none"
                         >
-                            {isLogin ? 'Sign Up' : 'Sign In'}
+                            {isLogin ? t('signUpBtn') : t('signInBtn')}
                         </button>
                     </div>
-                </form >
-            </div >
-        </div >
+                </form>
+            </div>
+        </div>
     );
 }

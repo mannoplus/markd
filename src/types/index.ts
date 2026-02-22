@@ -95,6 +95,23 @@ export interface TMDBCastMember {
     order: number;
 }
 
+export interface TMDBCrewMember {
+    id: number;
+    name: string;
+    job: string;
+    department: string;
+    profile_path: string | null;
+}
+
+export interface TMDBVideo {
+    id: string;
+    key: string;
+    name: string;
+    site: string;
+    type: string;
+    official: boolean;
+}
+
 export interface TMDBWatchProvider {
     logo_path: string;
     provider_id: number;

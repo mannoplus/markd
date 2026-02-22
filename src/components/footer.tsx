@@ -1,8 +1,11 @@
 import { Github } from 'lucide-react';
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 import { Logo } from '@/components/logo';
+import { useTranslations } from 'next-intl';
 
 export function Footer() {
+    const t = useTranslations('Footer');
+
     return (
         <footer className="border-t border-border bg-background-secondary">
             <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 py-8 sm:flex-row sm:px-6 lg:px-8">
@@ -12,19 +15,19 @@ export function Footer() {
                 </div>
 
                 <p className="text-xs text-foreground-subtle text-center">
-                    Powered by{' '}
-                    <Link
+                    {t('poweredBy')}{' '}
+                    <a
                         href="https://www.themoviedb.org/"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="underline transition-colors hover:text-foreground-muted"
                     >
                         TMDB
-                    </Link>
-                    . This product uses the TMDB API but is not endorsed or certified by TMDB.
+                    </a>
+                    . {t('disclaimer')}
                 </p>
 
-                <Link
+                <a
                     href="https://github.com"
                     target="_blank"
                     rel="noopener noreferrer"
@@ -32,7 +35,7 @@ export function Footer() {
                     aria-label="GitHub"
                 >
                     <Github className="h-5 w-5" />
-                </Link>
+                </a>
             </div>
         </footer>
     );

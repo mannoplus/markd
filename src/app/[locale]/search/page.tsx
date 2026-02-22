@@ -1,6 +1,7 @@
 import { searchMulti } from '@/lib/tmdb';
 import { MovieCard } from '@/components/movie-card';
 import { SearchBar } from '@/components/search-bar';
+import { getTranslations } from 'next-intl/server';
 
 // Set route to dynamic to handle searchParams updates
 export const dynamic = 'force-dynamic';
@@ -13,6 +14,7 @@ export default async function SearchPage({
     // In Next.js 15, searchParams is a Promise
     const resolvedParams = await searchParams;
     const query = typeof resolvedParams.q === 'string' ? resolvedParams.q : '';
+    const t = await getTranslations('Search');
 
     let results = null;
     if (query) {
@@ -21,11 +23,11 @@ export default async function SearchPage({
 
     return (
         <div className="space-y-12 pb-16 pt-8">
-            <section className="flex flex-col items-center justify-center space-y-8 pt-8 pb-12">
+            <section className={`flex flex-col items-center justify-center space-y-8 pt-8 pb-12 ${!query ? 'min-h-[50vh]' : ''}`}>
                 <div className="space-y-4 text-center">
-                    <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">Search MARKD</h1>
+                    <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">{t('title')}</h1>
                     <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-                        Find your next favorite movie or TV show to track.
+                        {t('description')}
                     </p>
                 </div>
                 <div className="w-full px-4">
@@ -36,13 +38,13 @@ export default async function SearchPage({
             {query && results && (
                 <section className="space-y-6">
                     <h2 className="text-2xl font-bold tracking-tight">
-                        Results for "{query}"
+                        {t('resultsFor', { query })}
                     </h2>
 
                     {results.results.length === 0 ? (
                         <div className="text-foreground-muted py-24 text-center">
-                            <p className="text-xl font-medium">No results found.</p>
-                            <p className="mt-2">Try adjusting your search terms.</p>
+                            <p className="text-xl font-medium">{t('noResults')}</p>
+                            <p className="mt-2">{t('tryAdjusting')}</p>
                         </div>
                     ) : (
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">

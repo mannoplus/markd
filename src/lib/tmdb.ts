@@ -10,11 +10,14 @@ import type {
     TMDBMovieDetails,
     TMDBTVDetails,
     TMDBCastMember,
+    TMDBCrewMember,
+    TMDBVideo,
     TMDBWatchProviderResult,
     TMDBTrendingResult,
     TMDBPersonDetails,
     MediaType,
 } from '@/types';
+import { getLocale } from 'next-intl/server';
 
 // ---------- Constants ----------
 
@@ -60,8 +63,12 @@ async function tmdbFetch<T>(
     params: Record<string, string> = {},
     revalidate: number = 3600 // cache for 1 hour by default
 ): Promise<T> {
+    const locale = await getLocale();
+    const language = locale === 'zh-TW' ? 'zh-TW' : 'en-US';
+
     const url = new URL(`${BASE_URL}${endpoint}`);
     url.searchParams.set('api_key', API_KEY);
+    url.searchParams.set('language', language);
 
     for (const [key, value] of Object.entries(params)) {
         url.searchParams.set(key, value);
@@ -110,40 +117,63 @@ export async function searchMulti(
 }
 
 /**
- * Get full details for a movie, including credits (cast).
+ * Get full details for a movie, including credits (cast, crew for director) and videos.
  */
 export async function getMovieDetails(id: number): Promise<{
     details: TMDBMovieDetails;
     cast: TMDBCastMember[];
+    director: TMDBCrewMember | null;
+    trailer: TMDBVideo | null;
 }> {
     const data = await tmdbFetch<
-        TMDBMovieDetails & { credits: { cast: TMDBCastMember[] } }
-    >(`/movie/${id}`, { append_to_response: 'credits' });
+        TMDBMovieDetails & {
+            credits: { cast: TMDBCastMember[]; crew: TMDBCrewMember[] };
+            videos?: { results: TMDBVideo[] };
+        }
+    >(`/movie/${id}`, { append_to_response: 'credits,videos' });
 
-    const { credits, ...details } = data;
+    const { credits, videos, ...details } = data;
+
+    const director = credits.crew.find((c) => c.job === 'Director') || null;
+    const trailer = videos?.results?.find((v) => v.type === 'Trailer' && v.site === 'YouTube') || null;
 
     return {
         details,
         cast: credits.cast.slice(0, 15), // Top 15 billed cast
+        director,
+        trailer,
     };
 }
 
 /**
- * Get full details for a TV show, including credits (cast).
+ * Get full details for a TV show, including credits (cast), creators, and videos.
  */
 export async function getTVDetails(id: number): Promise<{
     details: TMDBTVDetails;
     cast: TMDBCastMember[];
+    director: { id: number; name: string; profile_path: string | null } | null;
+    trailer: TMDBVideo | null;
 }> {
     const data = await tmdbFetch<
-        TMDBTVDetails & { credits: { cast: TMDBCastMember[] } }
-    >(`/tv/${id}`, { append_to_response: 'credits' });
+        TMDBTVDetails & {
+            credits: { cast: TMDBCastMember[]; crew: TMDBCrewMember[] };
+            videos?: { results: TMDBVideo[] };
+            created_by?: { id: number; name: string; profile_path: string | null }[];
+        }
+    >(`/tv/${id}`, { append_to_response: 'credits,videos' });
 
-    const { credits, ...details } = data;
+    const { credits, videos, created_by, ...details } = data;
+
+    // For TV, "Director" isn't always primary. "Created By" is better, or Executive Producer.
+    const creator = (created_by && created_by.length > 0) ? created_by[0] : null;
+
+    const trailer = videos?.results?.find((v) => v.type === 'Trailer' && v.site === 'YouTube') || null;
 
     return {
         details,
         cast: credits.cast.slice(0, 15),
+        director: creator,
+        trailer,
     };
 }
 
@@ -182,7 +212,6 @@ export async function getTrending(
 
 /**
  * Get movies currently playing in theaters.
- * Defaults to Taiwan (TW) as requested.
  */
 export async function getNowPlaying(
     region: string = 'TW'
@@ -197,6 +226,43 @@ export async function getNowPlaying(
     return data.results.map(movie => ({
         ...movie,
         media_type: 'movie'
+    }));
+}
+
+/**
+ * Get upcoming movies.
+ */
+export async function getUpcomingMovies(
+    region: string = 'TW'
+): Promise<TMDBTrendingResult[]> {
+    const data = await tmdbFetch<{ results: TMDBTrendingResult[] }>(
+        `/movie/upcoming`,
+        { region },
+        3600 // cache for 1 hour
+    );
+
+    return data.results.map(movie => ({
+        ...movie,
+        media_type: 'movie'
+    }));
+}
+
+/**
+ * Get upcoming TV shows (airing in the next 7 days).
+ */
+export async function getUpcomingTVShows(
+    region: string = 'TW'
+): Promise<TMDBTrendingResult[]> {
+    const timezone = region === 'US' ? 'America/New_York' : 'Asia/Taipei';
+    const data = await tmdbFetch<{ results: TMDBTrendingResult[] }>(
+        `/tv/on_the_air`,
+        { timezone },
+        3600 // cache for 1 hour
+    );
+
+    return data.results.map(tv => ({
+        ...tv,
+        media_type: 'tv'
     }));
 }
 
@@ -229,4 +295,33 @@ export async function getPersonDetails(id: number): Promise<TMDBPersonDetails> {
         { append_to_response: 'combined_credits' }
     );
     return data;
+}
+
+/**
+ * Discover movies or TV shows by a specific genre ID.
+ */
+export async function getMediaByGenre(
+    genreId: number,
+    type: 'movie' | 'tv',
+    page: number = 1
+): Promise<{ results: TMDBTrendingResult[]; total_pages: number }> {
+    const data = await tmdbFetch<{ results: TMDBTrendingResult[]; total_pages: number }>(
+        `/discover/${type}`,
+        {
+            with_genres: String(genreId),
+            page: String(page),
+            sort_by: 'popularity.desc',
+            include_adult: 'false',
+        },
+        3600
+    );
+
+    // Map media_type manually since discover doesn't include it natively for single-type queries
+    return {
+        ...data,
+        results: data.results.map(item => ({
+            ...item,
+            media_type: type
+        }))
+    };
 }

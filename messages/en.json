@@ -1,0 +1,117 @@
+{
+    "Index": {
+        "title": "Track What You Watch",
+        "description": "Your personal movie & TV show tracker. Search, discover, and keep track of everything you watch."
+    },
+    "Navigation": {
+        "dashboard": "Dashboard",
+        "library": "Library",
+        "signIn": "Sign In",
+        "search": "Search for movies or TV shows...",
+        "searchLink": "Search",
+        "signOut": "Sign Out",
+        "deleteAccount": "Delete Account"
+    },
+    "Home": {
+        "nowPlaying": "Now Playing in Cinemas",
+        "trendingMovies": "Trending Movies",
+        "trendingTvShows": "Trending TV Shows",
+        "upcomingMovies": "Upcoming Movies",
+        "upcomingTvShows": "Upcoming TV Shows",
+        "heroBadge": "Now Playing in Theaters",
+        "viewDetails": "View Details",
+        "regionTW": "Taiwan",
+        "regionUS": "United States"
+    },
+    "Footer": {
+        "poweredBy": "Powered by",
+        "disclaimer": "This product uses the TMDB API but is not endorsed or certified by TMDB."
+    },
+    "Login": {
+        "welcomeBack": "Welcome Back",
+        "createAccount": "Create Account",
+        "loginDesc": "Enter your credentials to access your library.",
+        "signupDesc": "Sign up to start tracking your favorite movies and shows.",
+        "emailLabel": "Email Address",
+        "emailPlaceholder": "you@example.com",
+        "passwordLabel": "Password",
+        "passwordPlaceholder": "••••••••",
+        "signInBtn": "Sign In",
+        "signUpBtn": "Sign Up",
+        "signingIn": "Signing in...",
+        "creatingAccount": "Creating account...",
+        "continueWith": "Or continue with",
+        "noAccount": "Don't have an account? ",
+        "hasAccount": "Already have an account? "
+    },
+    "MediaDetails": {
+        "directedBy": "Directed by:",
+        "createdBy": "Created by:",
+        "synopsis": "Synopsis",
+        "whereToWatch": "Where to Watch",
+        "stream": "Stream",
+        "rent": "Rent",
+        "buy": "Buy",
+        "topCast": "Top Cast",
+        "season": "Season",
+        "seasons": "Seasons",
+        "ep": "EP"
+    },
+    "Person": {
+        "personalInfo": "Personal Info",
+        "knownForItem": "Known For",
+        "born": "Born",
+        "died": "Died",
+        "placeOfBirth": "Place of Birth",
+        "biography": "Biography",
+        "noBio": "We don't have a biography for {name}.",
+        "knownForTitle": "Known For"
+    },
+    "Search": {
+        "title": "Search MARKD",
+        "description": "Find your next favorite movie or TV show to track.",
+        "resultsFor": "Results for \"{query}\"",
+        "noResults": "No results found.",
+        "tryAdjusting": "Try adjusting your search terms."
+    },
+    "Dashboard": {
+        "title": "Dashboard",
+        "fullLibrary": "Full Library",
+        "currentlyWatching": "Currently Watching",
+        "notWatching": "You are not currently watching anything.",
+        "discoverNew": "Discover something new",
+        "planToWatch": "Plan to Watch",
+        "watchlistEmpty": "Your watchlist is empty."
+    },
+    "Library": {
+        "title": "My Library",
+        "unableToLoad": "Unable to load your library.",
+        "watching": "Watching",
+        "planToWatch": "Plan to Watch",
+        "completed": "Completed",
+        "dropped": "Dropped",
+        "emptyCategory": "No items in this category yet."
+    },
+    "Genre": {
+        "movies": "Movies",
+        "tvShows": "TV Shows",
+        "discoverMovies": "Discover popular movies in this genre.",
+        "discoverTv": "Discover popular TV shows in this genre.",
+        "noResultsTitle": "No results found",
+        "noResultsMovies": "Could not find any movies for this genre.",
+        "noResultsTv": "Could not find any TV shows for this genre."
+    },
+    "StatusSelector": {
+        "title": "Your Tracking",
+        "rating": "Your Rating",
+        "season": "Season",
+        "episode": "Episode",
+        "update": "Update Tracking",
+        "add": "Add to Library",
+        "remove": "Remove from Library",
+        "statusPlan": "Plan to Watch",
+        "statusWatching": "Watching",
+        "statusCompleted": "Completed",
+        "statusDropped": "Dropped"
+    }
+}

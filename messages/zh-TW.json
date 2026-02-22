@@ -1,0 +1,117 @@
+{
+    "Index": {
+        "title": "追蹤你的觀影紀錄",
+        "description": "你的專屬電影與電視節目追蹤器。搜尋、探索並記錄你觀看的所有內容。"
+    },
+    "Navigation": {
+        "dashboard": "控制台",
+        "library": "主頁",
+        "signIn": "登入",
+        "search": "搜尋電影或電視節目...",
+        "searchLink": "搜尋",
+        "signOut": "登出",
+        "deleteAccount": "刪除帳號"
+    },
+    "Home": {
+        "nowPlaying": "現正熱映",
+        "trendingMovies": "熱門電影",
+        "trendingTvShows": "熱門電視節目",
+        "upcomingMovies": "即將上映的電影",
+        "upcomingTvShows": "即將播出的電視節目",
+        "heroBadge": "現正熱映",
+        "viewDetails": "查看詳情",
+        "regionTW": "台灣",
+        "regionUS": "美國"
+    },
+    "Footer": {
+        "poweredBy": "資料提供:",
+        "disclaimer": "本產品使用 TMDB API，但未經 TMDB 認可或認證。"
+    },
+    "Login": {
+        "welcomeBack": "歡迎回來",
+        "createAccount": "建立帳號",
+        "loginDesc": "輸入你的憑證以存取主頁。",
+        "signupDesc": "註冊以開始追蹤你最愛的電影和節目。",
+        "emailLabel": "電子郵件地址",
+        "emailPlaceholder": "you@example.com",
+        "passwordLabel": "密碼",
+        "passwordPlaceholder": "••••••••",
+        "signInBtn": "登入",
+        "signUpBtn": "註冊",
+        "signingIn": "登入中...",
+        "creatingAccount": "建立帳號中...",
+        "continueWith": "或透過以下方式繼續",
+        "noAccount": "還沒有帳號？ ",
+        "hasAccount": "已經有帳號？ "
+    },
+    "MediaDetails": {
+        "directedBy": "導演:",
+        "createdBy": "主創:",
+        "synopsis": "劇情簡介",
+        "whereToWatch": "哪裡觀看",
+        "stream": "串流",
+        "rent": "租借",
+        "buy": "購買",
+        "topCast": "主要演員",
+        "season": "季",
+        "seasons": "季",
+        "ep": "集"
+    },
+    "Person": {
+        "personalInfo": "個人資訊",
+        "knownForItem": "知名於",
+        "born": "出生",
+        "died": "逝世",
+        "placeOfBirth": "出生地點",
+        "biography": "個人簡介",
+        "noBio": "我們尚未有 {name} 的個人簡介。",
+        "knownForTitle": "知名作品"
+    },
+    "Search": {
+        "title": "搜尋 MARKD",
+        "description": "尋找你下一個想追蹤的電影或電視節目。",
+        "resultsFor": "\"{query}\" 的搜尋結果",
+        "noResults": "找不到結果。",
+        "tryAdjusting": "請嘗試調整搜尋條件。"
+    },
+    "Dashboard": {
+        "title": "控制台",
+        "fullLibrary": "完整片單",
+        "currentlyWatching": "正在觀看",
+        "notWatching": "你目前沒有正在觀看的內容。",
+        "discoverNew": "探索新內容",
+        "planToWatch": "待看清單",
+        "watchlistEmpty": "你的待看清單是空的。"
+    },
+    "Library": {
+        "title": "我的片單",
+        "unableToLoad": "無法載入你的片單。",
+        "watching": "正在觀看",
+        "planToWatch": "待看",
+        "completed": "已看完",
+        "dropped": "已棄坑",
+        "emptyCategory": "此分類目前沒有內容。"
+    },
+    "Genre": {
+        "movies": "電影",
+        "tvShows": "電視節目",
+        "discoverMovies": "探索此類型的熱門電影。",
+        "discoverTv": "探索此類型的熱門電視節目。",
+        "noResultsTitle": "找不到結果",
+        "noResultsMovies": "找不到此類型的電影。",
+        "noResultsTv": "找不到此類型的電視節目。"
+    },
+    "StatusSelector": {
+        "title": "你的追蹤設定",
+        "rating": "你的評分",
+        "season": "季",
+        "episode": "集",
+        "update": "更新追蹤紀錄",
+        "add": "加入片單",
+        "remove": "從片單移除",
+        "statusPlan": "待看",
+        "statusWatching": "正在看",
+        "statusCompleted": "已看完",
+        "statusDropped": "已棄坑"
+    }
+}

@@ -2,16 +2,18 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { IMAGE_SIZES } from '@/lib/tmdb';
 import type { TMDBTrendingResult } from '@/types';
+import { useTranslations } from 'next-intl';
 
 interface HeroCarouselProps {
     movies: TMDBTrendingResult[];
 }
 
 export function HeroCarousel({ movies }: HeroCarouselProps) {
+    const t = useTranslations('Home');
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isHovered, setIsHovered] = useState(false);
 
@@ -80,7 +82,7 @@ export function HeroCarousel({ movies }: HeroCarouselProps) {
             {/* Content */}
             <div className="relative z-10 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col items-start gap-4 fade-in">
                 <div className="inline-flex items-center rounded-full bg-accent/20 px-3 py-1 text-sm font-medium text-accent backdrop-blur-md border border-accent/20 transition-all duration-300">
-                    Now Playing in Theaters (TW)
+                    {t('heroBadge')}
                 </div>
                 {/* Wrap text in a key'd div to animate slide changes */}
                 <div key={currentMovie.id} className="fade-in max-w-4xl space-y-4">
@@ -95,7 +97,7 @@ export function HeroCarousel({ movies }: HeroCarouselProps) {
                             href={`/movie/${currentMovie.id}`}
                             className="inline-flex items-center justify-center rounded-full bg-foreground px-8 py-3.5 text-sm font-semibold text-background transition-all hover:bg-foreground-muted hover:scale-105"
                         >
-                            View Details
+                            {t('viewDetails')}
                         </Link>
                     </div>
                 </div>
