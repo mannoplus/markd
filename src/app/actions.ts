@@ -135,3 +135,23 @@ export async function deleteMediaItem(tmdbId: number, mediaType: MediaType) {
 
     return { error: null };
 }
+
+// ============================================================================
+// SEARCH ACTIONS
+// ============================================================================
+
+export async function searchMediaAction(query: string) {
+    if (!query || query.trim().length === 0) return null;
+
+    // Importing dynamically to avoid bringing tmdb client code into Edge/Client
+    // if this file gets imported in specific ways
+    const { searchMulti } = await import('@/lib/tmdb');
+
+    try {
+        const results = await searchMulti(query, 1);
+        return results;
+    } catch (error) {
+        console.error('Error performing live search:', error);
+        return null;
+    }
+}

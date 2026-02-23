@@ -21,11 +21,24 @@
         "heroBadge": "現正熱映",
         "viewDetails": "查看詳情",
         "regionTW": "台灣",
-        "regionUS": "美國"
+        "regionUS": "美國",
+        "regionCN": "中國",
+        "regionJP": "日本",
+        "regionGB": "英國",
+        "regionFR": "法國",
+        "regionDE": "德國",
+        "regionKR": "韓國",
+        "regionIN": "印度",
+        "regionAU": "澳洲",
+        "regionBR": "巴西",
+        "regionMX": "墨西哥",
+        "regionES": "西班牙",
+        "regionIT": "義大利",
+        "regionRU": "俄羅斯",
+        "regionID": "印尼"
     },
     "Footer": {
-        "poweredBy": "資料提供:",
-        "disclaimer": "本產品使用 TMDB API，但未經 TMDB 認可或認證。"
+        "text": "由影迷精心打造，為影迷而生。電影與電視節目資料由 <tmdb>TMDB</tmdb> 提供。 © 2026 MARKD"
     },
     "Login": {
         "welcomeBack": "歡迎回來",
@@ -113,5 +126,12 @@
         "statusWatching": "正在看",
         "statusCompleted": "已看完",
         "statusDropped": "已棄坑"
+    },
+    "About": {
+        "trigger": "關於 MARKD",
+        "title": "關於 MARKD",
+        "p1": "我們建立 MARKD 是因為受夠了無止盡的滑動。你一定懂那種感覺，花了45分鐘找片子，最後卻放棄，跑去重看第十遍的老劇。",
+        "p2": "MARKD 就是你的解藥。沒有演算法告訴你該喜歡什麼，沒有雜亂的廣告，也沒有干擾。這裡只是一個乾淨、簡單的空間，讓你收藏真正想看的電影和影集。",
+        "tagline": "由影迷打造，為影迷而生，只為記錄那份感動。"
     }
 }

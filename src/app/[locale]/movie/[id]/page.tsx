@@ -192,7 +192,7 @@ export default async function MovieDetailsPage({
                                                 <span className="text-xs text-foreground-muted font-medium uppercase tracking-wider">{t('stream')}</span>
                                                 <div className="flex flex-wrap gap-2">
                                                     {providers.flatrate.map(p => (
-                                                        <ProviderBadge key={p.provider_id} provider={p} link={providers.link} />
+                                                        <ProviderBadge key={p.provider_id} provider={p} link={providers.link} title={details.title} />
                                                     ))}
                                                 </div>
                                             </div>
@@ -202,7 +202,7 @@ export default async function MovieDetailsPage({
                                                 <span className="text-xs text-foreground-muted font-medium uppercase tracking-wider">{t('rent')}</span>
                                                 <div className="flex flex-wrap gap-2">
                                                     {providers.rent.map(p => (
-                                                        <ProviderBadge key={p.provider_id} provider={p} link={providers.link} />
+                                                        <ProviderBadge key={p.provider_id} provider={p} link={providers.link} title={details.title} />
                                                     ))}
                                                 </div>
                                             </div>
@@ -212,7 +212,7 @@ export default async function MovieDetailsPage({
                                                 <span className="text-xs text-foreground-muted font-medium uppercase tracking-wider">{t('buy')}</span>
                                                 <div className="flex flex-wrap gap-2">
                                                     {providers.buy.map(p => (
-                                                        <ProviderBadge key={p.provider_id} provider={p} link={providers.link} />
+                                                        <ProviderBadge key={p.provider_id} provider={p} link={providers.link} title={details.title} />
                                                     ))}
                                                 </div>
                                             </div>

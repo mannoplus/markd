@@ -21,11 +21,24 @@
         "heroBadge": "Now Playing in Theaters",
         "viewDetails": "View Details",
         "regionTW": "Taiwan",
-        "regionUS": "United States"
+        "regionUS": "United States",
+        "regionCN": "China",
+        "regionJP": "Japan",
+        "regionGB": "United Kingdom",
+        "regionFR": "France",
+        "regionDE": "Germany",
+        "regionKR": "South Korea",
+        "regionIN": "India",
+        "regionAU": "Australia",
+        "regionBR": "Brazil",
+        "regionMX": "Mexico",
+        "regionES": "Spain",
+        "regionIT": "Italy",
+        "regionRU": "Russia",
+        "regionID": "Indonesia"
     },
     "Footer": {
-        "poweredBy": "Powered by",
-        "disclaimer": "This product uses the TMDB API but is not endorsed or certified by TMDB."
+        "text": "Crafted by fans, for fans. Movie and TV show data courtesy of <tmdb>TMDB</tmdb>. © 2026 MARKD."
     },
     "Login": {
         "welcomeBack": "Welcome Back",
@@ -113,5 +126,12 @@
         "statusWatching": "Watching",
         "statusCompleted": "Completed",
         "statusDropped": "Dropped"
+    },
+    "About": {
+        "trigger": "About MARKD",
+        "title": "About MARKD",
+        "p1": "We built MARKD because we were tired of the endless scroll. You know the feeling of spending 45 minutes looking for something to watch, only to give up and re-watch the same show for the tenth time.",
+        "p2": "MARKD is the antidote. No algorithms telling you what to like, no cluttered ads, and no distractions. Just a clean, simple home for the movies and shows that actually matter to you.",
+        "tagline": "Built by fans, for fans, to keep track of the magic."
     }
 }
