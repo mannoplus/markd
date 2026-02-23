@@ -21,7 +21,7 @@ function SearchBarInner() {
     // Live results state
     const [results, setResults] = useState<TMDBSearchResult[]>([]);
     const [isLoading, setIsLoading] = useState(false);
-    const wrapperRef = useRef<HTMLDivElement>(null);
+    const wrapperRef = useRef<HTMLFormElement>(null);
 
     // 300ms debounce
     const debouncedQuery = useDebounce(query, 300);
