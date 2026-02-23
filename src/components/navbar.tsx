@@ -167,13 +167,42 @@ export function Navbar() {
                         <div className="my-2 border-t border-border" />
 
                         {user ? (
-                            <div className="flex items-center gap-3 px-3 py-2">
-                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-foreground text-sm font-bold text-background">
-                                    {user.email?.[0]?.toUpperCase() ?? 'U'}
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-3 px-3 py-2">
+                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-foreground text-sm font-bold text-background">
+                                        {user.email?.[0]?.toUpperCase() ?? 'U'}
+                                    </div>
+                                    <span className="text-sm text-foreground-muted truncate">
+                                        {user.email}
+                                    </span>
                                 </div>
-                                <span className="text-sm text-foreground-muted truncate">
-                                    {user.email}
-                                </span>
+                                <form action={async () => {
+                                    const { logout } = await import('@/app/[locale]/login/actions');
+                                    await logout();
+                                }}>
+                                    <button
+                                        type="submit"
+                                        className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground-muted transition-all hover:bg-background-elevated hover:text-foreground"
+                                    >
+                                        <LogIn className="h-4 w-4 rotate-180" />
+                                        {t('signOut')}
+                                    </button>
+                                </form>
+                                <form action={async () => {
+                                    const confirmed = window.confirm(t('deleteAccount'));
+                                    if (confirmed) {
+                                        const { deleteAccount } = await import('@/app/[locale]/login/actions');
+                                        await deleteAccount();
+                                    }
+                                }}>
+                                    <button
+                                        type="submit"
+                                        className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-red-500 transition-all hover:bg-red-500/10 hover:text-red-600"
+                                    >
+                                        <X className="h-4 w-4" />
+                                        {t('deleteAccount')}
+                                    </button>
+                                </form>
                             </div>
                         ) : (
                             <Link
