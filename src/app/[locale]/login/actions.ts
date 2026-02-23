@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 
 export async function login(formData: FormData) {
     const email = formData.get('email') as string;
@@ -41,13 +42,7 @@ export async function signup(formData: FormData) {
         email,
         password,
         options: {
-            // We'll set email_confirm = false in Supabase Dashboard for ease of development, 
-            // but Next.js will typically try to redirect.
-            emailRedirectTo: process.env.NEXT_PUBLIC_SITE_URL
-                ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
-                : process.env.NEXT_PUBLIC_VERCEL_URL
-                    ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}/auth/callback`
-                    : 'http://localhost:3000/auth/callback',
+            emailRedirectTo: `${(await headers()).get('origin') ?? (await headers()).get('referer')?.replace(/\/[^/]*$/, '') ?? 'http://localhost:3000'}/auth/callback`,
         }
     });
 

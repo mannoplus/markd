@@ -12,13 +12,7 @@ export async function GET(request: Request) {
         const { error } = await supabase.auth.exchangeCodeForSession(code);
 
         if (!error) {
-            let redirectUrl = process.env.NEXT_PUBLIC_SITE_URL
-                ? process.env.NEXT_PUBLIC_SITE_URL
-                : process.env.NEXT_PUBLIC_VERCEL_URL
-                    ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
-                    : origin;
-
-            return NextResponse.redirect(`${redirectUrl}${next}`);
+            return NextResponse.redirect(`${origin}${next}`);
         }
     }
 
