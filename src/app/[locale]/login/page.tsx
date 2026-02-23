@@ -107,13 +107,8 @@ export default function LoginPage() {
                             const supabase = createClient();
 
                             const getRedirectUrl = () => {
-                                let url =
-                                    process?.env?.NEXT_PUBLIC_SITE_URL ??
-                                    process?.env?.NEXT_PUBLIC_VERCEL_URL ??
-                                    'http://localhost:3000';
-                                url = url.includes('http') ? url : `https://${url}`;
-                                url = url.charAt(url.length - 1) === '/' ? url : `${url}/`;
-                                return `${url}auth/callback`;
+                                const origin = window.location.origin;
+                                return `${origin}/auth/callback`;
                             };
 
                             await supabase.auth.signInWithOAuth({
