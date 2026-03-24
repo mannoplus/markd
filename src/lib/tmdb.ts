@@ -383,7 +383,7 @@ const GLOBAL_CN_MOCKS: BoxOfficeMovie[] = [
 const GLOBAL_TW_MOCKS: BoxOfficeMovie[] = [
     { id: 1481955, rank: 0, title: 'Sunshine Women\'s Choir', poster_path: '/s4Kp2F2MaoJNtaSVyj87ExLYMS8.jpg', backdrop_path: '/21iGd9XfqAZJskCQNY1Nv70ksCH.jpg', overview: '', tagline: '', release_date: '2026-03-10', runtime: 110, vote_average: 8.8, vote_count: 150, revenue: 28500000, budget: 2000000, popularity: 90, genres: [], director: '', cast: [], omdbRtScore: '92%', rtStatus: 'fresh' },
     { id: 1272405, rank: 0, title: 'Kung Fu', poster_path: '/ceMT5i6aCdkm1cgAamJ6Fn2GTNE.jpg', backdrop_path: '/aKmWWZYCmMR5vyW2rAxeECgxsBU.jpg', overview: '', tagline: '', release_date: '2026-03-15', runtime: 115, vote_average: 7.5, vote_count: 200, revenue: 15200000, budget: 5000000, popularity: 85, genres: [], director: '', cast: [], omdbRtScore: '80%', rtStatus: 'fresh' },
-    { id: 1570664, rank: 0, title: 'Double Happiness', poster_path: '/n1iuCRzU2Xn6cotcCgOh1rVWWVW.jpg', backdrop_path: null, overview: '', tagline: '', release_date: '2026-03-18', runtime: 100, vote_average: 8.0, vote_count: 120, revenue: 8400000, budget: 1500000, popularity: 75, genres: [], director: '', cast: [], omdbRtScore: '85%', rtStatus: 'fresh' },
+    { id: 1536559, rank: 0, title: 'Double Happiness', poster_path: '/1MzikEP1A09dZFuQu5DBxJFPNH7.jpg', backdrop_path: null, overview: '', tagline: '', release_date: '2026-03-18', runtime: 100, vote_average: 8.0, vote_count: 120, revenue: 8400000, budget: 1500000, popularity: 75, genres: [], director: '', cast: [], omdbRtScore: '85%', rtStatus: 'fresh' },
 ];
 
 export async function getBoxOfficeMovies(
