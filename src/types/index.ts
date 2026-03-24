@@ -191,6 +191,7 @@ export interface BoxOfficeMovie {
     director: string | null;
     cast: { id: number; name: string; character: string; profile_path: string | null }[];
     omdbRtScore?: string;
+    rtStatus?: 'fresh' | 'rotten';
 }
 
 export interface BoxOfficeModalData extends BoxOfficeMovie {

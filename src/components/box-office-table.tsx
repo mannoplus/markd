@@ -59,13 +59,14 @@ export function BoxOfficeTable({ movies, onMovieSelect }: BoxOfficeTableProps) {
     return (
         <div className="space-y-3">
             {/* Desktop Header — hidden on mobile */}
-            <div className="hidden md:grid md:grid-cols-[3rem_minmax(0,2fr)_1fr_1fr_1fr_4rem_4rem] gap-4 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-foreground-subtle">
+            <div className="hidden md:grid md:grid-cols-[3rem_minmax(0,2fr)_1fr_1fr_1fr_5rem] gap-4 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-foreground-subtle">
                 <button onClick={() => handleSort('rank')} className="text-left hover:text-foreground">#<SortIcon columnKey="rank" /></button>
                 <span>{t('movie')}</span>
                 <button onClick={() => handleSort('revenue')} className="text-right hover:text-foreground">{t('revenue')}<SortIcon columnKey="revenue" /></button>
                 <button onClick={() => handleSort('budget')} className="text-right hover:text-foreground">{t('budget')}<SortIcon columnKey="budget" /></button>
-                <button onClick={() => handleSort('vote_average')} className="text-right hover:text-foreground">TMDB<SortIcon columnKey="vote_average" /></button>
-                <button onClick={() => handleSort('omdbRtScore')} className="text-right hover:text-foreground">RT<SortIcon columnKey="omdbRtScore" /></button>
+                <button onClick={() => handleSort('vote_average')} className="text-right hover:text-foreground">
+                    {t('rating')} <SortIcon columnKey="vote_average" />
+                </button>
                 <span className="text-right">{t('trend')}</span>
             </div>
 
@@ -137,18 +138,17 @@ export function BoxOfficeTable({ movies, onMovieSelect }: BoxOfficeTableProps) {
                                 </span>
                             </div>
 
-                            {/* TMDB Rating */}
-                            <div className="flex items-center justify-end gap-1">
-                                <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
-                                <span className="font-semibold">{movie.vote_average.toFixed(1)}</span>
-                            </div>
-
-                            {/* RT Score */}
-                            <div className="text-right relative">
-                                {movie.omdbRtScore ? (
-                                    <span className="font-bold text-red-500">{movie.omdbRtScore}</span>
-                                ) : (
-                                    <span className="text-foreground-subtle text-xs">N/A</span>
+                            {/* Ratings (TMDB + RT) */}
+                            <div className="flex flex-col items-end justify-center gap-1.5 min-w-0">
+                                <div className="flex items-center gap-1">
+                                    <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400 shrink-0" />
+                                    <span className="font-semibold">{movie.vote_average.toFixed(1)}</span>
+                                </div>
+                                {movie.omdbRtScore && (
+                                    <div className={`flex items-center gap-1 text-[11px] font-bold ${movie.rtStatus === 'rotten' ? 'text-green-500' : 'text-red-500'}`}>
+                                        <span role="img" aria-label="Rotten Tomatoes">🍅</span>
+                                        <span>{movie.omdbRtScore}</span>
+                                    </div>
                                 )}
                             </div>
 
@@ -190,13 +190,15 @@ export function BoxOfficeTable({ movies, onMovieSelect }: BoxOfficeTableProps) {
                                 <h3 className="font-semibold text-sm truncate">{movie.title}</h3>
                                 <div className="flex items-center gap-2 text-xs text-foreground-muted">
                                     <div className="flex items-center gap-1">
-                                        <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                                        <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 shrink-0" />
                                         <span>{movie.vote_average.toFixed(1)}</span>
                                     </div>
-                                    <div className="flex items-center gap-1">
-                                        <span className="text-red-500 text-[10px] font-bold border border-red-500/30 rounded px-1 leading-tight">RT</span>
-                                        <span>{movie.omdbRtScore || 'N/A'}</span>
-                                    </div>
+                                    {movie.omdbRtScore && (
+                                        <div className={`flex items-center gap-1 font-bold ${movie.rtStatus === 'rotten' ? 'text-green-500' : 'text-red-500'}`}>
+                                            <span role="img" aria-label="Rotten Tomatoes" className="text-[10px]">🍅</span>
+                                            <span>{movie.omdbRtScore}</span>
+                                        </div>
+                                    )}
                                     {movie.release_date && (
                                         <span>{new Date(movie.release_date).getFullYear()}</span>
                                     )}

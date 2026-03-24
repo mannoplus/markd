@@ -8,13 +8,14 @@ import type { BoxOfficeMovie } from '@/types';
 import { useTranslations } from 'next-intl';
 import { BarChart3 } from 'lucide-react';
 
-const REGIONS = ['US', 'TW', 'GB', 'JP', 'KR', 'FR'] as const;
+const REGIONS = ['US', 'TW', 'GB', 'JP', 'KR', 'CN', 'FR'] as const;
 const REGION_KEYS: Record<string, string> = {
     US: 'regionUS',
     TW: 'regionTW',
     GB: 'regionGB',
     JP: 'regionJP',
     KR: 'regionKR',
+    CN: 'regionCN',
     FR: 'regionFR',
 };
 
