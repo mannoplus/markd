@@ -12,6 +12,7 @@ const REGION_COLORS: Record<string, string> = {
     JP: '#ef4444',  // Red
     KR: '#14b8a6',  // Teal
     FR: '#8b5cf6',  // Violet
+    CN: '#facc15',  // Yellow
 };
 
 const REGION_KEYS: Record<string, string> = {
@@ -21,6 +22,7 @@ const REGION_KEYS: Record<string, string> = {
     JP: 'regionJP',
     KR: 'regionKR',
     FR: 'regionFR',
+    CN: 'regionCN',
 };
 
 function formatCompact(value: number): string {

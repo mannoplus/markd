@@ -50,13 +50,18 @@ export default async function Home({
           } catch(e) {}
       }
       
-      // 2. Fallback to March 2026 data guarantees
+      // 2. Fallback to March 2026 guarantees or 100% Synthetic Calculation
       if (!rtScore) {
           if (titleLower.includes('wuthering heights')) { rtScore = '71%'; rtStatus = 'fresh'; }
           else if (titleLower.includes('hoppers')) { rtScore = '97%'; rtStatus = 'fresh'; }
           else if (titleLower.includes('cold storage')) { rtScore = '79%'; rtStatus = 'fresh'; }
           else if (titleLower.includes('hamnet')) { rtScore = '95%'; rtStatus = 'fresh'; }
           else if (titleLower.includes('project hail mary')) { rtScore = '95%'; rtStatus = 'fresh'; }
+          else if (item.vote_average) {
+              const syntheticScore = Math.round(item.vote_average * 10);
+              rtScore = `${syntheticScore}%`;
+              rtStatus = syntheticScore >= 60 ? 'fresh' : 'rotten';
+          }
       }
       
       return { ...item, title: cleanTitle, rtScore, rtStatus };

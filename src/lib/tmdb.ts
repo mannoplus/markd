@@ -372,6 +372,20 @@ function isStreamingMovie(
  * Get box office movies for a given region, enriched with revenue/budget/credits.
  * Returns the top 10 now-playing movies sorted by popularity, strictly filtered for theatrical.
  */
+// Global Mock Interceptors for March 2026 Region Data
+const GLOBAL_CN_MOCKS: BoxOfficeMovie[] = [
+    { id: 1462229, rank: 0, title: 'Pegasus 3', poster_path: '/hypEABFazVTU4zTZYcVFmaPYdIH.jpg', backdrop_path: '/rLHFufd3gALwHay1Sxl3MjbGQ7E.jpg', overview: '', tagline: '', release_date: '2026-02-12', runtime: 120, vote_average: 8.2, vote_count: 500, revenue: 624500000, budget: 80000000, popularity: 100, genres: [], director: 'Han Han', cast: [], omdbRtScore: '85%', rtStatus: 'fresh' },
+    { id: 1305781, rank: 0, title: 'Blades of the Guardians', poster_path: '/AbunjMKX4P1sDNlKfhYrWkIoRD9.jpg', backdrop_path: '/cYyNJzwhaj7aC4uTlUctrfaERbf.jpg', overview: '', tagline: '', release_date: '2026-03-01', runtime: 115, vote_average: 7.9, vote_count: 300, revenue: 201900000, budget: 45000000, popularity: 90, genres: [], director: '', cast: [], omdbRtScore: '79%', rtStatus: 'fresh' },
+    { id: 1327819, rank: 0, title: 'Hoppers', poster_path: '/xjtWQ2CL1mpmMNwuU5HeS4Iuwuu.jpg', backdrop_path: '/u53UYu5XG2hNgWGvs3xGhAVzypl.jpg', overview: '', tagline: '', release_date: '2026-03-06', runtime: 105, vote_average: 7.6, vote_count: 250, revenue: 10300000, budget: 150000000, popularity: 80, genres: [], director: '', cast: [], omdbRtScore: '97%', rtStatus: 'fresh' },
+    { id: 687163, rank: 0, title: 'Project Hail Mary', poster_path: '/yihdXomYb5kTeSivtFndMy5iDmf.jpg', backdrop_path: '/8Tfys3mDZVp4tNoH2ktm06a0Tau.jpg', overview: '', tagline: '', release_date: '2026-03-20', runtime: 140, vote_average: 8.5, vote_count: 1000, revenue: 8300000, budget: 200000000, popularity: 95, genres: [], director: 'Phil Lord', cast: [], omdbRtScore: '95%', rtStatus: 'fresh' }
+];
+
+const GLOBAL_TW_MOCKS: BoxOfficeMovie[] = [
+    { id: 1481955, rank: 0, title: 'Sunshine Women\'s Choir', poster_path: '/s4Kp2F2MaoJNtaSVyj87ExLYMS8.jpg', backdrop_path: '/21iGd9XfqAZJskCQNY1Nv70ksCH.jpg', overview: '', tagline: '', release_date: '2026-03-10', runtime: 110, vote_average: 8.8, vote_count: 150, revenue: 28500000, budget: 2000000, popularity: 90, genres: [], director: '', cast: [], omdbRtScore: '92%', rtStatus: 'fresh' },
+    { id: 1272405, rank: 0, title: 'Kung Fu', poster_path: '/ceMT5i6aCdkm1cgAamJ6Fn2GTNE.jpg', backdrop_path: '/aKmWWZYCmMR5vyW2rAxeECgxsBU.jpg', overview: '', tagline: '', release_date: '2026-03-15', runtime: 115, vote_average: 7.5, vote_count: 200, revenue: 15200000, budget: 5000000, popularity: 85, genres: [], director: '', cast: [], omdbRtScore: '80%', rtStatus: 'fresh' },
+    { id: 1570664, rank: 0, title: 'Double Happiness', poster_path: '/n1iuCRzU2Xn6cotcCgOh1rVWWVW.jpg', backdrop_path: null, overview: '', tagline: '', release_date: '2026-03-18', runtime: 100, vote_average: 8.0, vote_count: 120, revenue: 8400000, budget: 1500000, popularity: 75, genres: [], director: '', cast: [], omdbRtScore: '85%', rtStatus: 'fresh' },
+];
+
 export async function getBoxOfficeMovies(
     region: string = 'US'
 ): Promise<BoxOfficeMovie[]> {
@@ -499,20 +513,13 @@ export async function getBoxOfficeMovies(
 
     // Regional Overrides (March 2026 data requirements)
     if (region === 'CN') {
-        const cnMocks: BoxOfficeMovie[] = [
-            { id: 1462229, rank: 0, title: 'Pegasus 3', poster_path: '/hypEABFazVTU4zTZYcVFmaPYdIH.jpg', backdrop_path: '/rLHFufd3gALwHay1Sxl3MjbGQ7E.jpg', overview: '', tagline: '', release_date: '2026-02-12', runtime: 120, vote_average: 8.2, vote_count: 500, revenue: 624500000, budget: 80000000, popularity: 100, genres: [], director: 'Han Han', cast: [], omdbRtScore: '85%', rtStatus: 'fresh' },
-            { id: 1305781, rank: 0, title: 'Blades of the Guardians', poster_path: '/AbunjMKX4P1sDNlKfhYrWkIoRD9.jpg', backdrop_path: '/cYyNJzwhaj7aC4uTlUctrfaERbf.jpg', overview: '', tagline: '', release_date: '2026-03-01', runtime: 115, vote_average: 7.9, vote_count: 300, revenue: 201900000, budget: 45000000, popularity: 90, genres: [], director: '', cast: [], omdbRtScore: '79%', rtStatus: 'fresh' },
-            { id: 1327819, rank: 0, title: 'Hoppers', poster_path: '/xjtWQ2CL1mpmMNwuU5HeS4Iuwuu.jpg', backdrop_path: '/u53UYu5XG2hNgWGvs3xGhAVzypl.jpg', overview: '', tagline: '', release_date: '2026-03-06', runtime: 105, vote_average: 7.6, vote_count: 250, revenue: 10300000, budget: 150000000, popularity: 80, genres: [], director: '', cast: [], omdbRtScore: '97%', rtStatus: 'fresh' },
-            { id: 687163, rank: 0, title: 'Project Hail Mary', poster_path: '/yihdXomYb5kTeSivtFndMy5iDmf.jpg', backdrop_path: '/8Tfys3mDZVp4tNoH2ktm06a0Tau.jpg', overview: '', tagline: '', release_date: '2026-03-20', runtime: 140, vote_average: 8.5, vote_count: 1000, revenue: 8300000, budget: 200000000, popularity: 95, genres: [], director: 'Phil Lord', cast: [], omdbRtScore: '95%', rtStatus: 'fresh' }
-        ];
-        validMovies = [...cnMocks, ...validMovies.slice(4)];
+        const cnMockIds = GLOBAL_CN_MOCKS.map(m => m.id);
+        validMovies = validMovies.filter(m => !cnMockIds.includes(m.id));
+        validMovies = [...GLOBAL_CN_MOCKS, ...validMovies.slice(GLOBAL_CN_MOCKS.length)];
     } else if (region === 'TW') {
-        const twMocks: BoxOfficeMovie[] = [
-            { id: 1481955, rank: 0, title: 'Sunshine Women\'s Choir', poster_path: '/s4Kp2F2MaoJNtaSVyj87ExLYMS8.jpg', backdrop_path: '/21iGd9XfqAZJskCQNY1Nv70ksCH.jpg', overview: '', tagline: '', release_date: '2026-03-10', runtime: 110, vote_average: 8.8, vote_count: 150, revenue: 28500000, budget: 2000000, popularity: 90, genres: [], director: '', cast: [], omdbRtScore: '92%', rtStatus: 'fresh' },
-            { id: 1272405, rank: 0, title: 'Kung Fu', poster_path: '/ceMT5i6aCdkm1cgAamJ6Fn2GTNE.jpg', backdrop_path: '/aKmWWZYCmMR5vyW2rAxeECgxsBU.jpg', overview: '', tagline: '', release_date: '2026-03-15', runtime: 115, vote_average: 7.5, vote_count: 200, revenue: 15200000, budget: 5000000, popularity: 85, genres: [], director: '', cast: [], omdbRtScore: '80%', rtStatus: 'fresh' },
-            { id: 1570664, rank: 0, title: 'Double Happiness', poster_path: '/n1iuCRzU2Xn6cotcCgOh1rVWWVW.jpg', backdrop_path: null, overview: '', tagline: '', release_date: '2026-03-18', runtime: 100, vote_average: 8.0, vote_count: 120, revenue: 8400000, budget: 1500000, popularity: 75, genres: [], director: '', cast: [], omdbRtScore: '85%', rtStatus: 'fresh' },
-        ];
-        validMovies = [...twMocks, ...validMovies.slice(3).map(m => ({ ...m, revenue: Math.floor(Math.random() * 5000000) + 1000000 }))];
+        const twMockIds = GLOBAL_TW_MOCKS.map(m => m.id);
+        validMovies = validMovies.filter(m => !twMockIds.includes(m.id));
+        validMovies = [...GLOBAL_TW_MOCKS, ...validMovies.slice(GLOBAL_TW_MOCKS.length).map(m => ({ ...m, revenue: Math.floor(Math.random() * 5000000) + 1000000 }))];
     }
 
     // Sort by revenue (descending) and assign rank
@@ -612,6 +619,26 @@ export async function getBoxOfficeModalDetails(movieId: number): Promise<BoxOffi
             }
         }
 
+        // Sync Table and Modal variables using Mocks
+        const allMocks = [...GLOBAL_CN_MOCKS, ...GLOBAL_TW_MOCKS];
+        const mockMatch = allMocks.find(m => m.id === detail.id);
+        
+        // Use Mock data if overriding, otherwise fallback to native TMDB
+        const revenue = mockMatch ? mockMatch.revenue : detail.revenue;
+        const budget = mockMatch ? mockMatch.budget : detail.budget;
+        const release_date = mockMatch ? mockMatch.release_date : detail.release_date;
+        const runtime = mockMatch ? mockMatch.runtime : detail.runtime;
+        const vote_average = mockMatch ? mockMatch.vote_average : detail.vote_average;
+
+        // Force OMDB scores from mock if unavailable locally
+        if (mockMatch?.omdbRtScore) {
+            if (omdbData) {
+                omdbData.rottenTomatoes = mockMatch.omdbRtScore;
+            } else {
+                omdbData = { rottenTomatoes: mockMatch.omdbRtScore };
+            }
+        }
+
         return {
             id: detail.id,
             rank: 0, // Unused in modal
@@ -620,12 +647,12 @@ export async function getBoxOfficeModalDetails(movieId: number): Promise<BoxOffi
             backdrop_path: detail.backdrop_path,
             overview: detail.overview,
             tagline: detail.tagline,
-            release_date: detail.release_date,
-            runtime: detail.runtime,
-            vote_average: detail.vote_average,
+            release_date: release_date,
+            runtime: runtime,
+            vote_average: vote_average,
             vote_count: detail.vote_count,
-            revenue: detail.revenue,
-            budget: detail.budget,
+            revenue: revenue,
+            budget: budget,
             popularity: detail.popularity,
             genres: detail.genres,
             director: crew.find((c: any) => c.job === 'Director')?.name || null,
