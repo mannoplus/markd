@@ -429,7 +429,7 @@ export async function getBoxOfficeMovies(
                     return {
                         id: movie.id,
                         rank: 0, // Assigned later
-                        title: detail.title || movie.title || movie.name || '',
+                        title: (detail.title || movie.title || movie.name || '').replace(/^["']+|["']+$/g, ''),
                         poster_path: detail.poster_path ?? movie.poster_path,
                         backdrop_path: detail.backdrop_path ?? movie.backdrop_path,
                         overview: detail.overview || movie.overview,
@@ -455,7 +455,7 @@ export async function getBoxOfficeMovies(
                     return {
                         id: movie.id,
                         rank: index + 1, // Will be reassigned later
-                        title: movie.title || movie.name || '',
+                        title: (movie.title || movie.name || '').replace(/^["']+|["']+$/g, ''),
                         poster_path: movie.poster_path,
                         backdrop_path: movie.backdrop_path,
                         overview: movie.overview,
@@ -482,8 +482,8 @@ export async function getBoxOfficeMovies(
         page++;
     }
 
-    // Sort by popularity (descending) and assign rank
-    validMovies.sort((a, b) => b.popularity - a.popularity);
+    // Sort by revenue (descending) and assign rank
+    validMovies.sort((a, b) => b.revenue - a.revenue);
     return validMovies.slice(0, 10).map((m, i) => ({ ...m, rank: i + 1 }));
 }
 
