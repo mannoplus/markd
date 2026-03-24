@@ -31,12 +31,12 @@ export function BoxOfficeClient({ allRegionData, defaultRegion }: BoxOfficeClien
     const currentMovies = allRegionData[activeRegion] ?? [];
 
     return (
-        <div className="pb-16 -mt-16 sm:-mt-20">
+        <div className="pb-16 pt-24 sm:pt-28">
             {/* Main Content */}
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-12 mt-28 relative z-20">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-12 relative z-20">
 
                 {/* Region Tabs */}
-                <div className="flex flex-wrap items-center gap-2 pb-2">
+                <div className="flex overflow-x-auto whitespace-nowrap items-center gap-2 pb-2 scrollbar-hide relative z-30">
                     {REGIONS.map((region) => (
                         <button
                             key={region}
