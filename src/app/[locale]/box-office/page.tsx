@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 };
 
 async function BoxOfficeContent() {
-    const regions = ['US', 'TW', 'GB', 'JP', 'KR', 'FR'];
+    const regions = ['US', 'TW', 'GB', 'JP', 'KR', 'CN', 'FR'];
     const allRegionData = await getBoxOfficeMultiRegion(regions);
 
     return (

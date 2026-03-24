@@ -22,25 +22,49 @@ export default async function Home({
     getUpcomingTVShows(region)
   ]);
 
-  // RT Fallback Injector Helper for Welcome Page
-  const injectRTScores = <T extends Record<string, any>>(items: T[]) => {
-    return items.map(item => {
-      const titleLower = (item.title || item.name || '').toLowerCase();
+  // RT Fallback & Dynamic OMDb Injector Helper
+  const injectRTScores = async <T extends Record<string, any>>(items: T[]) => {
+    return Promise.all(items.map(async item => {
+      const cleanTitle = (item.title || item.name || '').replace(/^["']+|["']+$/g, '');
+      const year = (item.release_date || item.first_air_date || '').substring(0, 4);
+      const titleLower = cleanTitle.toLowerCase();
+      
       let rtScore: string | undefined = undefined;
       let rtStatus: 'fresh' | 'rotten' | undefined = undefined;
+
+      // 1. Attempt dynamic background fetch by Title and Year
+      if (process.env.OMDB_API_KEY) {
+          try {
+              const res = await fetch(`https://www.omdbapi.com/?t=${encodeURIComponent(cleanTitle)}&y=${year}&apikey=${process.env.OMDB_API_KEY}`, { next: { revalidate: 86400 } });
+              if (res.ok) {
+                  const json = await res.json();
+                  if (json.Response === 'True') {
+                      const score = json.Ratings?.find((r: any) => r.Source === 'Rotten Tomatoes')?.Value;
+                      if (score && score !== 'N/A') {
+                          rtScore = score;
+                          const num = parseInt(score.replace('%', ''));
+                          rtStatus = num >= 60 ? 'fresh' : 'rotten';
+                      }
+                  }
+              }
+          } catch(e) {}
+      }
       
-      if (titleLower.includes('wuthering heights')) { rtScore = '71%'; rtStatus = 'fresh'; }
-      else if (titleLower.includes('hoppers')) { rtScore = '97%'; rtStatus = 'fresh'; }
-      else if (titleLower.includes('cold storage')) { rtScore = '79%'; rtStatus = 'fresh'; }
-      else if (titleLower.includes('hamnet')) { rtScore = '95%'; rtStatus = 'fresh'; }
-      else if (titleLower.includes('project hail mary')) { rtScore = '95%'; rtStatus = 'fresh'; }
+      // 2. Fallback to March 2026 data guarantees
+      if (!rtScore) {
+          if (titleLower.includes('wuthering heights')) { rtScore = '71%'; rtStatus = 'fresh'; }
+          else if (titleLower.includes('hoppers')) { rtScore = '97%'; rtStatus = 'fresh'; }
+          else if (titleLower.includes('cold storage')) { rtScore = '79%'; rtStatus = 'fresh'; }
+          else if (titleLower.includes('hamnet')) { rtScore = '95%'; rtStatus = 'fresh'; }
+          else if (titleLower.includes('project hail mary')) { rtScore = '95%'; rtStatus = 'fresh'; }
+      }
       
-      return { ...item, rtScore, rtStatus };
-    });
+      return { ...item, title: cleanTitle, rtScore, rtStatus };
+    }));
   };
 
-  const enrichedNowPlaying = injectRTScores(nowPlaying);
-  const enrichedTrendingMovies = injectRTScores(trendingMovies);
+  const enrichedNowPlaying = await injectRTScores(nowPlaying);
+  const enrichedTrendingMovies = await injectRTScores(trendingMovies);
 
   // Pass top 5 movies to carousel
   const carouselMovies = enrichedNowPlaying.slice(0, 5);
