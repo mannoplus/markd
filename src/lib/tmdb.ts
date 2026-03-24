@@ -16,6 +16,8 @@ import type {
     TMDBTrendingResult,
     TMDBPersonDetails,
     MediaType,
+    BoxOfficeMovie,
+    BoxOfficeModalData,
 } from '@/types';
 import { getLocale } from 'next-intl/server';
 
@@ -324,4 +326,261 @@ export async function getMediaByGenre(
             media_type: type
         }))
     };
+}
+
+// ---------- Box Office ----------
+
+const STREAMING_PLATFORMS = ['Netflix', 'Amazon', 'Disney+', 'Apple TV+', 'Hulu', 'HBO Max', 'Max Originals'];
+
+function isStreamingMovie(
+    movie: any,
+    detail: any
+): boolean {
+    if (!detail) return false;
+
+    // Check production companies
+    const hasStreamingCompany = detail.production_companies?.some((c: any) =>
+        STREAMING_PLATFORMS.some((p) => c.name.toLowerCase().includes(p.toLowerCase()))
+    );
+
+    if (hasStreamingCompany) return true;
+
+    // Check release dates for 'Netflix', 'Amazon', etc., in Notes
+    let hasStreamingNote = false;
+    if (detail.release_dates && detail.release_dates.results) {
+        for (const rd of detail.release_dates.results) {
+            if (rd.release_dates?.some((dateItem: any) =>
+                STREAMING_PLATFORMS.some((p) => dateItem.note?.toLowerCase().includes(p.toLowerCase())) ||
+                dateItem.type === 4 // 4 = Digital
+            )) {
+                hasStreamingNote = true;
+                break;
+            }
+        }
+    }
+
+    // A movie MUST have theatrical release types (type 3) across multiple regions or a reported revenue.
+    // If it's mostly digital and has 0 revenue, it's likely a streaming exclusive.
+    if (hasStreamingNote && (!detail.revenue || detail.revenue === 0)) {
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * Get box office movies for a given region, enriched with revenue/budget/credits.
+ * Returns the top 10 now-playing movies sorted by popularity, strictly filtered for theatrical.
+ */
+export async function getBoxOfficeMovies(
+    region: string = 'US'
+): Promise<BoxOfficeMovie[]> {
+    let validMovies: BoxOfficeMovie[] = [];
+    let page = 1;
+
+    // Fetch pages until we have 10 valid theatrical movies or we hit page 5
+    while (validMovies.length < 10 && page <= 5) {
+        const data = await tmdbFetch<{ results: TMDBTrendingResult[] }>(
+            '/movie/now_playing',
+            { region, page: page.toString() },
+            1800 // cache for 30 min
+        );
+
+        const enriched = await Promise.all(
+            data.results.map(async (movie) => {
+                try {
+                    const detail = await tmdbFetch<any>(
+                        `/movie/${movie.id}`,
+                        { append_to_response: 'credits,release_dates' },
+                        3600
+                    );
+
+                    // Skip if identified as a streaming-exclusive or direct-to-video
+                    if (isStreamingMovie(movie, detail)) return null;
+
+                    // Some "now playing" movies are very old re-releases or have 0 revenue.
+                    // We strongly prefer movies that have actual box office data for a box office page.
+                    // If building a strict list, we might enforce revenue > 0, but some 
+                    // international or fresh releases don't report revenue immediately.
+                    // We'll trust the streaming filter and popularity for now.
+
+                    const director =
+                        detail.credits.crew.find((c: any) => c.job === 'Director')?.name ?? null;
+
+                    return {
+                        id: movie.id,
+                        rank: 0, // Assigned later
+                        title: detail.title || movie.title || movie.name || '',
+                        poster_path: detail.poster_path ?? movie.poster_path,
+                        backdrop_path: detail.backdrop_path ?? movie.backdrop_path,
+                        overview: detail.overview || movie.overview,
+                        tagline: detail.tagline || '',
+                        release_date: detail.release_date || movie.release_date || '',
+                        runtime: detail.runtime || 0,
+                        vote_average: detail.vote_average || movie.vote_average,
+                        vote_count: detail.vote_count || 0,
+                        revenue: detail.revenue || 0,
+                        budget: detail.budget || 0,
+                        popularity: movie.popularity || 0,
+                        genres: detail.genres || [],
+                        director,
+                        cast: detail.credits.cast.slice(0, 5).map((c: any) => ({
+                            id: c.id,
+                            name: c.name,
+                            character: c.character,
+                            profile_path: c.profile_path,
+                        })),
+                    } satisfies BoxOfficeMovie;
+                } catch {
+                    return null; // Ignore failed fetches
+                }
+            })
+        );
+
+        // Filter out nulls and append
+        const filtered = enriched.filter((m): m is BoxOfficeMovie => m !== null);
+        validMovies = [...validMovies, ...filtered];
+        page++;
+    }
+
+    // Sort by popularity (descending) and assign rank
+    validMovies.sort((a, b) => b.popularity - a.popularity);
+    return validMovies.slice(0, 10).map((m, i) => ({ ...m, rank: i + 1 }));
+}
+
+/**
+ * Fetch box office data for multiple regions in parallel.
+ * Used for regional comparison charts.
+ */
+export async function getBoxOfficeMultiRegion(
+    regions: string[] = ['US', 'TW', 'GB', 'JP', 'KR', 'FR']
+): Promise<Record<string, BoxOfficeMovie[]>> {
+    const entries = await Promise.all(
+        regions.map(async (region) => {
+            const movies = await getBoxOfficeMovies(region);
+            return [region, movies] as [string, BoxOfficeMovie[]];
+        })
+    );
+
+    return Object.fromEntries(entries);
+}
+
+/**
+ * Fetch comprehensive details for the Box Office Modal
+ */
+export async function getBoxOfficeModalDetails(movieId: number): Promise<BoxOfficeModalData | null> {
+    try {
+        const detail = await tmdbFetch<any>(
+            `/movie/${movieId}`,
+            { append_to_response: 'credits,release_dates,images,videos' },
+            3600
+        );
+
+        // Extract US MPAA rating
+        let mpaa = null;
+        if (detail.release_dates?.results) {
+            const usRelease = detail.release_dates.results.find((r: any) => r.iso_3166_1 === 'US');
+            if (usRelease) {
+                const rated = usRelease.release_dates.find((d: any) => d.certification);
+                mpaa = rated ? rated.certification : null;
+            }
+        }
+
+        // Extract localized release dates for major regions
+        const TARGET_REGIONS = ['US', 'TW', 'GB', 'CN', 'KR', 'JP', 'FR'];
+        const release_date_localized: Record<string, string> = {};
+        
+        if (detail.release_dates?.results) {
+            for (const r of detail.release_dates.results) {
+                if (TARGET_REGIONS.includes(r.iso_3166_1)) {
+                    // Get earliest release date for that country
+                    const sorted = [...r.release_dates].sort((a: any, b: any) => 
+                        new Date(a.release_date).getTime() - new Date(b.release_date).getTime()
+                    );
+                    if (sorted.length > 0) {
+                        release_date_localized[r.iso_3166_1] = sorted[0].release_date.split('T')[0];
+                    }
+                }
+            }
+        }
+
+        // Get Director, Writers, Producers
+        const keyCrewJobs = ['Director', 'Screenplay', 'Writer', 'Producer', 'Director of Photography', 'Original Music Composer'];
+        const crew = detail.credits?.crew
+            ?.filter((c: any) => keyCrewJobs.includes(c.job))
+            ?.filter((c: any, index: number, self: any[]) => 
+                index === self.findIndex((t) => t.id === c.id && t.job === c.job)
+            ) // deduplicate
+            .map((c: any) => ({
+                id: c.id,
+                name: c.name,
+                job: c.job,
+                profile_path: c.profile_path,
+            })) || [];
+
+        // Fetch OMDb Ratings securely
+        let omdbData = undefined;
+        if (detail.imdb_id && process.env.OMDB_API_KEY) {
+            try {
+                const omdbRes = await fetch(`https://www.omdbapi.com/?i=${detail.imdb_id}&apikey=${process.env.OMDB_API_KEY}`, { next: { revalidate: 3600 } });
+                
+                if (omdbRes.ok) {
+                    const omdbJson = await omdbRes.json();
+                    if (omdbJson.Response === 'True') {
+                        const rtRating = omdbJson.Ratings?.find((r: any) => r.Source === 'Rotten Tomatoes')?.Value;
+                        omdbData = {
+                            imdbRating: omdbJson.imdbRating && omdbJson.imdbRating !== 'N/A' ? omdbJson.imdbRating : undefined,
+                            rottenTomatoes: rtRating && rtRating !== 'N/A' ? rtRating : undefined,
+                            metacritic: omdbJson.Metascore && omdbJson.Metascore !== 'N/A' ? omdbJson.Metascore : undefined,
+                        };
+                    }
+                }
+            } catch (e) {
+                console.error('Error fetching from OMDB API:', e);
+            }
+        }
+
+        return {
+            id: detail.id,
+            rank: 0, // Unused in modal
+            title: detail.title,
+            poster_path: detail.poster_path,
+            backdrop_path: detail.backdrop_path,
+            overview: detail.overview,
+            tagline: detail.tagline,
+            release_date: detail.release_date,
+            runtime: detail.runtime,
+            vote_average: detail.vote_average,
+            vote_count: detail.vote_count,
+            revenue: detail.revenue,
+            budget: detail.budget,
+            popularity: detail.popularity,
+            genres: detail.genres,
+            director: crew.find((c: any) => c.job === 'Director')?.name || null,
+            cast: detail.credits?.cast?.slice(0, 8).map((c: any) => ({
+                id: c.id,
+                name: c.name,
+                character: c.character,
+                profile_path: c.profile_path,
+            })) || [],
+            production_companies: detail.production_companies?.map((c: any) => ({
+                id: c.id,
+                name: c.name,
+            })) || [],
+            release_date_localized,
+            rating_mpaa: mpaa,
+            crew,
+            images: {
+                posters: detail.images?.posters?.slice(0, 5) || [],
+                backdrops: detail.images?.backdrops?.slice(0, 10) || [],
+            },
+            videos: detail.videos?.results
+                ?.filter((v: any) => v.site === 'YouTube' && v.type === 'Trailer')
+                .slice(0, 2) || [],
+            omdb: omdbData,
+        };
+    } catch (e) {
+        console.error('Error fetching modal details:', e);
+        return null;
+    }
 }

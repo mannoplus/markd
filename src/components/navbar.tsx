@@ -2,7 +2,7 @@
 
 import { Link } from '@/i18n/routing';
 import { usePathname } from 'next/navigation';
-import { Search, Library, LayoutDashboard, LogIn, Menu, X } from 'lucide-react';
+import { Search, Library, LayoutDashboard, LogIn, Menu, X, TrendingUp } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { useState, useEffect } from 'react';
@@ -18,6 +18,7 @@ export function Navbar() {
 
     const NAV_LINKS = [
         { href: '/search', label: t('searchLink'), icon: Search },
+        { href: '/box-office', label: t('boxOffice'), icon: TrendingUp },
         { href: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
         { href: '/library', label: t('library'), icon: Library },
     ];
@@ -44,7 +45,7 @@ export function Navbar() {
     }, [pathname]);
 
     return (
-        <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border">
+        <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border pt-safe">
             <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
                 {/* Logo */}
                 <Link

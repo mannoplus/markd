@@ -20,6 +20,11 @@ export const metadata: Metadata = {
   keywords: ["movies", "tv shows", "tracker", "watchlist", "streaming"],
 };
 
+export const viewport = {
+  themeColor: "#000000",
+  viewportFit: "cover",
+};
+
 export default async function RootLayout({
   children,
   params

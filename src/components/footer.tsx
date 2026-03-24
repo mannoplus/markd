@@ -7,7 +7,7 @@ export function Footer() {
     const t = useTranslations('Footer');
 
     return (
-        <footer className="border-t border-border bg-background-secondary py-8">
+        <footer className="border-t border-border bg-background-secondary pt-8 pb-safe">
             <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-4 md:flex-row md:px-6 lg:px-8">
                 {/* Left: Logo */}
                 <div className="flex w-full justify-center md:w-auto md:justify-start">

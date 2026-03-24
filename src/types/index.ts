@@ -58,6 +58,8 @@ export interface TMDBMovieDetails {
     genres: { id: number; name: string }[];
     tagline: string;
     status: string;
+    revenue: number;
+    budget: number;
 }
 
 export interface TMDBTVDetails {
@@ -138,6 +140,7 @@ export interface TMDBTrendingResult {
     vote_average: number;
     release_date?: string;
     first_air_date?: string;
+    popularity: number;
 }
 
 export interface TMDBPersonDetails {
@@ -165,4 +168,43 @@ export interface TMDBPersonCredit {
     first_air_date?: string; // for tv
     vote_average: number;
     order?: number;
+}
+
+// ---------- Box Office ----------
+
+export interface BoxOfficeMovie {
+    id: number;
+    rank: number;
+    title: string;
+    poster_path: string | null;
+    backdrop_path: string | null;
+    overview: string;
+    tagline: string;
+    release_date: string;
+    runtime: number;
+    vote_average: number;
+    vote_count: number;
+    revenue: number;
+    budget: number;
+    popularity: number;
+    genres: { id: number; name: string }[];
+    director: string | null;
+    cast: { id: number; name: string; character: string; profile_path: string | null }[];
+}
+
+export interface BoxOfficeModalData extends BoxOfficeMovie {
+    production_companies: { id: number; name: string }[];
+    release_date_localized: Record<string, string>; // country_code -> date
+    rating_mpaa: string | null;
+    crew: { id: number; name: string; job: string; profile_path: string | null }[];
+    images: {
+        posters: { file_path: string }[];
+        backdrops: { file_path: string }[];
+    };
+    videos: { key: string; name: string; type: string; site: string }[];
+    omdb?: {
+        imdbRating?: string;
+        rottenTomatoes?: string;
+        metacritic?: string;
+    };
 }
