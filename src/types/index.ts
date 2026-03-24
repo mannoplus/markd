@@ -43,6 +43,8 @@ export interface TMDBSearchResult {
     release_date?: string; // movies
     first_air_date?: string; // tv shows
     genre_ids: number[];
+    rtScore?: string;
+    rtStatus?: 'fresh' | 'rotten';
 }
 
 export interface TMDBMovieDetails {
@@ -141,6 +143,8 @@ export interface TMDBTrendingResult {
     release_date?: string;
     first_air_date?: string;
     popularity: number;
+    rtScore?: string;
+    rtStatus?: 'fresh' | 'rotten';
 }
 
 export interface TMDBPersonDetails {

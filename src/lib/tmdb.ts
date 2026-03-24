@@ -525,7 +525,7 @@ export async function getBoxOfficeMovies(
  * Used for regional comparison charts.
  */
 export async function getBoxOfficeMultiRegion(
-    regions: string[] = ['US', 'TW', 'GB', 'JP', 'KR', 'FR']
+    regions: string[] = ['US', 'TW', 'GB', 'JP', 'KR', 'CN', 'FR']
 ): Promise<Record<string, BoxOfficeMovie[]>> {
     const entries = await Promise.all(
         regions.map(async (region) => {

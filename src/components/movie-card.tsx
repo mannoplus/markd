@@ -12,6 +12,9 @@ interface MovieCardProps {
     releaseDate?: string;
     /** Optional: show the user's watch status badge */
     status?: string;
+    /** Optional: RT formatting for global UI */
+    rtScore?: string;
+    rtStatus?: 'fresh' | 'rotten';
 }
 
 export function MovieCard({
@@ -22,6 +25,8 @@ export function MovieCard({
     voteAverage,
     releaseDate,
     status,
+    rtScore,
+    rtStatus,
 }: MovieCardProps) {
     const year = releaseDate ? new Date(releaseDate).getFullYear() : null;
     const href = `/${mediaType}/${id}`;
@@ -46,11 +51,21 @@ export function MovieCard({
                         </div>
                     )}
 
-                    {/* Rating badge */}
-                    {rating && (
-                        <div className="absolute top-2 right-2 flex items-center gap-1 rounded-full bg-black/70 px-2 py-0.5 text-xs font-semibold backdrop-blur-sm">
-                            <Star className="h-3 w-3 fill-accent text-accent" />
-                            <span>{rating}</span>
+                    {/* Rating badge(s) */}
+                    {(rating || rtScore) && (
+                        <div className="absolute top-2 right-2 flex flex-col items-end gap-1">
+                            {rating && (
+                                <div className="flex items-center gap-1 rounded-full bg-black/70 px-2 py-0.5 text-xs font-semibold backdrop-blur-sm">
+                                    <Star className="h-3 w-3 fill-accent text-accent" />
+                                    <span>{rating}</span>
+                                </div>
+                            )}
+                            {rtScore && (
+                                <div className={`flex items-center gap-1 rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-bold backdrop-blur-sm ${rtStatus === 'rotten' ? 'text-green-500' : 'text-red-500'}`}>
+                                    <span role="img" aria-label="Rotten Tomatoes">🍅</span>
+                                    <span>{rtScore}</span>
+                                </div>
+                            )}
                         </div>
                     )}
 
