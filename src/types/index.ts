@@ -190,6 +190,7 @@ export interface BoxOfficeMovie {
     genres: { id: number; name: string }[];
     director: string | null;
     cast: { id: number; name: string; character: string; profile_path: string | null }[];
+    omdbRtScore?: string;
 }
 
 export interface BoxOfficeModalData extends BoxOfficeMovie {

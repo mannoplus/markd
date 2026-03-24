@@ -387,7 +387,7 @@ export async function getBoxOfficeMovies(
         );
 
         const enriched = await Promise.all(
-            data.results.map(async (movie) => {
+            data.results.map(async (movie, index) => {
                 try {
                     const detail = await tmdbFetch<any>(
                         `/movie/${movie.id}`,
@@ -406,6 +406,25 @@ export async function getBoxOfficeMovies(
 
                     const director =
                         detail.credits.crew.find((c: any) => c.job === 'Director')?.name ?? null;
+
+                    // Securely fetch OMDb RT Score
+                    let rtScore = undefined;
+                    if (detail.imdb_id && process.env.OMDB_API_KEY) {
+                        try {
+                            const omdbRes = await fetch(`https://www.omdbapi.com/?i=${detail.imdb_id}&apikey=${process.env.OMDB_API_KEY}`, { next: { revalidate: 3600 } });
+                            if (omdbRes.ok) {
+                                const omdbJson = await omdbRes.json();
+                                if (omdbJson.Response === 'True') {
+                                    const score = omdbJson.Ratings?.find((r: any) => r.Source === 'Rotten Tomatoes')?.Value;
+                                    if (score && score !== 'N/A') {
+                                        rtScore = score;
+                                    }
+                                }
+                            }
+                        } catch (e) {
+                            console.error('Failed to prefetch OMDb score for top 10:', e);
+                        }
+                    }
 
                     return {
                         id: movie.id,
@@ -430,9 +449,29 @@ export async function getBoxOfficeMovies(
                             character: c.character,
                             profile_path: c.profile_path,
                         })),
-                    } satisfies BoxOfficeMovie;
+                        omdbRtScore: rtScore,
+                    } as BoxOfficeMovie;
                 } catch {
-                    return null; // Ignore failed fetches
+                    return {
+                        id: movie.id,
+                        rank: index + 1, // Will be reassigned later
+                        title: movie.title || movie.name || '',
+                        poster_path: movie.poster_path,
+                        backdrop_path: movie.backdrop_path,
+                        overview: movie.overview,
+                        tagline: '',
+                        release_date: movie.release_date || '',
+                        runtime: 0,
+                        vote_average: movie.vote_average,
+                        vote_count: 0,
+                        revenue: 0,
+                        budget: 0,
+                        popularity: movie.popularity || 0,
+                        genres: [],
+                        director: null,
+                        cast: [],
+                        omdbRtScore: undefined,
+                    } as BoxOfficeMovie;
                 }
             })
         );

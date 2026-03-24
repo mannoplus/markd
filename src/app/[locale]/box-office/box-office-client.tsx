@@ -36,7 +36,7 @@ export function BoxOfficeClient({ allRegionData, defaultRegion }: BoxOfficeClien
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-12 mt-28 relative z-20">
 
                 {/* Region Tabs */}
-                <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                <div className="flex flex-wrap items-center gap-2 pb-2">
                     {REGIONS.map((region) => (
                         <button
                             key={region}

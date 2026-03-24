@@ -1,7 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import Image from 'next/image';
-import { Star, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Star, TrendingUp, TrendingDown, Minus, ChevronUp, ChevronDown } from 'lucide-react';
 import { IMAGE_SIZES } from '@/lib/tmdb';
 import type { BoxOfficeMovie } from '@/types';
 import { useTranslations } from 'next-intl';
@@ -19,23 +20,57 @@ interface BoxOfficeTableProps {
     onMovieSelect?: (id: number) => void;
 }
 
+type SortKey = 'rank' | 'revenue' | 'budget' | 'vote_average' | 'omdbRtScore';
+
 export function BoxOfficeTable({ movies, onMovieSelect }: BoxOfficeTableProps) {
     const t = useTranslations('BoxOffice');
+    const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'asc' | 'desc' } | null>(null);
+
+    const sortedMovies = [...movies].sort((a, b) => {
+        if (!sortConfig) return 0;
+        
+        let aVal: any = a[sortConfig.key];
+        let bVal: any = b[sortConfig.key];
+
+        // Handle string parsing for RT Score (e.g. "95%")
+        if (sortConfig.key === 'omdbRtScore') {
+            aVal = aVal ? parseInt(aVal.replace('%', '')) : -1;
+            bVal = bVal ? parseInt(bVal.replace('%', '')) : -1;
+        }
+
+        if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+    });
+
+    const handleSort = (key: SortKey) => {
+        setSortConfig(current => {
+            if (!current || current.key !== key) return { key, direction: 'desc' };
+            if (current.direction === 'desc') return { key, direction: 'asc' };
+            return null; // Reset sort
+        });
+    };
+
+    const SortIcon = ({ columnKey }: { columnKey: SortKey }) => {
+        if (sortConfig?.key !== columnKey) return null;
+        return sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3 inline mb-0.5 ml-1" /> : <ChevronDown className="w-3 h-3 inline mb-0.5 ml-1" />;
+    };
 
     return (
         <div className="space-y-3">
             {/* Desktop Header — hidden on mobile */}
-            <div className="hidden md:grid md:grid-cols-[3rem_minmax(0,2fr)_1fr_1fr_1fr_5rem] gap-4 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-foreground-subtle">
-                <span>#</span>
+            <div className="hidden md:grid md:grid-cols-[3rem_minmax(0,2fr)_1fr_1fr_1fr_4rem_4rem] gap-4 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-foreground-subtle">
+                <button onClick={() => handleSort('rank')} className="text-left hover:text-foreground">#<SortIcon columnKey="rank" /></button>
                 <span>{t('movie')}</span>
-                <span className="text-right">{t('revenue')}</span>
-                <span className="text-right">{t('budget')}</span>
-                <span className="text-right">{t('rating')}</span>
+                <button onClick={() => handleSort('revenue')} className="text-right hover:text-foreground">{t('revenue')}<SortIcon columnKey="revenue" /></button>
+                <button onClick={() => handleSort('budget')} className="text-right hover:text-foreground">{t('budget')}<SortIcon columnKey="budget" /></button>
+                <button onClick={() => handleSort('vote_average')} className="text-right hover:text-foreground">TMDB<SortIcon columnKey="vote_average" /></button>
+                <button onClick={() => handleSort('omdbRtScore')} className="text-right hover:text-foreground">RT<SortIcon columnKey="omdbRtScore" /></button>
                 <span className="text-right">{t('trend')}</span>
             </div>
 
             {/* Movie Rows */}
-            {movies.map((movie, index) => {
+            {sortedMovies.map((movie, index) => {
                 const rowHandlers = onMovieSelect ? {
                     onClick: () => onMovieSelect(movie.id),
                 } : {};
@@ -50,7 +85,7 @@ export function BoxOfficeTable({ movies, onMovieSelect }: BoxOfficeTableProps) {
                 >
                     <div className="rounded-[var(--radius-lg)] border border-border bg-background-card/50 px-4 py-3 transition-all duration-[var(--transition-base)] hover:bg-background-elevated hover:border-border-hover hover:shadow-[var(--shadow-elevated)] hover:-translate-y-0.5">
                         {/* Desktop layout */}
-                        <div className="hidden md:grid md:grid-cols-[3rem_minmax(0,2fr)_1fr_1fr_1fr_5rem] gap-4 items-center">
+                        <div className="hidden md:grid md:grid-cols-[3rem_minmax(0,2fr)_1fr_1fr_1fr_4rem_4rem] gap-4 items-center">
                             {/* Rank */}
                             <span className={`text-2xl font-black ${movie.rank <= 3 ? 'text-foreground' : 'text-foreground-subtle'}`}>
                                 {movie.rank}
@@ -102,10 +137,19 @@ export function BoxOfficeTable({ movies, onMovieSelect }: BoxOfficeTableProps) {
                                 </span>
                             </div>
 
-                            {/* Rating */}
+                            {/* TMDB Rating */}
                             <div className="flex items-center justify-end gap-1">
                                 <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
                                 <span className="font-semibold">{movie.vote_average.toFixed(1)}</span>
+                            </div>
+
+                            {/* RT Score */}
+                            <div className="text-right relative">
+                                {movie.omdbRtScore ? (
+                                    <span className="font-bold text-red-500">{movie.omdbRtScore}</span>
+                                ) : (
+                                    <span className="text-foreground-subtle text-xs">N/A</span>
+                                )}
                             </div>
 
                             {/* Trend (placeholder — week-over-week) */}
@@ -148,6 +192,10 @@ export function BoxOfficeTable({ movies, onMovieSelect }: BoxOfficeTableProps) {
                                     <div className="flex items-center gap-1">
                                         <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
                                         <span>{movie.vote_average.toFixed(1)}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-red-500 text-[10px] font-bold border border-red-500/30 rounded px-1 leading-tight">RT</span>
+                                        <span>{movie.omdbRtScore || 'N/A'}</span>
                                     </div>
                                     {movie.release_date && (
                                         <span>{new Date(movie.release_date).getFullYear()}</span>
