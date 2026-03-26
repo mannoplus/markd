@@ -1,3 +1,5 @@
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { Star, Tv, Film } from 'lucide-react';
@@ -44,10 +46,28 @@ export function MovieCard({
                             fill
                             sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 200px"
                             className="object-cover transition-transform duration-[var(--transition-slow)] group-hover:scale-105"
+                            onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                const parent = target.parentElement;
+                                if (parent) {
+                                    parent.innerHTML = `
+                                        <div class="flex h-full w-full items-center justify-center bg-background-elevated">
+                                            <div class="text-center p-4">
+                                                <Film class="h-12 w-12 text-foreground-subtle mx-auto mb-2" />
+                                                <div class="text-xs text-foreground-muted">Poster Coming Soon</div>
+                                            </div>
+                                        </div>
+                                    `;
+                                }
+                            }}
                         />
                     ) : (
                         <div className="flex h-full w-full items-center justify-center bg-background-elevated">
-                            <Film className="h-12 w-12 text-foreground-subtle" />
+                            <div className="text-center p-4">
+                                <Film className="h-12 w-12 text-foreground-subtle mx-auto mb-2" />
+                                <div className="text-xs text-foreground-muted">Poster Coming Soon</div>
+                            </div>
                         </div>
                     )}
 
@@ -61,7 +81,7 @@ export function MovieCard({
                                 </div>
                             )}
                             {rtScore && (
-                                <div className={`flex items-center gap-1 rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-bold backdrop-blur-sm ${rtStatus === 'rotten' ? 'text-green-500' : 'text-red-500'}`}>
+                                <div className={`flex items-center gap-1 rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-bold backdrop-blur-sm ${rtStatus === 'fresh' ? 'text-green-500' : 'text-red-500'}`}>
                                     <span role="img" aria-label="Rotten Tomatoes">🍅</span>
                                     <span>{rtScore}</span>
                                 </div>

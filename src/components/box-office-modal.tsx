@@ -228,23 +228,30 @@ export function BoxOfficeModal({
                                             </span>
                                             <span className="font-bold">{data.vote_average.toFixed(1)} <span className="text-xs font-normal text-foreground-subtle">({data.vote_count.toLocaleString()})</span></span>
                                         </li>
+                                        {/* Rotten Tomatoes - Enhanced Display */}
+                                        {data.omdb?.rottenTomatoes && (
+                                            <li className="flex items-center justify-between bg-red-500/10 border border-red-500/20 rounded-lg p-3 -mx-1">
+                                                <span className="text-foreground flex items-center gap-2 font-semibold">
+                                                    <span role="img" aria-label="Rotten Tomatoes" className="text-lg">🍅</span>
+                                                    {t('rottenTomatoes')}
+                                                </span>
+                                                <div className="flex flex-col items-end">
+                                                    <span className="font-black text-lg text-red-500">{data.omdb.rottenTomatoes}</span>
+                                                    <span className="text-[10px] text-foreground-muted uppercase tracking-wider">Tomatometer</span>
+                                                </div>
+                                            </li>
+                                        )}
                                         {/* OMDb Ratings */}
                                         {data.omdb?.imdbRating && (
                                             <li className="flex items-center justify-between">
                                                 <span className="text-foreground-muted">IMDb</span>
-                                                <span className="font-bold text-foreground">{data.omdb.imdbRating}</span>
-                                            </li>
-                                        )}
-                                        {data.omdb?.rottenTomatoes && (
-                                            <li className="flex items-center justify-between">
-                                                <span className="text-foreground-muted">{t('rottenTomatoes')}</span>
-                                                <span className="font-bold text-red-500">{data.omdb.rottenTomatoes}</span>
+                                                <span className="font-bold text-foreground">{data.omdb.imdbRating}/10</span>
                                             </li>
                                         )}
                                         {data.omdb?.metacritic && (
                                             <li className="flex items-center justify-between">
                                                 <span className="text-foreground-muted">Metacritic</span>
-                                                <span className="font-bold text-green-500">{data.omdb.metacritic}</span>
+                                                <span className="font-bold text-green-500">{data.omdb.metacritic}/100</span>
                                             </li>
                                         )}
                                         {!data.omdb?.rottenTomatoes && !data.omdb?.imdbRating && !data.omdb?.metacritic && (

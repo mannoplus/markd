@@ -15,6 +15,37 @@ function formatCurrency(value: number): string {
     return '—';
 }
 
+function formatWeekChange(change?: number): { icon: any; color: string; text: string } {
+    if (!change || change === 0) return { icon: Minus, color: 'text-foreground-muted', text: '—' };
+    if (change > 0) return { icon: TrendingUp, color: 'text-emerald-500', text: `+${change.toFixed(1)}%` };
+    return { icon: TrendingDown, color: 'text-red-500', text: `${change.toFixed(1)}%` };
+}
+
+function PosterView({ movie, size = 'small' }: { movie: BoxOfficeMovie, size?: 'small' | 'medium' }) {
+    const [error, setError] = useState(false);
+    const posterUrl = movie.poster_path ? `${IMAGE_SIZES.poster[size]}${movie.poster_path}` : null;
+
+    if (!posterUrl || error) {
+        return (
+            <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-background-elevated to-background-card p-1 text-center">
+                <span className="text-[10px] font-bold text-foreground-muted leading-tight uppercase selection:bg-accent/30 break-words">
+                    {movie.title.split(' ').slice(0, 3).join(' ')}
+                </span>
+            </div>
+        );
+    }
+
+    return (
+        <Image
+            src={posterUrl}
+            alt={movie.title}
+            fill
+            className="object-cover transition-opacity duration-300"
+            onError={() => setError(true)}
+        />
+    );
+}
+
 interface BoxOfficeTableProps {
     movies: BoxOfficeMovie[];
     onMovieSelect?: (id: number) => void;
@@ -62,12 +93,12 @@ export function BoxOfficeTable({ movies, onMovieSelect }: BoxOfficeTableProps) {
             <div className="hidden md:grid md:grid-cols-[3rem_minmax(0,2fr)_1fr_1fr_1fr_5rem] gap-4 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-foreground-subtle">
                 <button onClick={() => handleSort('rank')} className="text-left hover:text-foreground">#<SortIcon columnKey="rank" /></button>
                 <span>{t('movie')}</span>
-                <button onClick={() => handleSort('revenue')} className="text-right hover:text-foreground">{t('revenue')}<SortIcon columnKey="revenue" /></button>
+                <button onClick={() => handleSort('revenue')} className="text-right hover:text-foreground">{t('weeklyRevenue')}<SortIcon columnKey="revenue" /></button>
                 <button onClick={() => handleSort('budget')} className="text-right hover:text-foreground">{t('budget')}<SortIcon columnKey="budget" /></button>
                 <button onClick={() => handleSort('vote_average')} className="text-right hover:text-foreground">
                     {t('rating')} <SortIcon columnKey="vote_average" />
                 </button>
-                <span className="text-right">{t('trend')}</span>
+                <span className="text-right">{t('weekChange')}</span>
             </div>
 
             {/* Movie Rows */}
@@ -94,73 +125,57 @@ export function BoxOfficeTable({ movies, onMovieSelect }: BoxOfficeTableProps) {
 
                             {/* Movie Info */}
                             <div className="flex items-center gap-3 min-w-0">
-                                <div className="relative h-16 w-11 shrink-0 overflow-hidden rounded-[var(--radius-sm)]">
-                                    {movie.poster_path ? (
-                                        <Image
-                                            src={`${IMAGE_SIZES.poster.small}${movie.poster_path}`}
-                                            alt={movie.title}
-                                            fill
-                                            className="object-cover transition-transform duration-300 group-hover:scale-110"
-                                        />
-                                    ) : (
-                                        <div className="h-full w-full bg-background-elevated" />
-                                    )}
+                                <div className="relative h-16 w-11 shrink-0 overflow-hidden rounded-[var(--radius-sm)] bg-background-elevated border border-border/50">
+                                    <PosterView movie={movie} size="small" />
                                 </div>
-                                <div className="min-w-0">
-                                    <h3 className="font-semibold truncate group-hover:text-accent transition-colors">
-                                        {movie.title}
-                                    </h3>
-                                    <div className="flex items-center gap-2 text-xs text-foreground-muted mt-0.5">
-                                        {movie.release_date && (
-                                            <span>{new Date(movie.release_date).getFullYear()}</span>
-                                        )}
-                                        {movie.runtime > 0 && (
-                                            <span>• {movie.runtime}{t('min')}</span>
-                                        )}
-                                        {movie.director && (
-                                            <span className="hidden lg:inline">• {movie.director}</span>
-                                        )}
-                                    </div>
+                                <div className="min-w-0 flex-1">
+                                    <h3 className="font-bold truncate">{movie.title}</h3>
+                                    <p className="text-xs text-foreground-muted truncate">{movie.director || 'Unknown'}</p>
                                 </div>
                             </div>
 
-                            {/* Revenue */}
+                            {/* Weekly Revenue */}
                             <div className="text-right">
-                                <span className={`font-semibold ${movie.revenue > 0 ? 'text-emerald-400' : 'text-foreground-subtle'}`}>
-                                    {formatCurrency(movie.revenue)}
-                                </span>
+                                <div className="font-mono font-bold text-emerald-400">
+                                    {formatCurrency(movie.weeklyRevenue || movie.revenue)}
+                                </div>
+                                <div className="text-[10px] text-foreground-muted uppercase tracking-wider">
+                                    This Week
+                                </div>
                             </div>
 
                             {/* Budget */}
-                            <div className="text-right">
-                                <span className="text-foreground-muted">
-                                    {formatCurrency(movie.budget)}
-                                </span>
+                            <div className="text-right font-mono text-sm text-foreground-muted">
+                                {formatCurrency(movie.budget)}
                             </div>
 
-                            {/* Ratings (TMDB + RT) */}
-                            <div className="flex flex-col items-end justify-center gap-1.5 min-w-0">
-                                <div className="flex items-center gap-1">
-                                    <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400 shrink-0" />
-                                    <span className="font-semibold">{movie.vote_average.toFixed(1)}</span>
+                            {/* Rating */}
+                            <div className="flex items-center justify-end gap-1.5">
+                                <Star className="h-3.5 w-3.5 fill-accent text-accent" />
+                                <span className="font-semibold">{movie.vote_average.toFixed(1)}</span>
+                            </div>
+
+                            {/* RT Score */}
+                            {movie.omdbRtScore && (
+                                <div className="flex items-center justify-end gap-1">
+                                    <span role="img" aria-label="Rotten Tomatoes" className="text-base">🍅</span>
+                                    <span className={`text-xs font-bold ${movie.rtStatus === 'fresh' ? 'text-emerald-500' : 'text-red-500'}`}>
+                                        {movie.omdbRtScore}
+                                    </span>
                                 </div>
-                                {movie.omdbRtScore && (
-                                    <div className={`flex items-center gap-1 text-[11px] font-bold ${movie.rtStatus === 'rotten' ? 'text-green-500' : 'text-red-500'}`}>
-                                        <span role="img" aria-label="Rotten Tomatoes">🍅</span>
-                                        <span>{movie.omdbRtScore}</span>
-                                    </div>
-                                )}
-                            </div>
+                            )}
 
-                            {/* Trend (placeholder — week-over-week) */}
+                            {/* Week Change */}
                             <div className="flex items-center justify-end">
-                                {movie.rank <= 3 ? (
-                                    <TrendingUp className="h-4 w-4 text-emerald-400" />
-                                ) : movie.rank >= 8 ? (
-                                    <TrendingDown className="h-4 w-4 text-red-400" />
-                                ) : (
-                                    <Minus className="h-4 w-4 text-foreground-subtle" />
-                                )}
+                                {(() => {
+                                    const { icon: Icon, color, text } = formatWeekChange(movie.weekChange);
+                                    return (
+                                        <div className={`flex items-center gap-1 ${color}`}>
+                                            <Icon className="h-4 w-4" />
+                                            <span className="text-xs font-semibold">{text}</span>
+                                        </div>
+                                    );
+                                })()}
                             </div>
                         </div>
 
@@ -172,17 +187,8 @@ export function BoxOfficeTable({ movies, onMovieSelect }: BoxOfficeTableProps) {
                             </span>
 
                             {/* Poster */}
-                            <div className="relative h-20 w-[54px] shrink-0 overflow-hidden rounded-[var(--radius-sm)]">
-                                {movie.poster_path ? (
-                                    <Image
-                                        src={`${IMAGE_SIZES.poster.small}${movie.poster_path}`}
-                                        alt={movie.title}
-                                        fill
-                                        className="object-cover"
-                                    />
-                                ) : (
-                                    <div className="h-full w-full bg-background-elevated" />
-                                )}
+                            <div className="relative h-20 w-[54px] shrink-0 overflow-hidden rounded-[var(--radius-sm)] bg-background-elevated border border-border/50">
+                                <PosterView movie={movie} size="small" />
                             </div>
 
                             {/* Info */}
@@ -194,7 +200,7 @@ export function BoxOfficeTable({ movies, onMovieSelect }: BoxOfficeTableProps) {
                                         <span>{movie.vote_average.toFixed(1)}</span>
                                     </div>
                                     {movie.omdbRtScore && (
-                                        <div className={`flex items-center gap-1 font-bold ${movie.rtStatus === 'rotten' ? 'text-green-500' : 'text-red-500'}`}>
+                                        <div className={`flex items-center gap-1 font-bold ${movie.rtStatus === 'fresh' ? 'text-emerald-500' : 'text-red-500'}`}>
                                             <span role="img" aria-label="Rotten Tomatoes" className="text-[10px]">🍅</span>
                                             <span>{movie.omdbRtScore}</span>
                                         </div>
@@ -204,15 +210,25 @@ export function BoxOfficeTable({ movies, onMovieSelect }: BoxOfficeTableProps) {
                                     )}
                                 </div>
                                 <div className="flex items-center gap-3 text-xs">
-                                    {movie.revenue > 0 && (
-                                        <span className="text-emerald-400 font-semibold">
-                                            {formatCurrency(movie.revenue)}
-                                        </span>
+                                    {(movie.weeklyRevenue || movie.revenue) > 0 && (
+                                        <div className="flex flex-col">
+                                            <span className="text-emerald-400 font-semibold">
+                                                {formatCurrency(movie.weeklyRevenue || movie.revenue)}
+                                            </span>
+                                            <span className="text-[9px] text-foreground-muted uppercase tracking-wider">
+                                                This Week
+                                            </span>
+                                        </div>
                                     )}
-                                    {movie.budget > 0 && (
-                                        <span className="text-foreground-subtle">
-                                            {t('budget')}: {formatCurrency(movie.budget)}
-                                        </span>
+                                    {movie.weekChange !== undefined && movie.weekChange !== 0 && (
+                                        <div className={`flex items-center gap-0.5 ${movie.weekChange > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                                            {movie.weekChange > 0 ? (
+                                                <TrendingUp className="h-3 w-3" />
+                                            ) : (
+                                                <TrendingDown className="h-3 w-3" />
+                                            )}
+                                            <span className="font-semibold">{Math.abs(movie.weekChange).toFixed(1)}%</span>
+                                        </div>
                                     )}
                                 </div>
                             </div>

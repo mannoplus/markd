@@ -171,3 +171,12 @@ export async function getBoxOfficeModalAction(movieId: number) {
     }
 }
 
+// ============================================================================
+// CACHE / REVALIDATION ACTIONS
+// ============================================================================
+
+export async function revalidateHomeAction() {
+    revalidatePath('/', 'layout');
+    return { success: true };
+}
+

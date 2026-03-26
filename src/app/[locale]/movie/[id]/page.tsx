@@ -23,7 +23,8 @@ export default async function MovieDetailsPage({
     try {
         const movie = await getFullMediaDetails(Number(id), 'movie');
         const { data: userItem } = await getUserMediaItem(Number(id), 'movie');
-        const { cast, providers } = movie;
+        const { cast, providers, rtScore, rtStatus, rtAudienceScore, rtAudienceStatus } = movie;
+        const imdbRating = 'imdbRating' in movie ? movie.imdbRating : undefined;
         const details = movie.details as any;
 
         const backdropUrl = details.backdrop_path
@@ -117,6 +118,35 @@ export default async function MovieDetailsPage({
                                             <span>{details.vote_average.toFixed(1)} / 10</span>
                                         </div>
                                     )}
+                                    {imdbRating && (
+                                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20">
+                                            <span className="text-xs font-bold text-amber-500">IMDb</span>
+                                            <span className="font-bold text-foreground">{imdbRating}</span>
+                                        </div>
+                                    )}
+                                    {rtScore && rtScore !== 'N/A' && rtScore !== 'Score Unavailable' ? (
+                                        <div className="flex items-center gap-3">
+                                            {/* Tomatometer (Critic Score) */}
+                                            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full ${rtStatus === 'fresh' ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-red-500/10 border border-red-500/20'}`}>
+                                                <span role="img" aria-label="Rotten Tomatoes Tomatometer" className="text-base">🍅</span>
+                                                <span className={`font-bold text-xs ${rtStatus === 'fresh' ? 'text-emerald-500' : 'text-red-500'}`}>
+                                                    {rtScore}
+                                                </span>
+                                                <span className="text-xs text-foreground-muted">Critics</span>
+                                            </div>
+                                            
+                                            {/* Audience Score */}
+                                            {rtAudienceScore && (
+                                                <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full ${rtAudienceStatus === 'fresh' ? 'bg-blue-500/10 border border-blue-500/20' : 'bg-orange-500/10 border border-orange-500/20'}`}>
+                                                    <span role="img" aria-label="Audience Score" className="text-base">🍿</span>
+                                                    <span className={`font-bold text-xs ${rtAudienceStatus === 'fresh' ? 'text-blue-500' : 'text-orange-500'}`}>
+                                                        {rtAudienceScore}
+                                                    </span>
+                                                    <span className="text-xs text-foreground-muted">Audience</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : null}
                                 </div>
 
                                 {details.genres && details.genres.length > 0 && (

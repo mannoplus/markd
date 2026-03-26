@@ -188,7 +188,8 @@ export interface BoxOfficeMovie {
     runtime: number;
     vote_average: number;
     vote_count: number;
-    revenue: number;
+    revenue: number; // Total revenue
+    weeklyRevenue?: number; // Weekly revenue (last 7 days)
     budget: number;
     popularity: number;
     genres: { id: number; name: string }[];
@@ -196,6 +197,8 @@ export interface BoxOfficeMovie {
     cast: { id: number; name: string; character: string; profile_path: string | null }[];
     omdbRtScore?: string;
     rtStatus?: 'fresh' | 'rotten';
+    weekChange?: number; // Week-over-week change percentage
+    lastUpdated?: string; // ISO timestamp of when the data was last fetched
 }
 
 export interface BoxOfficeModalData extends BoxOfficeMovie {

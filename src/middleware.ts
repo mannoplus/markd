@@ -15,6 +15,6 @@ export const config = {
          * - auth/callback (Supabase OAuth callback)
          * - public assets (svg, png, jpg, etc.)
          */
-        '/((?!_next/static|_next/image|favicon.ico|auth/callback|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+        '/((?!api|_next/static|_next/image|favicon.ico|auth/callback|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
     ],
 };

@@ -23,7 +23,7 @@ export default async function TVDetailsPage({
     try {
         const tv = await getFullMediaDetails(Number(id), 'tv');
         const { data: userItem } = await getUserMediaItem(Number(id), 'tv');
-        const { cast, providers } = tv;
+        const { cast, providers, rtScore, rtStatus, rtAudienceScore, rtAudienceStatus } = tv;
         const details = tv.details as any;
 
         const backdropUrl = details.backdrop_path
@@ -132,6 +132,29 @@ export default async function TVDetailsPage({
                                             <span>{details.vote_average.toFixed(1)} / 10</span>
                                         </div>
                                     )}
+                                    {rtScore && rtScore !== 'N/A' && rtScore !== 'Score Unavailable' ? (
+                                        <div className="flex items-center gap-3">
+                                            {/* Tomatometer (Critic Score) */}
+                                            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full ${rtStatus === 'fresh' ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-red-500/10 border border-red-500/20'}`}>
+                                                <span role="img" aria-label="Rotten Tomatoes Tomatometer" className="text-base">🍅</span>
+                                                <span className={`font-bold text-xs ${rtStatus === 'fresh' ? 'text-emerald-500' : 'text-red-500'}`}>
+                                                    {rtScore}
+                                                </span>
+                                                <span className="text-xs text-foreground-muted">Critics</span>
+                                            </div>
+                                            
+                                            {/* Audience Score */}
+                                            {rtAudienceScore && (
+                                                <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full ${rtAudienceStatus === 'fresh' ? 'bg-blue-500/10 border border-blue-500/20' : 'bg-orange-500/10 border border-orange-500/20'}`}>
+                                                    <span role="img" aria-label="Audience Score" className="text-base">🍿</span>
+                                                    <span className={`font-bold text-xs ${rtAudienceStatus === 'fresh' ? 'text-blue-500' : 'text-orange-500'}`}>
+                                                        {rtAudienceScore}
+                                                    </span>
+                                                    <span className="text-xs text-foreground-muted">Audience</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : null}
                                 </div>
 
                                 {details.genres && details.genres.length > 0 && (

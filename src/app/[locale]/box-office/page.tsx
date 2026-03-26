@@ -1,23 +1,33 @@
-import { getBoxOfficeMultiRegion } from '@/lib/tmdb';
+import { getBoxOfficeMovies } from '@/lib/tmdb';
 import { BoxOfficeClient } from './box-office-client';
 import { BoxOfficeTableSkeleton } from '@/components/box-office-table';
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-    title: 'Box Office — MARKD',
-    description: 'Real-time box office tracking across US, Taiwan, UK, Japan, Korea, and France. Revenue, ratings, and trends for the biggest movies.',
-    keywords: ['box office', 'movie revenue', 'now playing', 'box office rankings', 'movie tracker'],
+    title: 'US Box Office — MARKD',
+    description: 'Real-time US box office tracking with daily, weekly, and monthly charts. Revenue, ratings, and trends for the biggest movies in America.',
+    keywords: ['US box office', 'movie revenue', 'daily box office', 'weekly box office', 'monthly box office', 'movie tracker'],
 };
 
 async function BoxOfficeContent() {
-    const regions = ['US', 'TW', 'GB', 'JP', 'KR', 'CN', 'FR'];
-    const allRegionData = await getBoxOfficeMultiRegion(regions);
+    // Fetch US box office data for different time periods
+    const [dailyData, weeklyData, monthlyData] = await Promise.all([
+        getBoxOfficeMovies('US', 'daily'),
+        getBoxOfficeMovies('US', 'weekly'),
+        getBoxOfficeMovies('US', 'monthly'),
+    ]);
+
+    const boxOfficeData = {
+        daily: dailyData,
+        weekly: weeklyData,
+        monthly: monthlyData,
+    };
 
     return (
         <BoxOfficeClient
-            allRegionData={allRegionData}
-            defaultRegion="US"
+            boxOfficeData={boxOfficeData}
+            defaultPeriod="weekly"
         />
     );
 }
