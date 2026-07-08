@@ -44,22 +44,44 @@ async function extractMovies(html: string | null, limit: number) {
     return movies.slice(0, limit);
 }
 
-// Function to fetch details for a single movie to get the poster
-async function fetchMovieDetails(movie: any) {
-    if (!movie.id) return { ...movie, poster: `https://picsum.photos/seed/${encodeURIComponent(movie.title)}/400/600` };
+// Function to fetch poster from TMDB using the movie title
+async function fetchTmdbPoster(movie: any) {
+    let poster = `https://picsum.photos/seed/${encodeURIComponent(movie.title)}/400/600`;
+    
+    // Clean up title for better TMDB search results
+    // ATM usually gives "海洋奇緣 Moana". Remove the English trailing part.
+    let cleanTitle = movie.title.replace(/[a-zA-Z:\-0-9\s]+$/, '').trim();
+    if (!cleanTitle) cleanTitle = movie.title.trim(); // fallback if it was all English
     
     try {
-        const html = await fetchHtml(`https://www.atmovies.com.tw/movie/${movie.id}/`);
-        let poster = `https://picsum.photos/seed/${encodeURIComponent(movie.title)}/400/600`;
-        if (html) {
-            const $ = cheerio.load(html);
-            const img = $('.film_poster img').attr('src') || $('img[src*="/photo101/"]').attr('src') || $('img.poster').attr('src');
-            if (img) poster = img;
+        const tmdbApiKey = process.env.TMDB_API_KEY;
+        if (!tmdbApiKey) {
+            console.warn("TMDB_API_KEY is missing in environment variables.");
+            return { ...movie, poster };
         }
-        return { ...movie, poster };
-    } catch {
-        return { ...movie, poster: `https://picsum.photos/seed/${encodeURIComponent(movie.title)}/400/600` };
+
+        const url = `https://api.themoviedb.org/3/search/movie?api_key=${tmdbApiKey}&query=${encodeURIComponent(cleanTitle)}&language=zh-TW&page=1`;
+        const response = await fetch(url, {
+            headers: {
+                'accept': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            if (data.results && data.results.length > 0) {
+                // Find the first result with a poster
+                const match = data.results.find((r: any) => r.poster_path);
+                if (match && match.poster_path) {
+                    poster = `https://image.tmdb.org/t/p/w500${match.poster_path}`;
+                }
+            }
+        }
+    } catch (e) {
+        console.error("TMDB fetch error:", e);
     }
+
+    return { ...movie, poster };
 }
 
 export async function GET() {
@@ -86,7 +108,8 @@ export async function GET() {
         if (boxOfficeHtml) {
             const $ = cheerio.load(boxOfficeHtml);
             $('tr').each((i, el) => {
-                const a = $(el).find('td a[href^="/movie/"]');
+                // Fixed: use * instead of ^ because boxoffice has absolute URLs like http://www.atmovies.com.tw/movie/ID/
+                const a = $(el).find('td a[href*="/movie/"]');
                 const title = a.text().trim().replace(/\s+/g, ' ');
                 const link = a.attr('href') || '';
                 const match = link.match(/\/movie\/([a-zA-Z0-9]+)\/?/);
@@ -105,11 +128,11 @@ export async function GET() {
         let firstRun = await extractMovies(firstRunHtml, 10) as BaseMovieData[];
         let comingSoon = await extractMovies(upcomingHtml, 10) as BaseMovieData[];
 
-        // Fetch posters concurrently
-        boxOffice = (await Promise.all(boxOffice.map(fetchMovieDetails))) as BoxOfficeData[];
-        thisWeekNew = (await Promise.all(thisWeekNew.map(fetchMovieDetails))) as BaseMovieData[];
-        firstRun = (await Promise.all(firstRun.map(fetchMovieDetails))) as BaseMovieData[];
-        comingSoon = (await Promise.all(comingSoon.map(fetchMovieDetails))) as BaseMovieData[];
+        // Fetch posters from TMDB concurrently
+        boxOffice = (await Promise.all(boxOffice.map(fetchTmdbPoster))) as BoxOfficeData[];
+        thisWeekNew = (await Promise.all(thisWeekNew.map(fetchTmdbPoster))) as BaseMovieData[];
+        firstRun = (await Promise.all(firstRun.map(fetchTmdbPoster))) as BaseMovieData[];
+        comingSoon = (await Promise.all(comingSoon.map(fetchTmdbPoster))) as BaseMovieData[];
 
         return NextResponse.json({
             success: true,
