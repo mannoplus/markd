@@ -18,7 +18,7 @@ export function Navbar() {
 
     const NAV_LINKS = [
         { href: '/search', label: t('searchLink'), icon: Search },
-        { href: '/box-office', label: t('boxOffice'), icon: TrendingUp },
+        { href: '/now-showing', label: 'Now Showing', icon: TrendingUp },
         { href: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
         { href: '/library', label: t('library'), icon: Library },
     ];
