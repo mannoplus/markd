@@ -1,4 +1,5 @@
-/* eslint-disable @next/next/no-img-element */
+import { Link } from '@/i18n/routing';
+
 interface MovieData {
     id: string;
     title: string;
@@ -6,12 +7,18 @@ interface MovieData {
     poster: string;
 }
 
-export default function ShowtimeCard({ movie }: { movie: MovieData }) {
+interface Props {
+    movie: MovieData;
+    onShowtimesClick: (id: string, title: string) => void;
+}
+
+export default function ShowtimeCard({ movie, onShowtimesClick }: Props) {
     return (
         <div className="group relative rounded-xl overflow-hidden bg-gray-800/50 border border-gray-700/50 hover:bg-gray-800 transition-colors flex flex-col h-full">
-            <div className="relative aspect-[4/5] w-full overflow-hidden">
+            <Link href={movie.link as any} className="relative aspect-[4/5] w-full overflow-hidden block">
                 <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent z-10 opacity-80"></div>
                 
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img 
                     src={movie.poster} 
                     alt={movie.title}
@@ -24,19 +31,15 @@ export default function ShowtimeCard({ movie }: { movie: MovieData }) {
                         {movie.title}
                     </h3>
                 </div>
-            </div>
+            </Link>
             
-            <div className="p-4 flex flex-col flex-grow bg-gray-900 border-t border-gray-800">
-                {movie.link && (
-                    <a 
-                        href={movie.link} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="w-full py-2.5 px-4 bg-purple-600/10 text-purple-400 hover:bg-purple-600 hover:text-white rounded-lg text-sm font-semibold text-center transition-all duration-300 ring-1 ring-inset ring-purple-500/20 hover:ring-purple-600"
-                    >
-                        View Showtimes
-                    </a>
-                )}
+            <div className="p-4 flex flex-col flex-grow justify-end bg-gray-900 border-t border-gray-800">
+                <button 
+                    onClick={() => onShowtimesClick(movie.id, movie.title)}
+                    className="w-full py-2.5 px-4 bg-purple-600/10 text-purple-400 hover:bg-purple-600 hover:text-white rounded-lg text-sm font-semibold text-center transition-all duration-300 ring-1 ring-inset ring-purple-500/20 hover:ring-purple-600"
+                >
+                    View Showtimes
+                </button>
             </div>
         </div>
     );

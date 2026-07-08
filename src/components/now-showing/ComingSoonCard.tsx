@@ -1,4 +1,5 @@
-/* eslint-disable @next/next/no-img-element */
+import { Link } from '@/i18n/routing';
+
 interface MovieData {
     id: string;
     title: string;
@@ -9,9 +10,10 @@ interface MovieData {
 export default function ComingSoonCard({ movie }: { movie: MovieData }) {
     return (
         <div className="group relative rounded-xl overflow-hidden bg-gray-900 border border-pink-500/10 hover:border-pink-500/40 transition-colors flex flex-col h-full shadow-lg">
-            <div className="relative aspect-square w-full overflow-hidden">
+            <div className="relative aspect-[4/5] w-full overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent z-10 opacity-90"></div>
                 
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img 
                     src={movie.poster} 
                     alt={movie.title}
@@ -29,16 +31,14 @@ export default function ComingSoonCard({ movie }: { movie: MovieData }) {
                 </div>
             </div>
             
-            <div className="p-4 flex flex-col flex-grow bg-gray-900 border-t border-gray-800">
+            <div className="p-4 flex flex-col flex-grow justify-end bg-gray-900 border-t border-gray-800">
                 {movie.link && (
-                    <a 
-                        href={movie.link} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="w-full py-2 px-4 text-pink-400 hover:text-pink-300 hover:bg-pink-500/10 rounded-lg text-sm font-medium text-center transition-colors"
+                    <Link 
+                        href={movie.link as any} 
+                        className="w-full py-2 px-4 text-pink-400 hover:text-pink-300 hover:bg-pink-500/10 rounded-lg text-sm font-medium text-center transition-colors block"
                     >
                         More Info
-                    </a>
+                    </Link>
                 )}
             </div>
         </div>

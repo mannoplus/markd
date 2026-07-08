@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import BoxOfficeCard from './BoxOfficeCard';
 import ShowtimeCard from './ShowtimeCard';
 import ComingSoonCard from './ComingSoonCard';
+import ShowtimeModal from './ShowtimeModal';
 
 interface MovieData {
     id: string;
@@ -15,14 +17,23 @@ interface MovieData {
 
 interface DashboardData {
     boxOffice: MovieData[];
-    showtimes: MovieData[];
+    thisWeekNew: MovieData[];
+    firstRun: MovieData[];
     comingSoon: MovieData[];
 }
 
 export default function Dashboard() {
+    const searchParams = useSearchParams();
+    const region = searchParams.get('region') || 'TW';
+
     const [data, setData] = useState<DashboardData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    // Modal state
+    const [modalOpen, setModalOpen] = useState(false);
+    const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null);
+    const [selectedMovieTitle, setSelectedMovieTitle] = useState<string>('');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -48,6 +59,12 @@ export default function Dashboard() {
 
         fetchData();
     }, []);
+
+    const handleShowtimesClick = (id: string, title: string) => {
+        setSelectedMovieId(id);
+        setSelectedMovieTitle(title);
+        setModalOpen(true);
+    };
 
     if (loading) {
         return (
@@ -99,14 +116,26 @@ export default function Dashboard() {
                     </div>
                 </section>
 
+                {/* This Week New Releases Section */}
+                <section>
+                    <div className="flex items-center justify-between mb-10">
+                        <h2 className="text-3xl font-bold tracking-tight border-l-4 border-purple-500 pl-4">New Releases</h2>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+                        {data?.thisWeekNew.map((movie) => (
+                            <ShowtimeCard key={movie.id} movie={movie} onShowtimesClick={handleShowtimesClick} />
+                        ))}
+                    </div>
+                </section>
+
                 {/* Now in Theaters Section */}
                 <section>
                     <div className="flex items-center justify-between mb-10">
-                        <h2 className="text-3xl font-bold tracking-tight border-l-4 border-purple-500 pl-4">Now In Theaters</h2>
+                        <h2 className="text-3xl font-bold tracking-tight border-l-4 border-emerald-500 pl-4">First Run Theaters</h2>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                        {data?.showtimes.map((movie) => (
-                            <ShowtimeCard key={movie.id} movie={movie} />
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+                        {data?.firstRun.map((movie) => (
+                            <ShowtimeCard key={movie.id} movie={movie} onShowtimesClick={handleShowtimesClick} />
                         ))}
                     </div>
                 </section>
@@ -116,13 +145,21 @@ export default function Dashboard() {
                     <div className="flex items-center justify-between mb-10">
                         <h2 className="text-3xl font-bold tracking-tight border-l-4 border-pink-500 pl-4">Coming Soon</h2>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
                         {data?.comingSoon.map((movie) => (
                             <ComingSoonCard key={movie.id} movie={movie} />
                         ))}
                     </div>
                 </section>
             </div>
+
+            <ShowtimeModal 
+                isOpen={modalOpen} 
+                onClose={() => setModalOpen(false)} 
+                movieId={selectedMovieId} 
+                movieTitle={selectedMovieTitle}
+                region={region}
+            />
         </div>
     );
 }
