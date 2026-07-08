@@ -46,7 +46,7 @@ export function Navbar() {
                 {/* Logo */}
                 <Link
                     href="/"
-                    className="flex items-center transition-opacity hover:opacity-80"
+                    className="flex items-center transition-opacity hover:opacity-80 flex-shrink-0"
                 >
                     <Logo size="md" className="text-foreground" />
                 </Link>
@@ -72,7 +72,7 @@ export function Navbar() {
                 </div>
 
                 {/* Auth + Mobile toggle */}
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-shrink-0">
                     <LanguageSwitcher />
 
                     {user ? (
@@ -122,7 +122,7 @@ export function Navbar() {
                     ) : (
                         <Link
                             href="/login"
-                            className="flex items-center gap-2 rounded-lg bg-foreground px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm font-semibold text-background transition-all hover:bg-foreground-muted"
+                            className="flex items-center gap-2 rounded-lg bg-foreground px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm font-semibold text-background transition-all hover:bg-foreground-muted flex-shrink-0 whitespace-nowrap"
                         >
                             <LogIn className="h-4 w-4" />
                             {t('signIn')}

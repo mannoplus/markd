@@ -4,6 +4,7 @@ const config: CapacitorConfig = {
     appId: 'com.markd.app',
     appName: 'markd',
     webDir: '.next',
+    backgroundColor: '#0a0a0f',
     server: {
         url: 'https://markd-ashen.vercel.app/en', // Update with actual Vercel assigned domain if different
         cleartext: true
