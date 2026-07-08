@@ -29,9 +29,31 @@ export async function GET() {
             fetchHtml('https://www.atmovies.com.tw/movie/next/')
         ]);
 
-        const boxOffice = [];
-        const showtimes = [];
-        const comingSoon = [];
+        interface BoxOfficeData {
+            id: string;
+            title: string;
+            link: string;
+            rank: number;
+            poster: string;
+        }
+
+        interface ShowtimeData {
+            id: string;
+            title: string;
+            link: string;
+            poster: string;
+        }
+
+        interface ComingSoonData {
+            id: string;
+            title: string;
+            link: string;
+            poster: string;
+        }
+
+        const boxOffice: BoxOfficeData[] = [];
+        const showtimes: ShowtimeData[] = [];
+        const comingSoon: ComingSoonData[] = [];
 
         // Parse Box Office
         if (boxOfficeHtml) {
@@ -62,7 +84,7 @@ export async function GET() {
                     showtimes.push({
                         id: `showtime-${i}`,
                         title,
-                        link: val?.startsWith('/') ? `https://www.atmovies.com.tw${val}` : val,
+                        link: val ? (val.startsWith('/') ? `https://www.atmovies.com.tw${val}` : val) : '',
                         poster: `https://picsum.photos/seed/${encodeURIComponent(title)}/400/600`
                     });
                 }
