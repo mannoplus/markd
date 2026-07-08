@@ -1,13 +1,16 @@
 import { Link } from '@/i18n/routing';
+import { useTranslations } from 'next-intl';
 
 interface MovieData {
     id: string;
+    tmdbId?: number | null;
     title: string;
-    link: string;
+    link: string | null;
     poster: string;
 }
 
 export default function ComingSoonCard({ movie }: { movie: MovieData }) {
+    const t = useTranslations('nowShowing');
     return (
         <div className="group relative rounded-xl overflow-hidden bg-gray-900 border border-pink-500/10 hover:border-pink-500/40 transition-colors flex flex-col h-full shadow-lg">
             <div className="relative aspect-[4/5] w-full overflow-hidden">
@@ -23,7 +26,7 @@ export default function ComingSoonCard({ movie }: { movie: MovieData }) {
                 
                 <div className="absolute inset-x-0 bottom-0 p-4 z-20 flex flex-col items-center text-center">
                     <span className="inline-block px-3 py-1 mb-3 text-[10px] font-bold uppercase tracking-widest text-pink-300 bg-pink-500/20 rounded-full border border-pink-500/30 backdrop-blur-md">
-                        Coming Soon
+                        {t('comingSoonBadge')}
                     </span>
                     <h3 className="font-bold text-white text-md line-clamp-2 leading-snug drop-shadow-md">
                         {movie.title}
@@ -37,7 +40,7 @@ export default function ComingSoonCard({ movie }: { movie: MovieData }) {
                         href={movie.link as any} 
                         className="w-full py-2 px-4 text-pink-400 hover:text-pink-300 hover:bg-pink-500/10 rounded-lg text-sm font-medium text-center transition-colors block"
                     >
-                        More Info
+                        {t('moreInfo')}
                     </Link>
                 )}
             </div>

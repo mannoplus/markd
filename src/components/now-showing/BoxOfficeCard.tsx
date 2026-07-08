@@ -1,14 +1,17 @@
 import { Link } from '@/i18n/routing';
+import { useTranslations } from 'next-intl';
 
 interface MovieData {
     id: string;
+    tmdbId?: number | null;
     title: string;
-    link: string;
+    link: string | null;
     poster: string;
     rank?: number;
 }
 
 export default function BoxOfficeCard({ movie }: { movie: MovieData }) {
+    const t = useTranslations('nowShowing');
     const getBadgeStyle = (rank: number) => {
         switch (rank) {
             case 1: return 'bg-gradient-to-br from-yellow-300 to-yellow-600 text-yellow-950 border-yellow-200';
@@ -46,7 +49,7 @@ export default function BoxOfficeCard({ movie }: { movie: MovieData }) {
                         href={movie.link as any} 
                         className="mt-4 text-xs font-bold uppercase tracking-wider text-indigo-400 hover:text-indigo-300 inline-flex items-center gap-1 w-fit transition-colors"
                     >
-                        View Details
+                        {t('viewDetails')}
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                         </svg>

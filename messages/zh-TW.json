@@ -174,5 +174,18 @@
         "rottenTomatoes": "爛番茄",
         "availableViaOmdb": "可透過 OMDb 取得",
         "viewFullMoviePage": "查看完整電影頁面"
+    },
+    "nowShowing": {
+        "title": "現正熱映",
+        "description": "探索最新票房排行榜、現正熱映的電影以及備受期待的即將上映作品。",
+        "boxOffice": "票房排行榜",
+        "newReleases": "本周新片",
+        "comingSoon": "近期上映",
+        "viewDetails": "查看詳情",
+        "viewShowtimes": "查看時刻表",
+        "moreInfo": "更多資訊",
+        "comingSoonBadge": "近期上映",
+        "loading": "正在載入控制台...",
+        "error": "載入資料時發生錯誤"
     }
 }

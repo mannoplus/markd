@@ -174,5 +174,18 @@
         "rottenTomatoes": "Rotten Tomatoes",
         "availableViaOmdb": "Available via OMDb",
         "viewFullMoviePage": "View Full Movie Page"
+    },
+    "nowShowing": {
+        "title": "Now Showing",
+        "description": "Discover the latest box office hits, movies currently in theaters, and highly anticipated upcoming releases.",
+        "boxOffice": "Box Office Rankings",
+        "newReleases": "New Releases",
+        "comingSoon": "Coming Soon",
+        "viewDetails": "View Details",
+        "viewShowtimes": "View Showtimes",
+        "moreInfo": "More Info",
+        "comingSoonBadge": "Coming Soon",
+        "loading": "Loading Dashboard...",
+        "error": "Error Loading Data"
     }
 }

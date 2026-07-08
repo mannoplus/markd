@@ -22,7 +22,7 @@ async function fetchHtml(url: string) {
     }
 }
 
-async function extractMovies(html: string | null, limit: number) {
+async function extractMovies(html: string | null, limit?: number) {
     if (!html) return [];
     const $ = cheerio.load(html);
     const movies: any[] = [];
@@ -37,16 +37,18 @@ async function extractMovies(html: string | null, limit: number) {
         if (id && title && title.length > 1 && !EXCLUDED_TITLES.includes(title)) {
             // Avoid duplicates
             if (!movies.find(m => m.id === id)) {
-                movies.push({ id, title, link: `/movie/${id}` });
+                movies.push({ id, title });
             }
         }
     });
-    return movies.slice(0, limit);
+    return limit ? movies.slice(0, limit) : movies;
 }
 
-// Function to fetch poster from TMDB using the movie title
+// Function to fetch poster and ID from TMDB using the movie title
 async function fetchTmdbPoster(movie: any) {
     let poster = `https://picsum.photos/seed/${encodeURIComponent(movie.title)}/400/600`;
+    let tmdbId = null;
+    let link = null; // Default to null if TMDB fails
     
     // Clean up title for better TMDB search results
     // ATM usually gives "海洋奇緣 Moana". Remove the English trailing part.
@@ -57,7 +59,7 @@ async function fetchTmdbPoster(movie: any) {
         const tmdbApiKey = process.env.TMDB_API_KEY;
         if (!tmdbApiKey) {
             console.warn("TMDB_API_KEY is missing in environment variables.");
-            return { ...movie, poster };
+            return { ...movie, poster, link };
         }
 
         const url = `https://api.themoviedb.org/3/search/movie?api_key=${tmdbApiKey}&query=${encodeURIComponent(cleanTitle)}&language=zh-TW&page=1`;
@@ -71,9 +73,13 @@ async function fetchTmdbPoster(movie: any) {
             const data = await response.json();
             if (data.results && data.results.length > 0) {
                 // Find the first result with a poster
-                const match = data.results.find((r: any) => r.poster_path);
-                if (match && match.poster_path) {
-                    poster = `https://image.tmdb.org/t/p/w500${match.poster_path}`;
+                const match = data.results.find((r: any) => r.poster_path) || data.results[0];
+                if (match) {
+                    tmdbId = match.id;
+                    link = `/movie/${tmdbId}`;
+                    if (match.poster_path) {
+                        poster = `https://image.tmdb.org/t/p/w500${match.poster_path}`;
+                    }
                 }
             }
         }
@@ -81,22 +87,22 @@ async function fetchTmdbPoster(movie: any) {
         console.error("TMDB fetch error:", e);
     }
 
-    return { ...movie, poster };
+    return { ...movie, poster, tmdbId, link };
 }
 
 export async function GET() {
     try {
-        const [boxOfficeHtml, newReleasesHtml, firstRunHtml, upcomingHtml] = await Promise.all([
+        const [boxOfficeHtml, newReleasesHtml, upcomingHtml] = await Promise.all([
             fetchHtml('https://app2.atmovies.com.tw/boxoffice/'),
             fetchHtml('https://www.atmovies.com.tw/movie/new/'),
-            fetchHtml('https://www.atmovies.com.tw/movie/now/'),
             fetchHtml('https://www.atmovies.com.tw/movie/next2/')
         ]);
 
         interface BaseMovieData {
-            id: string;
+            id: string; // ATM ID
+            tmdbId?: number | null; // TMDB ID
             title: string;
-            link: string;
+            link: string | null; // Route link
             poster: string;
         }
 
@@ -108,7 +114,6 @@ export async function GET() {
         if (boxOfficeHtml) {
             const $ = cheerio.load(boxOfficeHtml);
             $('tr').each((i, el) => {
-                // Fixed: use * instead of ^ because boxoffice has absolute URLs like http://www.atmovies.com.tw/movie/ID/
                 const a = $(el).find('td a[href*="/movie/"]');
                 const title = a.text().trim().replace(/\s+/g, ' ');
                 const link = a.attr('href') || '';
@@ -117,26 +122,25 @@ export async function GET() {
 
                 if (id && title && title.length > 1 && !EXCLUDED_TITLES.includes(title)) {
                     if (!boxOffice.find(m => m.id === id)) {
-                        boxOffice.push({ id, title, link: `/movie/${id}`, rank: boxOffice.length + 1, poster: '' });
+                        boxOffice.push({ id, title, link: null, rank: boxOffice.length + 1, poster: '' });
                     }
                 }
             });
             boxOffice = boxOffice.slice(0, 10);
         }
 
-        let thisWeekNew = await extractMovies(newReleasesHtml, 10) as BaseMovieData[];
-        let firstRun = await extractMovies(firstRunHtml, 10) as BaseMovieData[];
+        // Fetch without limit for New Releases
+        let thisWeekNew = await extractMovies(newReleasesHtml) as BaseMovieData[];
         let comingSoon = await extractMovies(upcomingHtml, 10) as BaseMovieData[];
 
-        // Fetch posters from TMDB concurrently
+        // Fetch TMDB metadata concurrently
         boxOffice = (await Promise.all(boxOffice.map(fetchTmdbPoster))) as BoxOfficeData[];
         thisWeekNew = (await Promise.all(thisWeekNew.map(fetchTmdbPoster))) as BaseMovieData[];
-        firstRun = (await Promise.all(firstRun.map(fetchTmdbPoster))) as BaseMovieData[];
         comingSoon = (await Promise.all(comingSoon.map(fetchTmdbPoster))) as BaseMovieData[];
 
         return NextResponse.json({
             success: true,
-            data: { boxOffice, thisWeekNew, firstRun, comingSoon }
+            data: { boxOffice, thisWeekNew, comingSoon } // Removed firstRun
         }, {
             headers: {
                 'Cache-Control': 's-maxage=43200, stale-while-revalidate'
