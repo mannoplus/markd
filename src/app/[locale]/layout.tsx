@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/navbar";
+import { BottomNav } from "@/components/bottom-nav";
 import { Footer } from "@/components/footer";
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
@@ -48,8 +49,9 @@ export default async function RootLayout({
       <body className={`${inter.variable} antialiased`} suppressHydrationWarning>
         <NextIntlClientProvider messages={messages}>
           <Navbar />
-          <main className="min-h-screen">{children}</main>
+          <main className="min-h-screen pb-24 md:pb-0">{children}</main>
           <Footer />
+          <BottomNav />
         </NextIntlClientProvider>
       </body>
     </html>

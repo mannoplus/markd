@@ -14,7 +14,6 @@ export function Navbar() {
     const t = useTranslations('Navigation');
     const pathname = usePathname();
     const [user, setUser] = useState<User | null>(null);
-    const [mobileOpen, setMobileOpen] = useState(false);
 
     const NAV_LINKS = [
         { href: '/search', label: t('searchLink'), icon: Search },
@@ -39,10 +38,7 @@ export function Navbar() {
         return () => subscription.unsubscribe();
     }, []);
 
-    // Close mobile menu on navigation
-    useEffect(() => {
-        setMobileOpen(false);
-    }, [pathname]);
+    // No mobile menu logic needed anymore
 
     return (
         <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border pt-safe">
@@ -80,7 +76,7 @@ export function Navbar() {
                     <LanguageSwitcher />
 
                     {user ? (
-                        <div className="hidden items-center gap-2 md:flex relative group/usermenu">
+                        <div className="flex items-center gap-2 relative group/usermenu">
                             <button className="flex h-8 w-8 items-center justify-center rounded-full bg-foreground text-sm font-bold text-background transition-transform hover:scale-105 focus:outline-none">
                                 {user.email?.[0]?.toUpperCase() ?? 'U'}
                             </button>
@@ -126,97 +122,15 @@ export function Navbar() {
                     ) : (
                         <Link
                             href="/login"
-                            className="hidden items-center gap-2 rounded-lg bg-foreground px-4 py-2 text-sm font-semibold text-background transition-all hover:bg-foreground-muted md:flex"
+                            className="flex items-center gap-2 rounded-lg bg-foreground px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm font-semibold text-background transition-all hover:bg-foreground-muted"
                         >
                             <LogIn className="h-4 w-4" />
                             {t('signIn')}
                         </Link>
                     )}
 
-                    {/* Mobile hamburger */}
-                    <button
-                        onClick={() => setMobileOpen(!mobileOpen)}
-                        className="rounded-lg p-2 text-foreground-muted transition-colors hover:bg-background-elevated hover:text-foreground md:hidden"
-                        aria-label="Toggle menu"
-                    >
-                        {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-                    </button>
                 </div>
             </nav>
-
-            {/* Mobile menu */}
-            {mobileOpen && (
-                <div className="border-t border-border bg-background-secondary md:hidden fade-in">
-                    <div className="space-y-1 px-4 py-3">
-                        {NAV_LINKS.map(({ href, label, icon: Icon }) => {
-                            const isActive = pathname.startsWith(href);
-                            return (
-                                <Link
-                                    key={href}
-                                    href={href as any}
-                                    className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${isActive
-                                        ? 'bg-accent-muted text-accent'
-                                        : 'text-foreground-muted hover:bg-background-elevated hover:text-foreground'
-                                        }`}
-                                >
-                                    <Icon className="h-4 w-4" />
-                                    {label}
-                                </Link>
-                            );
-                        })}
-
-                        <div className="my-2 border-t border-border" />
-
-                        {user ? (
-                            <div className="space-y-2">
-                                <div className="flex items-center gap-3 px-3 py-2">
-                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-foreground text-sm font-bold text-background">
-                                        {user.email?.[0]?.toUpperCase() ?? 'U'}
-                                    </div>
-                                    <span className="text-sm text-foreground-muted truncate">
-                                        {user.email}
-                                    </span>
-                                </div>
-                                <form action={async () => {
-                                    const { logout } = await import('@/app/[locale]/login/actions');
-                                    await logout();
-                                }}>
-                                    <button
-                                        type="submit"
-                                        className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground-muted transition-all hover:bg-background-elevated hover:text-foreground"
-                                    >
-                                        <LogIn className="h-4 w-4 rotate-180" />
-                                        {t('signOut')}
-                                    </button>
-                                </form>
-                                <form action={async () => {
-                                    const confirmed = window.confirm(t('deleteAccount'));
-                                    if (confirmed) {
-                                        const { deleteAccount } = await import('@/app/[locale]/login/actions');
-                                        await deleteAccount();
-                                    }
-                                }}>
-                                    <button
-                                        type="submit"
-                                        className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-red-500 transition-all hover:bg-red-500/10 hover:text-red-600"
-                                    >
-                                        <X className="h-4 w-4" />
-                                        {t('deleteAccount')}
-                                    </button>
-                                </form>
-                            </div>
-                        ) : (
-                            <Link
-                                href="/login"
-                                className="flex items-center gap-3 rounded-lg bg-foreground px-3 py-2.5 text-sm font-semibold text-background transition-all hover:bg-foreground-muted"
-                            >
-                                <LogIn className="h-4 w-4" />
-                                {t('signIn')}
-                            </Link>
-                        )}
-                    </div>
-                </div>
-            )}
         </header>
     );
 }
