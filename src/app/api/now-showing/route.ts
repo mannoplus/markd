@@ -45,7 +45,7 @@ async function extractMovies(html: string | null, limit?: number) {
 }
 
 // Function to fetch poster and ID from TMDB using the movie title
-async function fetchTmdbPoster(movie: any) {
+async function fetchTmdbPoster(movie: any, lang: string = 'zh-TW') {
     let poster = `https://picsum.photos/seed/${encodeURIComponent(movie.title)}/400/600`;
     let tmdbId = null;
     let link = null; // Default to null if TMDB fails
@@ -62,7 +62,7 @@ async function fetchTmdbPoster(movie: any) {
             return { ...movie, poster, link };
         }
 
-        const url = `https://api.themoviedb.org/3/search/movie?api_key=${tmdbApiKey}&query=${encodeURIComponent(cleanTitle)}&language=zh-TW&page=1`;
+        const url = `https://api.themoviedb.org/3/search/movie?api_key=${tmdbApiKey}&query=${encodeURIComponent(cleanTitle)}&language=${lang}&page=1`;
         const response = await fetch(url, {
             headers: {
                 'accept': 'application/json'
@@ -80,6 +80,9 @@ async function fetchTmdbPoster(movie: any) {
                     if (match.poster_path) {
                         poster = `https://image.tmdb.org/t/p/w500${match.poster_path}`;
                     }
+                    if (match.title) {
+                        movie.title = match.title; // Update the title to the localized version
+                    }
                 }
             }
         }
@@ -90,7 +93,9 @@ async function fetchTmdbPoster(movie: any) {
     return { ...movie, poster, tmdbId, link };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+    const { searchParams } = new URL(request.url);
+    const lang = searchParams.get('lang') || 'zh-TW';
     try {
         const [boxOfficeHtml, newReleasesHtml, upcomingHtml] = await Promise.all([
             fetchHtml('https://app2.atmovies.com.tw/boxoffice/'),
@@ -134,9 +139,9 @@ export async function GET() {
         let comingSoon = await extractMovies(upcomingHtml, 10) as BaseMovieData[];
 
         // Fetch TMDB metadata concurrently
-        boxOffice = (await Promise.all(boxOffice.map(fetchTmdbPoster))) as BoxOfficeData[];
-        thisWeekNew = (await Promise.all(thisWeekNew.map(fetchTmdbPoster))) as BaseMovieData[];
-        comingSoon = (await Promise.all(comingSoon.map(fetchTmdbPoster))) as BaseMovieData[];
+        boxOffice = (await Promise.all(boxOffice.map(m => fetchTmdbPoster(m, lang)))) as BoxOfficeData[];
+        thisWeekNew = (await Promise.all(thisWeekNew.map(m => fetchTmdbPoster(m, lang)))) as BaseMovieData[];
+        comingSoon = (await Promise.all(comingSoon.map(m => fetchTmdbPoster(m, lang)))) as BaseMovieData[];
 
         return NextResponse.json({
             success: true,

@@ -10,6 +10,7 @@
         "search": "Search for movies or TV shows...",
         "searchLink": "Search",
         "boxOffice": "Box Office",
+        "nowShowing": "Now Showing",
         "signOut": "Sign Out",
         "deleteAccount": "Delete Account"
     },

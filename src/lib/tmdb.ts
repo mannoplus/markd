@@ -129,7 +129,7 @@ const MONTHLY_US_BOX_OFFICE: BoxOfficeMovie[] = [
 /**
  * Get US Box Office Data by Time Period
  */
-export async function getBoxOfficeMovies(region: string = 'US', period: 'daily' | 'weekly' | 'monthly' = 'weekly'): Promise<BoxOfficeMovie[]> {
+export async function getBoxOfficeMovies(region: string = 'TW', period: 'daily' | 'weekly' | 'monthly' = 'weekly'): Promise<BoxOfficeMovie[]> {
     if (region !== 'US') return [];
     
     switch (period) {
@@ -497,7 +497,7 @@ export async function getWatchProviders(
     type: MediaType
 ): Promise<TMDBWatchProviderResult | null> {
     const region =
-        process.env.NEXT_PUBLIC_WATCH_REGION || 'US';
+        process.env.NEXT_PUBLIC_WATCH_REGION || 'TW';
 
     const data = await tmdbFetch<{
         results: Record<string, TMDBWatchProviderResult>;
@@ -544,7 +544,7 @@ export async function getNowPlaying(
  * Get upcoming movies (March 27, 2026 onwards).
  */
 export async function getUpcomingMovies(
-    region: string = 'US'
+    region: string = 'TW'
 ): Promise<TMDBTrendingResult[]> {
     const today = '2026-03-27';
     const data = await tmdbFetch<{ results: TMDBTrendingResult[] }>(
@@ -568,7 +568,7 @@ export async function getUpcomingMovies(
  * Get upcoming TV shows showing only future releases (2026-03-27 onwards).
  */
 export async function getUpcomingTVShows(
-    region: string = 'US'
+    region: string = 'TW'
 ): Promise<TMDBTrendingResult[]> {
     const today = '2026-03-27';
     // Status filter: 0: Returning Series, 1: Planned, 2: In Production, 5: Pilot

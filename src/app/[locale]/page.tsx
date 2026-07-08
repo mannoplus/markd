@@ -12,7 +12,7 @@ export default async function Home({
 }) {
   const t = await getTranslations('Home');
   const resolvedParams = await searchParams;
-  const region = typeof resolvedParams.region === 'string' ? resolvedParams.region : 'US';
+  const region = typeof resolvedParams.region === 'string' ? resolvedParams.region : 'TW';
 
   // Fetch data in parallel
   const [nowPlaying, trendingMovies, trendingShows, upcomingMovies, upcomingShows] = await Promise.all([

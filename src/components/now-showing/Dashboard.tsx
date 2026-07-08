@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import BoxOfficeCard from './BoxOfficeCard';
 import ShowtimeCard from './ShowtimeCard';
 import ComingSoonCard from './ComingSoonCard';
@@ -27,6 +27,7 @@ export default function Dashboard() {
     const searchParams = useSearchParams();
     const region = searchParams.get('region') || 'TW';
     const t = useTranslations('nowShowing');
+    const locale = useLocale();
 
     const [data, setData] = useState<DashboardData | null>(null);
     const [loading, setLoading] = useState(true);
@@ -39,8 +40,9 @@ export default function Dashboard() {
 
     useEffect(() => {
         const fetchData = async () => {
+            setLoading(true);
             try {
-                const res = await fetch('/api/now-showing');
+                const res = await fetch(`/api/now-showing?lang=${locale}`);
                 if (!res.ok) throw new Error('Failed to fetch data');
                 const json = await res.json();
                 if (json.success) {
@@ -60,7 +62,7 @@ export default function Dashboard() {
         };
 
         fetchData();
-    }, []);
+    }, [locale]);
 
     const handleShowtimesClick = (id: string, title: string) => {
         setSelectedMovieId(id);
