@@ -131,6 +131,7 @@ export interface TMDBWatchProviderResult {
     rent?: TMDBWatchProvider[];
     buy?: TMDBWatchProvider[];
     ads?: TMDBWatchProvider[];        // free with ads
+    free?: TMDBWatchProvider[];       // free streaming
 }
 
 export interface TMDBTrendingResult {

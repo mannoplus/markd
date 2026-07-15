@@ -1,13 +1,19 @@
 'use client';
 
-import { useState } from 'react';
-import { Play, RotateCw, Eye, HelpCircle, Film, MapPin } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Play, RotateCw, Eye, HelpCircle, Film, MapPin, X, Loader2 } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { MovieCard } from '@/components/movie-card';
-import type { TMDBTrendingResult } from '@/types';
+import type { TMDBTrendingResult, TMDBWatchProvider, TMDBWatchProviderResult } from '@/types';
+import {
+    getMediaTrailerAction,
+    getNowPlayingAction,
+    getWatchProvidersAction,
+    getUpcomingMoviesAction,
+    getUpcomingTVShowsAction,
+} from '@/app/actions/discover';
 
 // Country list in requested order:
-// Taiwan, United States, China, Japan, UK, France, Germany, South Korea, Australia, Brazil, Mexico, Spain, Italy, Russia, Indonesia, India
 const CINEMA_COUNTRIES = [
     { name: 'Taiwan', code: 'TW' },
     { name: 'United States', code: 'US' },
@@ -51,25 +57,217 @@ export function HomeRedesign({
     initialFreeShows,
 }: HomeRedesignProps) {
     // ----------------------------------------------------
-    // SKELETON CLIENT STATE (Logic will be linked later)
+    // Client State
     // ----------------------------------------------------
     const [trailerTab, setTrailerTab] = useState<'popular' | 'streaming' | 'rent' | 'theaters'>('popular');
     const [cinemaCountry, setCinemaCountry] = useState<string>('TW');
     const [freeTab, setFreeTab] = useState<'movies' | 'tv'>('movies');
 
-    // Dynamic Lists (using initial props for skeleton display)
-    const currentTrailers = 
+    // Section 1: Trailer Modal State
+    const [activeTrailer, setActiveTrailer] = useState<{ id: number; type: 'movie' | 'tv'; title: string } | null>(null);
+    const [youtubeKey, setYoutubeKey] = useState<string | null>(null);
+    const [isLoadingTrailer, setIsLoadingTrailer] = useState<boolean>(false);
+
+    // Section 2: Cinema State
+    const [nowPlayingMovies, setNowPlayingMovies] = useState<TMDBTrendingResult[]>(initialNowPlaying);
+    const [isLoadingCinemas, setIsLoadingCinemas] = useState<boolean>(false);
+
+    // Section 3 & 4: Upcoming Feeds State
+    const [upcomingMovies, setUpcomingMovies] = useState<TMDBTrendingResult[]>(initialUpcomingMovies);
+    const [upcomingMoviesTime, setUpcomingMoviesTime] = useState<number>(0);
+    const [isUpdatingMovies, setIsUpdatingMovies] = useState<boolean>(false);
+
+    const [upcomingShows, setUpcomingShows] = useState<TMDBTrendingResult[]>(initialUpcomingShows);
+    const [upcomingShowsTime, setUpcomingShowsTime] = useState<number>(0);
+    const [isUpdatingShows, setIsUpdatingShows] = useState<boolean>(false);
+
+    // Section 5: Free Providers State
+    const [activeFreeItem, setActiveFreeItem] = useState<TMDBTrendingResult | null>(null);
+    const [freeProviders, setFreeProviders] = useState<TMDBWatchProviderResult | null>(null);
+    const [isLoadingProviders, setIsLoadingProviders] = useState<boolean>(false);
+
+    // ----------------------------------------------------
+    // Helper to calculate client-side synthetic RT score
+    // ----------------------------------------------------
+    const enrichClientRTScores = (items: TMDBTrendingResult[]) => {
+        return items.map((item) => {
+            const cleanTitle = (item.title || item.name || '').replace(/^["']+|["']+$/g, '');
+            const syntheticScore = Math.round(item.vote_average * 10) || 75;
+            return {
+                ...item,
+                title: cleanTitle,
+                rtScore: `${syntheticScore}%`,
+                rtStatus: (syntheticScore >= 60 ? 'fresh' : 'rotten') as 'fresh' | 'rotten',
+            };
+        });
+    };
+
+    // ----------------------------------------------------
+    // Section 1: Trailer Action Trigger
+    // ----------------------------------------------------
+    const handleTrailerClick = async (item: TMDBTrendingResult) => {
+        const type = item.media_type || (trailerTab === 'theaters' ? 'movie' : 'movie');
+        setActiveTrailer({
+            id: item.id,
+            type: type === 'tv' ? 'tv' : 'movie',
+            title: item.title || item.name || 'Trailer',
+        });
+        setIsLoadingTrailer(true);
+        setYoutubeKey(null);
+        try {
+            const key = await getMediaTrailerAction(type === 'tv' ? 'tv' : 'movie', item.id);
+            setYoutubeKey(key);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsLoadingTrailer(false);
+        }
+    };
+
+    // ----------------------------------------------------
+    // Section 2: Cinema Country Click handler
+    // ----------------------------------------------------
+    const handleCountryClick = async (code: string) => {
+        setCinemaCountry(code);
+        setIsLoadingCinemas(true);
+        try {
+            const data = await getNowPlayingAction(code);
+            setNowPlayingMovies(enrichClientRTScores(data.slice(0, 4)));
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsLoadingCinemas(false);
+        }
+    };
+
+    // ----------------------------------------------------
+    // Section 3 & 4: Caching & Auto/Manual Update timers
+    // ----------------------------------------------------
+    useEffect(() => {
+        // Load stored Upcoming Movies cache if less than 12 hours old
+        const cachedMovies = localStorage.getItem('upcoming_movies_data');
+        const cachedMoviesTime = localStorage.getItem('upcoming_movies_time');
+        if (cachedMovies && cachedMoviesTime) {
+            const age = Date.now() - Number(cachedMoviesTime);
+            if (age < 12 * 60 * 60 * 1000) {
+                setUpcomingMovies(JSON.parse(cachedMovies));
+                setUpcomingMoviesTime(Number(cachedMoviesTime));
+            } else {
+                localStorage.setItem('upcoming_movies_data', JSON.stringify(initialUpcomingMovies));
+                const now = Date.now();
+                localStorage.setItem('upcoming_movies_time', String(now));
+                setUpcomingMoviesTime(now);
+            }
+        } else {
+            localStorage.setItem('upcoming_movies_data', JSON.stringify(initialUpcomingMovies));
+            const now = Date.now();
+            localStorage.setItem('upcoming_movies_time', String(now));
+            setUpcomingMoviesTime(now);
+        }
+
+        // Load stored Upcoming TV Shows cache if less than 12 hours old
+        const cachedShows = localStorage.getItem('upcoming_shows_data');
+        const cachedShowsTime = localStorage.getItem('upcoming_shows_time');
+        if (cachedShows && cachedShowsTime) {
+            const age = Date.now() - Number(cachedShowsTime);
+            if (age < 12 * 60 * 60 * 1000) {
+                setUpcomingShows(JSON.parse(cachedShows));
+                setUpcomingShowsTime(Number(cachedShowsTime));
+            } else {
+                localStorage.setItem('upcoming_shows_data', JSON.stringify(initialUpcomingShows));
+                const now = Date.now();
+                localStorage.setItem('upcoming_shows_time', String(now));
+                setUpcomingShowsTime(now);
+            }
+        } else {
+            localStorage.setItem('upcoming_shows_data', JSON.stringify(initialUpcomingShows));
+            const now = Date.now();
+            localStorage.setItem('upcoming_shows_time', String(now));
+            setUpcomingShowsTime(now);
+        }
+    }, [initialUpcomingMovies, initialUpcomingShows]);
+
+    // Interval checks for auto-updates every 60 seconds
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const moviesTime = localStorage.getItem('upcoming_movies_time');
+            if (moviesTime && Date.now() - Number(moviesTime) >= 12 * 60 * 60 * 1000) {
+                triggerMoviesUpdate();
+            }
+            const showsTime = localStorage.getItem('upcoming_shows_time');
+            if (showsTime && Date.now() - Number(showsTime) >= 12 * 60 * 60 * 1000) {
+                triggerShowsUpdate();
+            }
+        }, 60000);
+
+        return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const triggerMoviesUpdate = async () => {
+        setIsUpdatingMovies(true);
+        try {
+            const data = await getUpcomingMoviesAction('TW');
+            const enriched = enrichClientRTScores(data.slice(0, 10));
+            setUpcomingMovies(enriched);
+            const now = Date.now();
+            localStorage.setItem('upcoming_movies_data', JSON.stringify(enriched));
+            localStorage.setItem('upcoming_movies_time', String(now));
+            setUpcomingMoviesTime(now);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsUpdatingMovies(false);
+        }
+    };
+
+    const triggerShowsUpdate = async () => {
+        setIsUpdatingShows(true);
+        try {
+            const data = await getUpcomingTVShowsAction('TW');
+            const enriched = enrichClientRTScores(data.slice(0, 10));
+            setUpcomingShows(enriched);
+            const now = Date.now();
+            localStorage.setItem('upcoming_shows_data', JSON.stringify(enriched));
+            localStorage.setItem('upcoming_shows_time', String(now));
+            setUpcomingShowsTime(now);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsUpdatingShows(false);
+        }
+    };
+
+    // ----------------------------------------------------
+    // Section 5: Free watch providers toggle handler
+    // ----------------------------------------------------
+    const handleFreeItemClick = async (item: TMDBTrendingResult) => {
+        setActiveFreeItem(item);
+        setIsLoadingProviders(true);
+        setFreeProviders(null);
+        try {
+            const providers = await getWatchProvidersAction(item.id, freeTab === 'movies' ? 'movie' : 'tv');
+            setFreeProviders(providers);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsLoadingProviders(false);
+        }
+    };
+
+    // Filter selectors
+    const currentTrailers =
         trailerTab === 'popular' ? initialPopularTrailers :
         trailerTab === 'streaming' ? initialStreamingTrailers :
         trailerTab === 'rent' ? initialRentTrailers :
         initialTheaterTrailers;
 
-    const currentFreeItems = 
+    const currentFreeItems =
         freeTab === 'movies' ? initialFreeMovies :
         initialFreeShows;
 
     return (
-        <div className="space-y-20 pb-24">
+        <div className="space-y-20 pb-24 relative">
             
             {/* ====================================================
                 SECTION 1: LATEST TRAILERS
@@ -78,16 +276,15 @@ export function HomeRedesign({
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/40 pb-4">
                     <div className="flex items-center gap-3">
                         <h2 className="text-2xl font-bold tracking-tight">Latest Trailers</h2>
-                        <span className="rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-semibold text-accent">Hot</span>
+                        <span className="rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-semibold text-accent font-sans">Hot</span>
                     </div>
 
-                    {/* Navigation Menu for Filter */}
                     <div className="flex flex-wrap items-center gap-2">
                         {(['popular', 'streaming', 'rent', 'theaters'] as const).map((tab) => (
                             <button
                                 key={tab}
                                 onClick={() => setTrailerTab(tab)}
-                                className={`rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all duration-300 ${
+                                className={`rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-wider transition-all duration-300 ${
                                     trailerTab === tab
                                         ? 'bg-accent text-background shadow-lg shadow-accent/20'
                                         : 'bg-background-elevated text-foreground-muted hover:bg-background-elevated-hover hover:text-foreground'
@@ -105,18 +302,17 @@ export function HomeRedesign({
                         href="/movies?category=popular"
                         className="text-sm font-semibold text-accent hover:text-accent-hover transition-colors"
                     >
-                        More Trailers →
+                        See More →
                     </Link>
                 </div>
 
-                {/* Horizontal Scroll Containers */}
                 <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 snap-x">
                     {currentTrailers.slice(0, 10).map((item: TMDBTrendingResult) => (
                         <div
                             key={item.id}
+                            onClick={() => handleTrailerClick(item)}
                             className="w-[280px] sm:w-[320px] shrink-0 snap-start group relative rounded-2xl overflow-hidden bg-background-elevated/40 border border-border/40 hover:border-accent/40 transition-all duration-300 cursor-pointer shadow-lg hover:shadow-2xl"
                         >
-                            {/* Backdrop 16:9 aspect image skeleton */}
                             <div className="aspect-video w-full bg-background-elevated relative overflow-hidden">
                                 {item.backdrop_path ? (
                                     // eslint-disable-next-line @next/next/no-img-element
@@ -130,7 +326,6 @@ export function HomeRedesign({
                                         <Film className="h-8 w-8" />
                                     </div>
                                 )}
-                                {/* Play Overlay */}
                                 <div className="absolute inset-0 bg-black/45 flex items-center justify-center opacity-70 group-hover:opacity-100 transition-opacity">
                                     <div className="rounded-full bg-accent p-3.5 text-background shadow-xl scale-95 group-hover:scale-110 transition-transform duration-300">
                                         <Play className="h-5 w-5 fill-current" />
@@ -166,12 +361,11 @@ export function HomeRedesign({
                         href={`/movies?category=now_playing&region=${cinemaCountry}`}
                         className="text-sm font-semibold text-accent hover:text-accent-hover transition-colors"
                     >
-                        More Cinemas →
+                        See More →
                     </Link>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                    {/* Vertical Country Selector Panel */}
                     <div className="lg:col-span-1 bg-[#12121a] border border-border/40 rounded-2xl p-4 h-[350px] overflow-y-auto space-y-1.5 scrollbar-thin">
                         <div className="text-[10px] font-bold text-foreground-muted uppercase tracking-wider mb-2 px-2">
                             Select Region
@@ -179,7 +373,8 @@ export function HomeRedesign({
                         {CINEMA_COUNTRIES.map((country) => (
                             <button
                                 key={country.code}
-                                onClick={() => setCinemaCountry(country.code)}
+                                onClick={() => handleCountryClick(country.code)}
+                                disabled={isLoadingCinemas}
                                 className={`w-full flex items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-semibold text-left transition-all ${
                                     cinemaCountry === country.code
                                         ? 'bg-accent/15 text-accent border border-accent/20'
@@ -192,10 +387,14 @@ export function HomeRedesign({
                         ))}
                     </div>
 
-                    {/* Movie Grid */}
-                    <div className="lg:col-span-3">
+                    <div className="lg:col-span-3 relative min-h-[300px]">
+                        {isLoadingCinemas ? (
+                            <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-[2px] rounded-2xl z-10">
+                                <Loader2 className="h-8 w-8 text-accent animate-spin" />
+                            </div>
+                        ) : null}
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-                            {initialNowPlaying.slice(0, 4).map((movie: TMDBTrendingResult) => (
+                            {nowPlayingMovies.map((movie: TMDBTrendingResult) => (
                                 <div key={movie.id} className="fade-in">
                                     <MovieCard
                                         id={movie.id}
@@ -223,15 +422,26 @@ export function HomeRedesign({
                         <h2 className="text-2xl font-bold tracking-tight">Upcoming Movies</h2>
                         <div className="flex items-center gap-2 text-[10px] font-bold text-foreground-muted uppercase tracking-wider">
                             <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-                            <span>Last updated: {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                            <span>
+                                Last updated:{' '}
+                                {upcomingMoviesTime > 0
+                                    ? new Date(upcomingMoviesTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                    : 'Updating...'}
+                            </span>
                         </div>
                     </div>
 
                     <div className="flex items-center gap-4">
                         <button
-                            className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-xs font-semibold text-foreground hover:bg-background-elevated transition-all active:scale-95"
+                            onClick={triggerMoviesUpdate}
+                            disabled={isUpdatingMovies}
+                            className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-xs font-semibold text-foreground hover:bg-background-elevated transition-all active:scale-95 disabled:opacity-50"
                         >
-                            <RotateCw className="h-3 w-3" />
+                            {isUpdatingMovies ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                                <RotateCw className="h-3 w-3" />
+                            )}
                             Manual Update
                         </button>
 
@@ -239,23 +449,23 @@ export function HomeRedesign({
                             href="/movies?category=upcoming"
                             className="text-sm font-semibold text-accent hover:text-accent-hover transition-colors"
                         >
-                            More Movies →
+                            See More →
                         </Link>
                     </div>
                 </div>
 
                 <div className="flex overflow-x-auto gap-6 pb-4 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 snap-x">
-                    {initialUpcomingMovies.map((movie: TMDBTrendingResult) => (
+                    {upcomingMovies.map((movie: TMDBTrendingResult) => (
                         <div key={movie.id} className="w-[160px] sm:w-[200px] shrink-0 snap-start">
                             <MovieCard
-                                        id={movie.id}
-                                        title={movie.title || movie.name || ''}
-                                        posterPath={movie.poster_path}
-                                        voteAverage={movie.vote_average}
-                                        releaseDate={movie.release_date || movie.first_air_date}
-                                        mediaType="movie"
-                                        rtScore={movie.rtScore}
-                                        rtStatus={movie.rtStatus}
+                                id={movie.id}
+                                title={movie.title || movie.name || ''}
+                                posterPath={movie.poster_path}
+                                voteAverage={movie.vote_average}
+                                releaseDate={movie.release_date || movie.first_air_date}
+                                mediaType="movie"
+                                rtScore={movie.rtScore}
+                                rtStatus={movie.rtStatus}
                             />
                         </div>
                     ))}
@@ -271,15 +481,26 @@ export function HomeRedesign({
                         <h2 className="text-2xl font-bold tracking-tight">Upcoming TV Shows</h2>
                         <div className="flex items-center gap-2 text-[10px] font-bold text-foreground-muted uppercase tracking-wider">
                             <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-                            <span>Last updated: {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                            <span>
+                                Last updated:{' '}
+                                {upcomingShowsTime > 0
+                                    ? new Date(upcomingShowsTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                    : 'Updating...'}
+                            </span>
                         </div>
                     </div>
 
                     <div className="flex items-center gap-4">
                         <button
-                            className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-xs font-semibold text-foreground hover:bg-background-elevated transition-all active:scale-95"
+                            onClick={triggerShowsUpdate}
+                            disabled={isUpdatingShows}
+                            className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-xs font-semibold text-foreground hover:bg-background-elevated transition-all active:scale-95 disabled:opacity-50"
                         >
-                            <RotateCw className="h-3 w-3" />
+                            {isUpdatingShows ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                                <RotateCw className="h-3 w-3" />
+                            )}
                             Manual Update
                         </button>
 
@@ -287,13 +508,13 @@ export function HomeRedesign({
                             href="/tv-shows?category=upcoming"
                             className="text-sm font-semibold text-accent hover:text-accent-hover transition-colors"
                         >
-                            More Shows →
+                            See More →
                         </Link>
                     </div>
                 </div>
 
                 <div className="flex overflow-x-auto gap-6 pb-4 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 snap-x">
-                    {initialUpcomingShows.map((show: TMDBTrendingResult) => (
+                    {upcomingShows.map((show: TMDBTrendingResult) => (
                         <div key={show.id} className="w-[160px] sm:w-[200px] shrink-0 snap-start">
                             <MovieCard
                                 id={show.id}
@@ -317,7 +538,6 @@ export function HomeRedesign({
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/40 pb-4">
                     <div className="flex items-center gap-3">
                         <h2 className="text-2xl font-bold tracking-tight">Free to Watch</h2>
-                        {/* Horizontal toggle button */}
                         <div className="flex rounded-full bg-background-elevated p-1">
                             <button
                                 onClick={() => setFreeTab('movies')}
@@ -343,10 +563,10 @@ export function HomeRedesign({
                     </div>
 
                     <Link
-                        href={`/movies?availability=free`}
+                        href={(freeTab === 'movies' ? `/movies?availability=free` : `/tv-shows?availability=free`) as string}
                         className="text-sm font-semibold text-accent hover:text-accent-hover transition-colors"
                     >
-                        More Free Content →
+                        See More →
                     </Link>
                 </div>
 
@@ -354,6 +574,7 @@ export function HomeRedesign({
                     {currentFreeItems.slice(0, 5).map((item: TMDBTrendingResult) => (
                         <div
                             key={item.id}
+                            onClick={() => handleFreeItemClick(item)}
                             className="bg-[#12121a] border border-border/40 hover:border-accent/40 rounded-2xl p-4 space-y-3 cursor-pointer group transition-all hover:scale-[1.02] shadow-lg flex flex-col justify-between"
                         >
                             <div className="space-y-2">
@@ -370,7 +591,7 @@ export function HomeRedesign({
                                             <HelpCircle className="h-8 w-8" />
                                         </div>
                                     )}
-                                    <div className="absolute top-2 left-2 rounded-md bg-emerald-500/95 px-2 py-0.5 text-[9px] font-bold text-background uppercase tracking-wider">
+                                    <div className="absolute top-2 left-2 rounded-md bg-emerald-500/95 px-2 py-0.5 text-[9px] font-bold text-background uppercase tracking-wider font-sans">
                                         Free
                                     </div>
                                 </div>
@@ -379,15 +600,189 @@ export function HomeRedesign({
                                 </h3>
                             </div>
 
-                            {/* Streaming links info box placeholder */}
                             <div className="bg-background-elevated rounded-xl p-2.5 text-[10px] text-foreground-muted text-center flex items-center justify-center gap-1.5 hover:bg-background-elevated-hover transition-colors">
                                 <Eye className="h-3 w-3 text-accent" />
-                                <span>Click to view free streaming options</span>
+                                <span>Free Streaming Info</span>
                             </div>
                         </div>
                     ))}
                 </div>
             </section>
+
+            {/* ====================================================
+                SECTION 1 MODAL: TRAILER VIDEO LIGHTBOX
+               ==================================================== */}
+            {activeTrailer ? (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    {/* Backdrop */}
+                    <div 
+                        className="absolute inset-0 bg-black/85 backdrop-blur-sm transition-opacity duration-300"
+                        onClick={() => setActiveTrailer(null)}
+                    />
+                    
+                    {/* Content Panel */}
+                    <div className="relative w-full max-w-4xl aspect-video rounded-2xl overflow-hidden bg-[#12121a] border border-border shadow-2xl z-10 flex items-center justify-center">
+                        <button
+                            onClick={() => setActiveTrailer(null)}
+                            className="absolute top-4 right-4 z-20 rounded-full bg-black/60 p-2 text-foreground hover:bg-black/80 hover:text-accent transition-all"
+                            aria-label="Close Trailer"
+                        >
+                            <X className="h-5 w-5" />
+                        </button>
+
+                        {isLoadingTrailer ? (
+                            <div className="flex flex-col items-center gap-3 text-foreground-muted">
+                                <Loader2 className="h-8 w-8 text-accent animate-spin" />
+                                <span className="text-xs font-semibold">Loading Trailer...</span>
+                            </div>
+                        ) : youtubeKey ? (
+                            <iframe
+                                src={`https://www.youtube.com/embed/${youtubeKey}?autoplay=1&rel=0`}
+                                title={activeTrailer.title}
+                                className="w-full h-full border-0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                            />
+                        ) : (
+                            <div className="text-center p-6 space-y-2">
+                                <Film className="h-12 w-12 text-foreground-subtle mx-auto mb-2" />
+                                <h3 className="font-bold text-sm text-foreground">No Trailer Found</h3>
+                                <p className="text-xs text-foreground-muted max-w-xs">
+                                    We couldn&apos;t find an official YouTube trailer for &ldquo;{activeTrailer.title}&rdquo;.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            ) : null}
+
+            {/* ====================================================
+                SECTION 5 MODAL: FREE STREAMING WATCH PROVIDERS
+               ==================================================== */}
+            {activeFreeItem ? (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    {/* Backdrop */}
+                    <div 
+                        className="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity duration-300"
+                        onClick={() => setActiveFreeItem(null)}
+                    />
+
+                    {/* Modal Card */}
+                    <div className="relative w-full max-w-md rounded-2xl bg-[#1c1c28] border border-border p-6 shadow-2xl z-10 space-y-6">
+                        <button
+                            onClick={() => setActiveFreeItem(null)}
+                            className="absolute top-4 right-4 rounded-full bg-background-elevated p-2 text-foreground-muted hover:text-foreground transition-all"
+                            aria-label="Close Watch Details"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+
+                        <div className="flex gap-4">
+                            <div className="w-[80px] shrink-0 aspect-[2/3] bg-background-elevated rounded-lg overflow-hidden relative border border-border/40">
+                                {activeFreeItem.poster_path ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img
+                                        src={`https://image.tmdb.org/t/p/w185${activeFreeItem.poster_path}`}
+                                        alt={activeFreeItem.title || activeFreeItem.name || ''}
+                                        className="h-full w-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="flex h-full w-full items-center justify-center text-foreground-subtle">
+                                        <HelpCircle className="h-6 w-6" />
+                                    </div>
+                                )}
+                            </div>
+                            <div className="space-y-1 text-left min-w-0">
+                                <h3 className="font-bold text-base text-foreground truncate pr-6">
+                                    {activeFreeItem.title || activeFreeItem.name}
+                                </h3>
+                                <p className="text-xs text-foreground-muted">
+                                    {activeFreeItem.release_date || activeFreeItem.first_air_date || 'Upcoming'}
+                                </p>
+                                <div className="inline-flex items-center rounded-md bg-emerald-500/10 px-2 py-0.5 text-[9px] font-bold text-emerald-400 border border-emerald-500/20 uppercase tracking-wider font-sans">
+                                    Free Stream Options
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="border-t border-border/40 pt-4 space-y-4">
+                            <h4 className="text-xs font-bold text-foreground-muted uppercase tracking-wider">
+                                Streaming Free In US
+                            </h4>
+
+                            {isLoadingProviders ? (
+                                <div className="flex justify-center py-6">
+                                    <Loader2 className="h-6 w-6 text-accent animate-spin" />
+                                </div>
+                            ) : freeProviders && (freeProviders.ads || freeProviders.free) ? (
+                                <div className="space-y-3">
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {[...(freeProviders.ads || []), ...(freeProviders.free || [])].map((prov: TMDBWatchProvider) => (
+                                            <div
+                                                key={prov.provider_id}
+                                                className="flex items-center gap-2.5 rounded-xl bg-background-elevated p-2 border border-border/20"
+                                            >
+                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                <img
+                                                    src={`https://image.tmdb.org/t/p/original${prov.logo_path}`}
+                                                    alt={prov.provider_name}
+                                                    className="h-6 w-6 rounded-md object-contain"
+                                                />
+                                                <span className="text-[10px] font-semibold text-foreground truncate">
+                                                    {prov.provider_name}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <p className="text-[10px] text-foreground-muted leading-relaxed">
+                                        This title is available free with ads or through public broadcasting providers. Click the button below to view official playback links.
+                                    </p>
+                                </div>
+                            ) : freeProviders && freeProviders.flatrate ? (
+                                <div className="space-y-3">
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {freeProviders.flatrate.map((prov: TMDBWatchProvider) => (
+                                            <div
+                                                key={prov.provider_id}
+                                                className="flex items-center gap-2.5 rounded-xl bg-background-elevated p-2 border border-border/20"
+                                            >
+                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                <img
+                                                    src={`https://image.tmdb.org/t/p/original${prov.logo_path}`}
+                                                    alt={prov.provider_name}
+                                                    className="h-6 w-6 rounded-md object-contain"
+                                                />
+                                                <span className="text-[10px] font-semibold text-foreground truncate">
+                                                    {prov.provider_name}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="rounded-lg bg-yellow-500/10 p-2.5 border border-yellow-500/20 text-[10px] text-yellow-400">
+                                        No 100% free streams found. Displaying standard subscription flatrate providers as a backup.
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="rounded-lg bg-background-elevated p-4 text-center text-xs text-foreground-muted border border-border/20">
+                                    No streaming details found for this title in your region.
+                                </div>
+                            )}
+
+                            {freeProviders && freeProviders.link ? (
+                                <a
+                                    href={freeProviders.link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="w-full inline-flex items-center justify-center rounded-xl bg-accent py-3 text-xs font-bold text-background hover:bg-accent-hover transition-colors shadow-md"
+                                >
+                                    Watch on JustWatch
+                                </a>
+                            ) : null}
+                        </div>
+                    </div>
+                </div>
+            ) : null}
+
         </div>
     );
 }
