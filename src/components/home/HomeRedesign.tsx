@@ -13,7 +13,8 @@ import {
     getUpcomingMoviesAction,
     getUpcomingTVShowsAction,
     getTrendingAction,
-    getStrictlyFreeMediaAction,
+    getStrictlyFreeQuotaAction,
+    getUpcomingWithTrailersAction,
 } from '@/app/actions/discover';
 
 // Comprehensive Country list
@@ -150,6 +151,41 @@ export function HomeRedesign({
                 }
             } catch (e) {
                 console.error('Failed to background auto-update trending carousel:', e);
+            }
+        }, 300000); // 5 minutes
+
+        return () => clearInterval(interval);
+    }, []);
+
+    // ----------------------------------------------------
+    // Section 1: Latest Trailers 5-Minute Background Sync (clears on unmount)
+    // ----------------------------------------------------
+    useEffect(() => {
+        const interval = setInterval(async () => {
+            try {
+                const [movies, shows] = await Promise.all([
+                    getUpcomingWithTrailersAction('movie'),
+                    getUpcomingWithTrailersAction('tv'),
+                ]);
+
+                if (movies.length > 0) {
+                    const enrichedMovies = enrichClientRTScores(movies.slice(0, 10));
+                    setUpcomingMovies(enrichedMovies);
+                    const now = Date.now();
+                    localStorage.setItem('upcoming_movies_data', JSON.stringify(enrichedMovies));
+                    localStorage.setItem('upcoming_movies_time', String(now));
+                    setUpcomingMoviesTime(now);
+                }
+                if (shows.length > 0) {
+                    const enrichedShows = enrichClientRTScores(shows.slice(0, 10));
+                    setUpcomingShows(enrichedShows);
+                    const now = Date.now();
+                    localStorage.setItem('upcoming_shows_data', JSON.stringify(enrichedShows));
+                    localStorage.setItem('upcoming_shows_time', String(now));
+                    setUpcomingShowsTime(now);
+                }
+            } catch (e) {
+                console.error('Failed to background sync trailers:', e);
             }
         }, 300000); // 5 minutes
 
@@ -307,15 +343,15 @@ export function HomeRedesign({
     };
 
     // ----------------------------------------------------
-    // Section 5: Free content randomized pagination updates
+    // Section 5: Free content randomized pagination updates (Strict 15-item quota)
     // ----------------------------------------------------
     const triggerFreeUpdate = async () => {
         setIsLoadingFree(true);
         try {
-            const randomPage = Math.floor(Math.random() * 12) + 1;
+            const randomPage = Math.floor(Math.random() * 20) + 1;
             const type = freeTab === 'movies' ? 'movie' : 'tv';
-            const data = await getStrictlyFreeMediaAction(type, randomPage);
-            const enriched = enrichClientRTScores(data.slice(0, 20));
+            const data = await getStrictlyFreeQuotaAction(type, randomPage);
+            const enriched = enrichClientRTScores(data);
             if (freeTab === 'movies') {
                 setFreeMovies(enriched);
             } else {
@@ -345,11 +381,11 @@ export function HomeRedesign({
     // Dynamic mixed list for "Upcoming" trailers
     const upcomingTrailers: TMDBTrendingResult[] = [];
     for (let i = 0; i < 6; i++) {
-        if (initialUpcomingMovies[i]) {
-            upcomingTrailers.push({ ...initialUpcomingMovies[i], media_type: 'movie' });
+        if (upcomingMovies[i]) {
+            upcomingTrailers.push({ ...upcomingMovies[i], media_type: 'movie' });
         }
-        if (initialUpcomingShows[i]) {
-            upcomingTrailers.push({ ...initialUpcomingShows[i], media_type: 'tv' });
+        if (upcomingShows[i]) {
+            upcomingTrailers.push({ ...upcomingShows[i], media_type: 'tv' });
         }
     }
 
@@ -697,42 +733,49 @@ export function HomeRedesign({
                         </Link>
                     </div>
 
-                    <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 snap-x">
-                        {currentFreeItems.map((item: TMDBTrendingResult) => (
-                            <div
-                                key={item.id}
-                                onClick={() => handleFreeItemClick(item)}
-                                className="w-[160px] sm:w-[200px] shrink-0 snap-start bg-[#12121a] border border-border/40 hover:border-accent/40 rounded-2xl p-4 space-y-3 cursor-pointer group transition-all hover:scale-[1.02] shadow-lg flex flex-col justify-between"
-                            >
-                                <div className="space-y-2">
-                                    <div className="aspect-[2/3] w-full rounded-xl overflow-hidden bg-background-elevated relative border border-border/20">
-                                        {item.poster_path ? (
-                                            // eslint-disable-next-line @next/next/no-img-element
-                                            <img
-                                                src={`https://image.tmdb.org/t/p/w342${item.poster_path}`}
-                                                alt={item.title || item.name || ''}
-                                                className="h-full w-full object-cover"
-                                            />
-                                        ) : (
-                                            <div className="flex h-full w-full items-center justify-center text-foreground-subtle">
-                                                <HelpCircle className="h-8 w-8" />
-                                            </div>
-                                        )}
-                                        <div className="absolute top-2 left-2 rounded-md bg-emerald-500/95 px-2 py-0.5 text-[9px] font-bold text-background uppercase tracking-wider font-sans">
-                                            Free
-                                        </div>
-                                    </div>
-                                    <h3 className="font-bold text-xs truncate group-hover:text-accent transition-colors">
-                                        {item.title || item.name}
-                                    </h3>
-                                </div>
-
-                                <div className="bg-background-elevated rounded-xl p-2.5 text-[10px] text-foreground-muted text-center flex items-center justify-center gap-1.5 hover:bg-background-elevated-hover transition-colors">
-                                    <Eye className="h-3 w-3 text-accent" />
-                                    <span>Free Streaming Info</span>
-                                </div>
+                    <div className="relative min-h-[250px]">
+                        {isLoadingFree ? (
+                            <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-[2px] rounded-2xl z-10">
+                                <Loader2 className="h-8 w-8 text-accent animate-spin" />
                             </div>
-                        ))}
+                        ) : null}
+                        <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 snap-x">
+                            {currentFreeItems.map((item: TMDBTrendingResult) => (
+                                <div
+                                    key={item.id}
+                                    onClick={() => handleFreeItemClick(item)}
+                                    className="w-[160px] sm:w-[200px] shrink-0 snap-start bg-[#12121a] border border-border/40 hover:border-accent/40 rounded-2xl p-4 space-y-3 cursor-pointer group transition-all hover:scale-[1.02] shadow-lg flex flex-col justify-between"
+                                >
+                                    <div className="space-y-2">
+                                        <div className="aspect-[2/3] w-full rounded-xl overflow-hidden bg-background-elevated relative border border-border/20">
+                                            {item.poster_path ? (
+                                                // eslint-disable-next-line @next/next/no-img-element
+                                                <img
+                                                    src={`https://image.tmdb.org/t/p/w342${item.poster_path}`}
+                                                    alt={item.title || item.name || ''}
+                                                    className="h-full w-full object-cover"
+                                                />
+                                            ) : (
+                                                <div className="flex h-full w-full items-center justify-center text-foreground-subtle">
+                                                    <HelpCircle className="h-8 w-8" />
+                                                </div>
+                                            )}
+                                            <div className="absolute top-2 left-2 rounded-md bg-emerald-500/95 px-2 py-0.5 text-[9px] font-bold text-background uppercase tracking-wider font-sans">
+                                                Free
+                                            </div>
+                                        </div>
+                                        <h3 className="font-bold text-xs truncate group-hover:text-accent transition-colors">
+                                            {item.title || item.name}
+                                        </h3>
+                                    </div>
+
+                                    <div className="bg-background-elevated rounded-xl p-2.5 text-[10px] text-foreground-muted text-center flex items-center justify-center gap-1.5 hover:bg-background-elevated-hover transition-colors">
+                                        <Eye className="h-3 w-3 text-accent" />
+                                        <span>Free Streaming Info</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </section>
 

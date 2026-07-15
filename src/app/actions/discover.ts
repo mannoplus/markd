@@ -123,43 +123,70 @@ export async function getTrendingAction(type: 'movie' | 'tv', timeWindow: 'day' 
     }
 }
 
-export async function getStrictlyFreeMediaAction(type: 'movie' | 'tv', startPage: number = 1) {
-    try {
-        // Fetch 3 pages of discover results in parallel to ensure a large pool of items
-        const pagesToFetch = [startPage, startPage + 1, startPage + 2];
-        const responses = await Promise.all(
-            pagesToFetch.map(p => discoverMedia(type, {
+export async function fetchStrictlyFreeQuota(type: 'movie' | 'tv', startPage: number = 1, quota: number = 15) {
+    let page = startPage;
+    const results: any[] = [];
+    while (results.length < quota && page <= 50) {
+        try {
+            const data = await discoverMedia(type, {
                 with_watch_monetization_types: 'free|ads',
                 watch_region: 'US',
                 sort_by: 'popularity.desc',
-                page: String(p)
-            }))
-        );
-
-        const allCandidates = responses.flatMap(r => r.results || []);
-
-        // Strictly verify that the watch providers returned contain free or ad-supported stream methods
-        const checkedCandidates = await Promise.all(
-            allCandidates.map(async (item) => {
-                try {
-                    const providers = await getWatchProviders(item.id, type);
-                    if (providers) {
-                        const hasFree = (providers.ads && providers.ads.length > 0) ||
-                                        (providers.free && providers.free.length > 0);
-                        if (hasFree) {
-                            return item;
+                page: String(page)
+            });
+            const candidates = data.results || [];
+            const checked = await Promise.all(
+                candidates.map(async (item) => {
+                    try {
+                        const providers = await getWatchProviders(item.id, type);
+                        if (providers) {
+                            const hasFree = (providers.ads && providers.ads.length > 0) ||
+                                            (providers.free && providers.free.length > 0);
+                            if (hasFree) return item;
                         }
+                    } catch (e) {
+                        console.error(`Failed to filter watch provider in loop for ${item.id}:`, e);
                     }
-                } catch (e) {
-                    console.error(`Failed to filter free provider for ${item.id}:`, e);
+                    return null;
+                })
+            );
+            for (const item of checked) {
+                if (item && !results.some(r => r.id === item.id)) {
+                    results.push(item);
+                }
+            }
+        } catch (e) {
+            console.error(`Error in fetchStrictlyFreeQuota loop:`, e);
+        }
+        page++;
+    }
+    return results.slice(0, quota);
+}
+
+export async function getStrictlyFreeQuotaAction(type: 'movie' | 'tv', startPage: number = 1) {
+    try {
+        return await fetchStrictlyFreeQuota(type, startPage, 15);
+    } catch (error) {
+        console.error('Failed getStrictlyFreeQuotaAction:', error);
+        return [];
+    }
+}
+
+export async function getUpcomingWithTrailersAction(type: 'movie' | 'tv') {
+    try {
+        const raw = type === 'movie' ? await getUpcomingMovies('TW') : await getUpcomingTVShows('TW');
+        const checked = await Promise.all(
+            raw.map(async (item) => {
+                const trailerKey = await getMediaTrailer(type, item.id);
+                if (trailerKey) {
+                    return { ...item, trailerKey, media_type: type };
                 }
                 return null;
             })
         );
-
-        return checkedCandidates.filter((item): item is any => item !== null);
-    } catch (error) {
-        console.error('Failed getStrictlyFreeMediaAction:', error);
+        return checked.filter((item): item is any => item !== null);
+    } catch (e) {
+        console.error(`Failed to fetch upcoming trailers for ${type}:`, e);
         return [];
     }
 }
