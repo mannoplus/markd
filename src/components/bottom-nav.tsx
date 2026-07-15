@@ -2,7 +2,7 @@
 
 import { Link } from '@/i18n/routing';
 import { usePathname } from 'next/navigation';
-import { Search, Library, LayoutDashboard, TrendingUp } from 'lucide-react';
+import { Film, Tv, Library, LayoutDashboard } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 export function BottomNav() {
@@ -10,8 +10,8 @@ export function BottomNav() {
     const pathname = usePathname();
 
     const NAV_LINKS = [
-        { href: '/now-showing', label: t('nowShowing'), icon: TrendingUp },
-        { href: '/search', label: t('searchLink'), icon: Search },
+        { href: '/movies', label: t('movies'), icon: Film },
+        { href: '/tv-shows', label: t('tvShows'), icon: Tv },
         { href: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
         { href: '/library', label: t('library'), icon: Library },
     ];

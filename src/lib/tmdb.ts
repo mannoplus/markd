@@ -1014,3 +1014,94 @@ export async function getBoxOfficeModalDetails(movieId: number): Promise<BoxOffi
         return null;
     }
 }
+
+/**
+ * Get the list of watch regions supported by TMDB.
+ */
+export async function getWatchRegions(): Promise<{ iso_3166_1: string; english_name: string; native_name: string }[]> {
+    const data = await tmdbFetch<{ results: { iso_3166_1: string; english_name: string; native_name: string }[] }>(
+        '/watch/providers/regions',
+        {},
+        86400 // Cache regions for 24 hours
+    );
+    return data.results || [];
+}
+
+/**
+ * Get the list of genres for movies or TV shows.
+ */
+export async function getGenresList(type: 'movie' | 'tv'): Promise<{ id: number; name: string }[]> {
+    const data = await tmdbFetch<{ genres: { id: number; name: string }[] }>(
+        `/genre/${type}/list`,
+        {},
+        86400 // Cache genres for 24 hours
+    );
+    return data.genres || [];
+}
+
+/**
+ * Search for movies, TV shows, and people simultaneously.
+ * Keep people results to query actors.
+ */
+export async function searchMultiWithPeople(
+    query: string,
+    page: number = 1
+): Promise<{ results: TMDBSearchResult[]; total_pages: number; total_results: number }> {
+    const data = await tmdbFetch<{
+        results: TMDBSearchResult[];
+        total_pages: number;
+        total_results: number;
+    }>('/search/multi', {
+        query,
+        page: String(page),
+        include_adult: 'false',
+    }, 600); // cache search results for 10 min
+
+    return data;
+}
+
+/**
+ * Discover movies or TV shows with flexible parameters.
+ */
+export async function discoverMedia(
+    type: 'movie' | 'tv',
+    params: Record<string, string>
+): Promise<{ results: TMDBTrendingResult[]; total_pages: number; total_results: number }> {
+    const data = await tmdbFetch<{
+        results: Omit<TMDBTrendingResult, 'media_type'>[];
+        total_pages: number;
+        total_results: number;
+    }>(`/discover/${type}`, params, 300); // Cache for 5 mins to allow filtering interactivity
+
+    return {
+        ...data,
+        results: data.results?.map(item => ({
+            ...item,
+            media_type: type
+        })) || []
+    };
+}
+
+/**
+ * Get category media for standard list endpoints (popular, top_rated, etc.).
+ */
+export async function getCategoryMedia(
+    endpoint: string,
+    page: number = 1
+): Promise<{ results: TMDBTrendingResult[]; total_pages: number; total_results: number }> {
+    const data = await tmdbFetch<{
+        results: Omit<TMDBTrendingResult, 'media_type'>[];
+        total_pages: number;
+        total_results: number;
+    }>(endpoint, { page: String(page) }, 1800); // Cache category pages for 30 min
+
+    const type = endpoint.startsWith('/movie') ? 'movie' : 'tv';
+    return {
+        ...data,
+        results: data.results?.map(item => ({
+            ...item,
+            media_type: type
+        })) || []
+    };
+}
+

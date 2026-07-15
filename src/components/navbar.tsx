@@ -2,21 +2,24 @@
 
 import { Link } from '@/i18n/routing';
 import { usePathname } from 'next/navigation';
-import { Search, Library, LayoutDashboard, LogIn, Menu, X, TrendingUp } from 'lucide-react';
+import { Search, Library, LayoutDashboard, LogIn, X, TrendingUp, Film, Tv } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 import { useTranslations } from 'next-intl';
+import { SearchOverlay } from '@/components/search-overlay';
 
 export function Navbar() {
     const t = useTranslations('Navigation');
     const pathname = usePathname();
     const [user, setUser] = useState<User | null>(null);
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
 
     const NAV_LINKS = [
-        { href: '/search', label: t('searchLink'), icon: Search },
+        { href: '/movies', label: t('movies'), icon: Film },
+        { href: '/tv-shows', label: t('tvShows'), icon: Tv },
         { href: '/now-showing', label: t('nowShowing'), icon: TrendingUp },
         { href: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
         { href: '/library', label: t('library'), icon: Library },
@@ -38,7 +41,27 @@ export function Navbar() {
         return () => subscription.unsubscribe();
     }, []);
 
-    // No mobile menu logic needed anymore
+    // Listen for ⌘K or / shortcuts
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+                e.preventDefault();
+                setIsSearchOpen(true);
+            }
+            if (e.key === '/') {
+                if (
+                    document.activeElement?.tagName !== 'INPUT' &&
+                    document.activeElement?.tagName !== 'TEXTAREA'
+                ) {
+                    e.preventDefault();
+                    setIsSearchOpen(true);
+                }
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
 
     return (
         <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border pt-safe">
@@ -58,7 +81,7 @@ export function Navbar() {
                         return (
                             <Link
                                 key={href}
-                                href={href as any}
+                                href={href as Parameters<typeof Link>[0]['href']}
                                 className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-[var(--transition-fast)] ${isActive
                                     ? 'bg-accent-muted text-accent'
                                     : 'text-foreground-muted hover:bg-background-elevated hover:text-foreground'
@@ -73,6 +96,26 @@ export function Navbar() {
 
                 {/* Auth + Mobile toggle */}
                 <div className="flex items-center gap-3 flex-shrink-0">
+                    {/* Search Trigger Buttons */}
+                    <button
+                        onClick={() => setIsSearchOpen(true)}
+                        className="hidden md:flex items-center gap-2 rounded-lg border border-border bg-background-secondary px-3.5 py-2 text-xs font-semibold text-foreground-muted hover:text-foreground hover:bg-background-elevated hover:border-border-hover transition-all cursor-pointer select-none"
+                    >
+                        <Search className="h-3.5 w-3.5" />
+                        <span className="max-w-[120px] lg:max-w-none truncate">{t('searchPlaceholderDesktop')}</span>
+                        <kbd className="hidden lg:inline-flex h-4 select-none items-center gap-0.5 rounded border border-border bg-background-elevated px-1.5 font-mono text-[9px] font-medium text-foreground-subtle">
+                            ⌘K
+                        </kbd>
+                    </button>
+
+                    <button
+                        onClick={() => setIsSearchOpen(true)}
+                        className="flex md:hidden h-8 w-8 items-center justify-center rounded-lg border border-border bg-background-secondary hover:bg-background-elevated hover:border-border-hover text-foreground-muted hover:text-foreground transition-all cursor-pointer"
+                        aria-label="Search"
+                    >
+                        <Search className="h-4 w-4" />
+                    </button>
+
                     <LanguageSwitcher />
 
                     {user ? (
@@ -131,6 +174,8 @@ export function Navbar() {
 
                 </div>
             </nav>
+
+            <SearchOverlay isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
         </header>
     );
 }

@@ -35,14 +35,16 @@ export interface TMDBSearchResult {
     id: number;
     media_type: 'movie' | 'tv' | 'person';
     title?: string;        // movies
-    name?: string;         // tv shows
-    poster_path: string | null;
-    backdrop_path: string | null;
-    overview: string;
-    vote_average: number;
+    name?: string;         // tv shows & people
+    poster_path?: string | null;
+    profile_path?: string | null; // people
+    known_for_department?: string; // people
+    backdrop_path?: string | null;
+    overview?: string;
+    vote_average?: number;
     release_date?: string; // movies
     first_air_date?: string; // tv shows
-    genre_ids: number[];
+    genre_ids?: number[];
     rtScore?: string;
     rtStatus?: 'fresh' | 'rotten';
 }
