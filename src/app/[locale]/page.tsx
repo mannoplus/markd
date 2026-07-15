@@ -5,10 +5,33 @@ import {
   getUpcomingTVShows,
   discoverMedia,
   getCategoryMedia,
+  getWatchProviders,
 } from '@/lib/tmdb';
 import { HeroCarousel } from '@/components/hero-carousel';
 import { HomeRedesign } from '@/components/home/HomeRedesign';
 import { getTranslations } from 'next-intl/server';
+
+// Server-side filter to ensure 100% free streaming content
+async function filterStrictlyFree(items: any[], type: 'movie' | 'tv') {
+  const results = await Promise.all(
+    items.map(async (item) => {
+      try {
+        const providers = await getWatchProviders(item.id, type);
+        if (!providers) return null;
+        // Check if it has ad-supported ('ads') or genuinely free streaming ('free') providers in the region (defaults to US)
+        const hasFree = (providers.ads && providers.ads.length > 0) ||
+                        (providers.free && providers.free.length > 0);
+        if (hasFree) {
+          return item;
+        }
+      } catch (e) {
+        console.error(`Failed to filter watch providers for ${type} ${item.id}:`, e);
+      }
+      return null;
+    })
+  );
+  return results.filter((item): item is any => item !== null);
+}
 
 export default async function Home({
   searchParams,
@@ -30,8 +53,10 @@ export default async function Home({
     streamingTrailersData,
     rentTrailersData,
     theaterTrailersData,
-    freeMoviesData,
-    freeShowsData,
+    freeMoviesDataPage1,
+    freeMoviesDataPage2,
+    freeShowsDataPage1,
+    freeShowsDataPage2,
   ] = await Promise.all([
     getNowPlaying('TW'), // Default Taiwan for In Cinemas
     getTrending('movie', 'day'),
@@ -42,8 +67,10 @@ export default async function Home({
     discoverMedia('movie', { with_watch_monetization_types: 'flatrate', watch_region: 'US', sort_by: 'popularity.desc' }),
     discoverMedia('movie', { with_watch_monetization_types: 'rent', watch_region: 'US', sort_by: 'popularity.desc' }),
     getCategoryMedia('/movie/now_playing'),
-    discoverMedia('movie', { with_watch_monetization_types: 'free|ads', watch_region: 'US', sort_by: 'popularity.desc' }),
-    discoverMedia('tv', { with_watch_monetization_types: 'free|ads', watch_region: 'US', sort_by: 'popularity.desc' }),
+    discoverMedia('movie', { with_watch_monetization_types: 'free|ads', watch_region: 'US', sort_by: 'popularity.desc', page: '1' }),
+    discoverMedia('movie', { with_watch_monetization_types: 'free|ads', watch_region: 'US', sort_by: 'popularity.desc', page: '2' }),
+    discoverMedia('tv', { with_watch_monetization_types: 'free|ads', watch_region: 'US', sort_by: 'popularity.desc', page: '1' }),
+    discoverMedia('tv', { with_watch_monetization_types: 'free|ads', watch_region: 'US', sort_by: 'popularity.desc', page: '2' }),
   ]);
 
   // RT Fallback & Dynamic OMDb Injector Helper
@@ -141,12 +168,21 @@ export default async function Home({
     );
   };
 
+  // Filter and merge strictly free items
+  const rawFreeMovies = [...(freeMoviesDataPage1.results || []), ...(freeMoviesDataPage2.results || [])];
+  const rawFreeShows = [...(freeShowsDataPage1.results || []), ...(freeShowsDataPage2.results || [])];
+
+  const strictlyFreeMovies = await filterStrictlyFree(rawFreeMovies, 'movie');
+  const strictlyFreeShows = await filterStrictlyFree(rawFreeShows, 'tv');
+
   // Enrich initial datasets
-  const enrichedNowPlaying = await injectRTScores(nowPlaying.slice(0, 4));
+  const enrichedNowPlaying = await injectRTScores(nowPlaying.slice(0, 8)); // Fetch up to 8 movies for cinemas density
   const enrichedTrendingMovies = await injectRTScores(trendingMovies.slice(0, 5));
   const enrichedTrendingShows = await injectRTScores(trendingShows.slice(0, 5));
   const enrichedUpcomingMovies = await injectRTScores(upcomingMovies.slice(0, 10));
   const enrichedUpcomingShows = await injectRTScores(upcomingShows.slice(0, 10));
+  const enrichedFreeMovies = await injectRTScores(strictlyFreeMovies.slice(0, 10));
+  const enrichedFreeShows = await injectRTScores(strictlyFreeShows.slice(0, 10));
 
   // Dynamic mixed Trending Carousel (5 Trending Movies + 5 Trending TV Shows alternating)
   const carouselMix: any[] = [];
@@ -174,8 +210,8 @@ export default async function Home({
           initialTheaterTrailers={theaterTrailersData.results || []}
           initialUpcomingMovies={enrichedUpcomingMovies}
           initialUpcomingShows={enrichedUpcomingShows}
-          initialFreeMovies={freeMoviesData.results || []}
-          initialFreeShows={freeShowsData.results || []}
+          initialFreeMovies={enrichedFreeMovies}
+          initialFreeShows={enrichedFreeShows}
         />
       </div>
     </div>

@@ -81,9 +81,6 @@ export function HeroCarousel({ movies }: HeroCarouselProps) {
 
             {/* Content */}
             <div className="relative z-10 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col items-start gap-4 fade-in">
-                <div className="inline-flex items-center rounded-full bg-accent/20 px-3 py-1 text-sm font-medium text-accent backdrop-blur-md border border-accent/20 transition-all duration-300">
-                    {t('heroBadge')}
-                </div>
                 {/* Wrap text in a key'd div to animate slide changes */}
                 <div key={currentMovie.id} className="fade-in max-w-4xl space-y-4">
                     <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight drop-shadow-xl">
