@@ -42,9 +42,9 @@ export async function discoverMediaAction(type: 'movie' | 'tv', params: Record<s
     }
 }
 
-export async function getCategoryMediaAction(endpoint: string, page: number = 1) {
+export async function getCategoryMediaAction(endpoint: string, page: number = 1, region?: string) {
     try {
-        return await getCategoryMedia(endpoint, page);
+        return await getCategoryMedia(endpoint, page, region);
     } catch (error) {
         console.error(`Failed to fetch category media action for ${endpoint}:`, error);
         throw error;
@@ -114,23 +114,29 @@ export async function getUpcomingTVShowsAction(region: string) {
     }
 }
 
-export async function getTrendingAction(type: 'movie' | 'tv', timeWindow: 'day' | 'week' = 'day') {
+export async function getTrendingAction(type: 'movie' | 'tv', timeWindow: 'day' | 'week' = 'day', region: string = 'TW') {
     try {
-        return await getTrending(type, timeWindow);
+        // Query discoverMedia localized to region sorted by popularity to represent local trending
+        const data = await discoverMedia(type, {
+            region,
+            watch_region: region,
+            sort_by: 'popularity.desc',
+        });
+        return data.results || [];
     } catch (error) {
         console.error(`Failed getTrendingAction for ${type}:`, error);
         return [];
     }
 }
 
-export async function fetchStrictlyFreeQuota(type: 'movie' | 'tv', startPage: number = 1, quota: number = 15) {
+export async function fetchStrictlyFreeQuota(type: 'movie' | 'tv', startPage: number = 1, quota: number = 15, region: string = 'TW') {
     let page = startPage;
     const results: any[] = [];
     while (results.length < quota && page <= 50) {
         try {
             const data = await discoverMedia(type, {
                 with_watch_monetization_types: 'free|ads',
-                watch_region: 'US',
+                watch_region: region,
                 sort_by: 'popularity.desc',
                 page: String(page)
             });
@@ -138,7 +144,7 @@ export async function fetchStrictlyFreeQuota(type: 'movie' | 'tv', startPage: nu
             const checked = await Promise.all(
                 candidates.map(async (item) => {
                     try {
-                        const providers = await getWatchProviders(item.id, type);
+                        const providers = await getWatchProviders(item.id, type, region);
                         if (providers) {
                             const hasFree = (providers.ads && providers.ads.length > 0) ||
                                             (providers.free && providers.free.length > 0);
@@ -163,18 +169,18 @@ export async function fetchStrictlyFreeQuota(type: 'movie' | 'tv', startPage: nu
     return results.slice(0, quota);
 }
 
-export async function getStrictlyFreeQuotaAction(type: 'movie' | 'tv', startPage: number = 1) {
+export async function getStrictlyFreeQuotaAction(type: 'movie' | 'tv', startPage: number = 1, region: string = 'TW') {
     try {
-        return await fetchStrictlyFreeQuota(type, startPage, 15);
+        return await fetchStrictlyFreeQuota(type, startPage, 15, region);
     } catch (error) {
         console.error('Failed getStrictlyFreeQuotaAction:', error);
         return [];
     }
 }
 
-export async function getUpcomingWithTrailersAction(type: 'movie' | 'tv') {
+export async function getUpcomingWithTrailersAction(type: 'movie' | 'tv', region: string = 'TW') {
     try {
-        const raw = type === 'movie' ? await getUpcomingMovies('TW') : await getUpcomingTVShows('TW');
+        const raw = type === 'movie' ? await getUpcomingMovies(region) : await getUpcomingTVShows(region);
         const checked = await Promise.all(
             raw.map(async (item) => {
                 const trailerKey = await getMediaTrailer(type, item.id);

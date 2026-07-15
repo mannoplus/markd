@@ -494,11 +494,9 @@ export async function getTVShowRTScore(imdbId: string): Promise<{ rtScore?: stri
  */
 export async function getWatchProviders(
     id: number,
-    type: MediaType
+    type: MediaType,
+    region: string = process.env.NEXT_PUBLIC_WATCH_REGION || 'TW'
 ): Promise<TMDBWatchProviderResult | null> {
-    const region =
-        process.env.NEXT_PUBLIC_WATCH_REGION || 'TW';
-
     const data = await tmdbFetch<{
         results: Record<string, TMDBWatchProviderResult>;
     }>(`/${type}/${id}/watch/providers`);
@@ -1087,13 +1085,18 @@ export async function discoverMedia(
  */
 export async function getCategoryMedia(
     endpoint: string,
-    page: number = 1
+    page: number = 1,
+    region?: string
 ): Promise<{ results: TMDBTrendingResult[]; total_pages: number; total_results: number }> {
+    const params: Record<string, string> = { page: String(page) };
+    if (region) {
+        params.region = region;
+    }
     const data = await tmdbFetch<{
         results: Omit<TMDBTrendingResult, 'media_type'>[];
         total_pages: number;
         total_results: number;
-    }>(endpoint, { page: String(page) }, 1800); // Cache category pages for 30 min
+    }>(endpoint, params, 1800); // Cache category pages for 30 min
 
     const type = endpoint.startsWith('/movie') ? 'movie' : 'tv';
     return {

@@ -1,5 +1,4 @@
 import {
-  getTrending,
   getNowPlaying,
   getUpcomingMovies,
   getUpcomingTVShows,
@@ -38,7 +37,7 @@ export default async function Home({
   const resolvedParams = await searchParams;
   const region = typeof resolvedParams.region === 'string' ? resolvedParams.region : 'TW';
 
-  // Fetch all initial data in parallel
+  // Fetch all initial data in parallel, fully localized by region parameter
   const [
     nowPlaying,
     trendingMovies,
@@ -50,21 +49,21 @@ export default async function Home({
     rentTrailersData,
     theaterTrailersData,
   ] = await Promise.all([
-    getNowPlaying('TW'), // Default Taiwan for In Cinemas
-    getTrending('movie', 'day'),
-    getTrending('tv', 'day'),
-    getUpcomingMovies('TW'),
-    getUpcomingTVShows('TW'),
-    getCategoryMedia('/movie/popular'),
-    discoverMedia('movie', { with_watch_monetization_types: 'flatrate', watch_region: 'US', sort_by: 'popularity.desc' }),
-    discoverMedia('movie', { with_watch_monetization_types: 'rent', watch_region: 'US', sort_by: 'popularity.desc' }),
-    getCategoryMedia('/movie/now_playing'),
+    getNowPlaying(region), // Localized In Cinemas
+    discoverMedia('movie', { region, watch_region: region, sort_by: 'popularity.desc' }), // Localized Trending Movies
+    discoverMedia('tv', { region, watch_region: region, sort_by: 'popularity.desc' }), // Localized Trending TV Shows
+    getUpcomingMovies(region),
+    getUpcomingTVShows(region),
+    getCategoryMedia('/movie/popular', 1, region),
+    discoverMedia('movie', { with_watch_monetization_types: 'flatrate', watch_region: region, sort_by: 'popularity.desc' }),
+    discoverMedia('movie', { with_watch_monetization_types: 'rent', watch_region: region, sort_by: 'popularity.desc' }),
+    getCategoryMedia('/movie/now_playing', 1, region),
   ]);
 
-  // Fetch free content with strict 15-item quota loops
+  // Fetch free content with strict 15-item quota loops, localized to current region
   const [strictlyFreeMovies, strictlyFreeShows] = await Promise.all([
-    fetchStrictlyFreeQuota('movie', 1, 15),
-    fetchStrictlyFreeQuota('tv', 1, 15),
+    fetchStrictlyFreeQuota('movie', 1, 15, region),
+    fetchStrictlyFreeQuota('tv', 1, 15, region),
   ]);
 
   // RT Fallback & Dynamic OMDb Injector Helper
@@ -167,12 +166,12 @@ export default async function Home({
 
   // Enrich initial datasets
   const enrichedNowPlaying = await injectRTScores(nowPlaying); // Fetch all movies for cinemas dynamically
-  const enrichedTrendingMovies = await injectRTScores(trendingMovies.slice(0, 6)); // Display exactly 6 trending movies
-  const enrichedTrendingShows = await injectRTScores(trendingShows.slice(0, 6)); // Display exactly 6 trending TV shows
+  const enrichedTrendingMovies = await injectRTScores(trendingMovies.results?.slice(0, 6) || []); // Display exactly 6 trending movies
+  const enrichedTrendingShows = await injectRTScores(trendingShows.results?.slice(0, 6) || []); // Display exactly 6 trending TV shows
   const enrichedUpcomingMovies = await injectRTScores(validatedUpcomingMovies.slice(0, 10));
   const enrichedUpcomingShows = await injectRTScores(validatedUpcomingShows.slice(0, 10));
-  const enrichedFreeMovies = await injectRTScores(strictlyFreeMovies); // Already sliced to 15 in the loop
-  const enrichedFreeShows = await injectRTScores(strictlyFreeShows); // Already sliced to 15 in the loop
+  const enrichedFreeMovies = await injectRTScores(strictlyFreeMovies); // Exactly 15 free movies
+  const enrichedFreeShows = await injectRTScores(strictlyFreeShows); // Exactly 15 free TV shows
 
   // Dynamic mixed Trending Carousel (6 Trending Movies + 6 Trending TV Shows alternating, total 12)
   const carouselMix: any[] = [];
