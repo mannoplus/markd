@@ -546,7 +546,7 @@ export async function getNowPlaying(
 export async function getUpcomingMovies(
     region: string = 'TW'
 ): Promise<TMDBTrendingResult[]> {
-    const today = '2026-03-27';
+    const today = new Date().toISOString().split('T')[0];
     const data = await tmdbFetch<{ results: TMDBTrendingResult[] }>(
         `/discover/movie`,
         { 
@@ -570,7 +570,7 @@ export async function getUpcomingMovies(
 export async function getUpcomingTVShows(
     region: string = 'TW'
 ): Promise<TMDBTrendingResult[]> {
-    const today = '2026-03-27';
+    const today = new Date().toISOString().split('T')[0];
     // Status filter: 0: Returning Series, 1: Planned, 2: In Production, 5: Pilot
     // We want to avoid 3: Ended and 4: Canceled
     const data = await tmdbFetch<{ results: TMDBTrendingResult[] }>(

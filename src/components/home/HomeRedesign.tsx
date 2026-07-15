@@ -389,48 +389,38 @@ export function HomeRedesign({
             </section>
 
             {/* ====================================================
-                SECTION 2: IN CINEMAS (UI OVERHAUL)
+                SECTION 2: IN CINEMAS
                ==================================================== */}
             <section className="space-y-6">
-                <div className="flex items-center justify-between border-b border-border/40 pb-4">
-                    <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/40 pb-4">
+                    <div className="flex flex-wrap items-center gap-3">
                         <h2 className="text-2xl font-bold tracking-tight">In Cinemas</h2>
+                        {/* Sleek, small, integrated region selector */}
+                        <div className="relative">
+                            <select
+                                value={cinemaCountry}
+                                onChange={(e) => handleCountryClick(e.target.value)}
+                                className="appearance-none bg-background-elevated border border-border/40 rounded-lg pl-3 pr-8 py-1 text-xs font-semibold text-foreground-muted hover:text-foreground focus:outline-none focus:border-accent cursor-pointer transition-all"
+                            >
+                                {CINEMA_COUNTRIES.map((c) => (
+                                    <option key={c.code} value={c.code} className="bg-[#1c1c28]">
+                                        {c.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-foreground-muted pointer-events-none" />
+                        </div>
                         <span className="flex items-center gap-1 text-xs text-foreground-muted">
                             <MapPin className="h-3 w-3 text-accent" />
                             Showing in Theaters
                         </span>
                     </div>
-                    <Link
-                        href={`/movies?category=now_playing&region=${cinemaCountry}`}
-                        className="text-sm font-semibold text-accent hover:text-accent-hover transition-colors"
-                    >
-                        See More →
-                    </Link>
-                </div>
 
-                <div className="flex flex-col gap-6">
-                    {/* Compact Modern Dropdown & Update Control bar */}
-                    <div className="flex flex-wrap items-center gap-3 bg-[#12121a] border border-border/40 rounded-2xl p-4 self-start">
-                        <span className="text-xs font-bold text-foreground-muted uppercase tracking-wider">Region:</span>
-                        <div className="relative">
-                            <select
-                                value={cinemaCountry}
-                                onChange={(e) => handleCountryClick(e.target.value)}
-                                className="appearance-none bg-background-elevated border border-border/40 rounded-xl pl-4 pr-10 py-2.5 text-xs font-semibold text-foreground focus:outline-none focus:border-accent cursor-pointer min-w-[180px] transition-all"
-                            >
-                                {CINEMA_COUNTRIES.map((c) => (
-                                    <option key={c.code} value={c.code} className="bg-[#1c1c28]">
-                                        {c.name} ({c.code})
-                                    </option>
-                                ))}
-                            </select>
-                            <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-foreground-muted pointer-events-none" />
-                        </div>
-
+                    <div className="flex items-center gap-4">
                         <button
                             onClick={() => handleCountryClick(cinemaCountry)}
                             disabled={isLoadingCinemas}
-                            className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-4 py-2.5 text-xs font-semibold text-foreground hover:bg-background-elevated transition-all active:scale-95 disabled:opacity-50"
+                            className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-xs font-semibold text-foreground hover:bg-background-elevated transition-all active:scale-95 disabled:opacity-50"
                         >
                             {isLoadingCinemas ? (
                                 <Loader2 className="h-3 w-3 animate-spin" />
@@ -439,31 +429,37 @@ export function HomeRedesign({
                             )}
                             Update
                         </button>
-                    </div>
 
-                    {/* Movie Grid (Capacity expanded to display up to 8 movies) */}
-                    <div className="relative min-h-[300px]">
-                        {isLoadingCinemas ? (
-                            <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-[2px] rounded-2xl z-10">
-                                <Loader2 className="h-8 w-8 text-accent animate-spin" />
-                            </div>
-                        ) : null}
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-                            {nowPlayingMovies.map((movie: TMDBTrendingResult) => (
-                                <div key={movie.id} className="fade-in">
-                                    <MovieCard
-                                        id={movie.id}
-                                        title={movie.title || movie.name || ''}
-                                        posterPath={movie.poster_path}
-                                        voteAverage={movie.vote_average}
-                                        releaseDate={movie.release_date || movie.first_air_date}
-                                        mediaType="movie"
-                                        rtScore={movie.rtScore}
-                                        rtStatus={movie.rtStatus}
-                                    />
-                                </div>
-                            ))}
+                        <Link
+                            href={`/movies?category=now_playing&region=${cinemaCountry}`}
+                            className="text-sm font-semibold text-accent hover:text-accent-hover transition-colors"
+                        >
+                            See More →
+                        </Link>
+                    </div>
+                </div>
+
+                <div className="relative min-h-[300px]">
+                    {isLoadingCinemas ? (
+                        <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-[2px] rounded-2xl z-10">
+                            <Loader2 className="h-8 w-8 text-accent animate-spin" />
                         </div>
+                    ) : null}
+                    <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 snap-x">
+                        {nowPlayingMovies.map((movie: TMDBTrendingResult) => (
+                            <div key={movie.id} className="w-[160px] sm:w-[200px] shrink-0 snap-start fade-in">
+                                <MovieCard
+                                    id={movie.id}
+                                    title={movie.title || movie.name || ''}
+                                    posterPath={movie.poster_path}
+                                    voteAverage={movie.vote_average}
+                                    releaseDate={movie.release_date || movie.first_air_date}
+                                    mediaType="movie"
+                                    rtScore={movie.rtScore}
+                                    rtStatus={movie.rtStatus}
+                                />
+                            </div>
+                        ))}
                     </div>
                 </div>
             </section>
@@ -625,15 +621,15 @@ export function HomeRedesign({
                     </Link>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-                    {currentFreeItems.slice(0, 10).map((item: TMDBTrendingResult) => (
+                <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 snap-x">
+                    {currentFreeItems.map((item: TMDBTrendingResult) => (
                         <div
                             key={item.id}
                             onClick={() => handleFreeItemClick(item)}
-                            className="bg-[#12121a] border border-border/40 hover:border-accent/40 rounded-2xl p-4 space-y-3 cursor-pointer group transition-all hover:scale-[1.02] shadow-lg flex flex-col justify-between"
+                            className="w-[160px] sm:w-[200px] shrink-0 snap-start bg-[#12121a] border border-border/40 hover:border-accent/40 rounded-2xl p-4 space-y-3 cursor-pointer group transition-all hover:scale-[1.02] shadow-lg flex flex-col justify-between"
                         >
                             <div className="space-y-2">
-                                <div className="aspect-[2/3] w-full rounded-xl overflow-hidden bg-background-elevated relative">
+                                <div className="aspect-[2/3] w-full rounded-xl overflow-hidden bg-background-elevated relative border border-border/20">
                                     {item.poster_path ? (
                                         // eslint-disable-next-line @next/next/no-img-element
                                         <img

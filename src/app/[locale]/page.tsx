@@ -176,13 +176,13 @@ export default async function Home({
   const strictlyFreeShows = await filterStrictlyFree(rawFreeShows, 'tv');
 
   // Enrich initial datasets
-  const enrichedNowPlaying = await injectRTScores(nowPlaying.slice(0, 8)); // Fetch up to 8 movies for cinemas density
+  const enrichedNowPlaying = await injectRTScores(nowPlaying); // Fetch all movies for cinemas dynamically
   const enrichedTrendingMovies = await injectRTScores(trendingMovies.slice(0, 5));
   const enrichedTrendingShows = await injectRTScores(trendingShows.slice(0, 5));
   const enrichedUpcomingMovies = await injectRTScores(upcomingMovies.slice(0, 10));
   const enrichedUpcomingShows = await injectRTScores(upcomingShows.slice(0, 10));
-  const enrichedFreeMovies = await injectRTScores(strictlyFreeMovies.slice(0, 10));
-  const enrichedFreeShows = await injectRTScores(strictlyFreeShows.slice(0, 10));
+  const enrichedFreeMovies = await injectRTScores(strictlyFreeMovies.slice(0, 20));
+  const enrichedFreeShows = await injectRTScores(strictlyFreeShows.slice(0, 20));
 
   // Dynamic mixed Trending Carousel (5 Trending Movies + 5 Trending TV Shows alternating)
   const carouselMix: any[] = [];
