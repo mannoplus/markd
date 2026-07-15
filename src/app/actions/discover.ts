@@ -7,6 +7,11 @@ import {
     getCategoryMedia,
     searchMultiWithPeople,
     searchKeywords,
+    getMediaTrailer,
+    getWatchProviders,
+    getNowPlaying,
+    getUpcomingMovies,
+    getUpcomingTVShows,
 } from '@/lib/tmdb';
 
 export async function getWatchRegionsAction() {
@@ -62,4 +67,50 @@ export async function searchKeywordsAction(query: string) {
         return [];
     }
 }
+
+export async function getMediaTrailerAction(type: 'movie' | 'tv', id: number) {
+    try {
+        return await getMediaTrailer(type, id);
+    } catch (error) {
+        console.error('Failed getMediaTrailerAction:', error);
+        return null;
+    }
+}
+
+export async function getNowPlayingAction(region: string) {
+    try {
+        return await getNowPlaying(region);
+    } catch (error) {
+        console.error('Failed getNowPlayingAction:', error);
+        return [];
+    }
+}
+
+export async function getWatchProvidersAction(id: number, type: 'movie' | 'tv', region: string = 'US') {
+    try {
+        return await getWatchProviders(id, type === 'movie' ? 'movie' : 'tv');
+    } catch (error) {
+        console.error('Failed getWatchProvidersAction:', error);
+        return null;
+    }
+}
+
+export async function getUpcomingMoviesAction(region: string) {
+    try {
+        return await getUpcomingMovies(region);
+    } catch (error) {
+        console.error('Failed getUpcomingMoviesAction:', error);
+        return [];
+    }
+}
+
+export async function getUpcomingTVShowsAction(region: string) {
+    try {
+        return await getUpcomingTVShows(region);
+    } catch (error) {
+        console.error('Failed getUpcomingTVShowsAction:', error);
+        return [];
+    }
+}
+
 

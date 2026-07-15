@@ -66,7 +66,7 @@ export function HeroCarousel({ movies }: HeroCarouselProps) {
                     >
                         <Image
                             src={url}
-                            alt={movie.title || ''}
+                            alt={movie.title || movie.name || ''}
                             fill
                             className="object-cover object-top"
                             priority={isActive}
@@ -87,14 +87,14 @@ export function HeroCarousel({ movies }: HeroCarouselProps) {
                 {/* Wrap text in a key'd div to animate slide changes */}
                 <div key={currentMovie.id} className="fade-in max-w-4xl space-y-4">
                     <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight drop-shadow-xl">
-                        {currentMovie.title}
+                        {currentMovie.title || currentMovie.name}
                     </h1>
                     <p className="text-foreground-muted text-base sm:text-lg max-w-2xl line-clamp-3 text-shadow-sm">
                         {currentMovie.overview}
                     </p>
                     <div className="mt-4 flex gap-4">
                         <Link
-                            href={`/movie/${currentMovie.id}`}
+                            href={(currentMovie.media_type === 'tv' ? `/tv/${currentMovie.id}` : `/movie/${currentMovie.id}`) as string}
                             className="inline-flex items-center justify-center rounded-full bg-foreground px-8 py-3.5 text-sm font-semibold text-background transition-all hover:bg-foreground-muted hover:scale-105"
                         >
                             {t('viewDetails')}

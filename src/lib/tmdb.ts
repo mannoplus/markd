@@ -1117,4 +1117,22 @@ export async function searchKeywords(query: string): Promise<{ id: number; name:
     return data.results || [];
 }
 
+/**
+ * Get YouTube trailer key for a movie or TV show.
+ */
+export async function getMediaTrailer(type: 'movie' | 'tv', id: number): Promise<string | null> {
+    try {
+        const data = await tmdbFetch<{
+            videos?: { results: TMDBVideo[] };
+        }>(`/${type}/${id}`, { append_to_response: 'videos' }, 86400);
+        const trailer = data.videos?.results?.find((v) => v.type === 'Trailer' && v.site === 'YouTube') || 
+                        data.videos?.results?.find((v) => v.site === 'YouTube') || null;
+        return trailer ? trailer.key : null;
+    } catch (e) {
+        console.error(`Failed to fetch trailer for ${type} ${id}:`, e);
+        return null;
+    }
+}
+
+
 
