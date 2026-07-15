@@ -12,6 +12,7 @@ import {
     getNowPlaying,
     getUpcomingMovies,
     getUpcomingTVShows,
+    getTrending,
 } from '@/lib/tmdb';
 
 export async function getWatchRegionsAction() {
@@ -109,6 +110,56 @@ export async function getUpcomingTVShowsAction(region: string) {
         return await getUpcomingTVShows(region);
     } catch (error) {
         console.error('Failed getUpcomingTVShowsAction:', error);
+        return [];
+    }
+}
+
+export async function getTrendingAction(type: 'movie' | 'tv', timeWindow: 'day' | 'week' = 'day') {
+    try {
+        return await getTrending(type, timeWindow);
+    } catch (error) {
+        console.error(`Failed getTrendingAction for ${type}:`, error);
+        return [];
+    }
+}
+
+export async function getStrictlyFreeMediaAction(type: 'movie' | 'tv', startPage: number = 1) {
+    try {
+        // Fetch 3 pages of discover results in parallel to ensure a large pool of items
+        const pagesToFetch = [startPage, startPage + 1, startPage + 2];
+        const responses = await Promise.all(
+            pagesToFetch.map(p => discoverMedia(type, {
+                with_watch_monetization_types: 'free|ads',
+                watch_region: 'US',
+                sort_by: 'popularity.desc',
+                page: String(p)
+            }))
+        );
+
+        const allCandidates = responses.flatMap(r => r.results || []);
+
+        // Strictly verify that the watch providers returned contain free or ad-supported stream methods
+        const checkedCandidates = await Promise.all(
+            allCandidates.map(async (item) => {
+                try {
+                    const providers = await getWatchProviders(item.id, type);
+                    if (providers) {
+                        const hasFree = (providers.ads && providers.ads.length > 0) ||
+                                        (providers.free && providers.free.length > 0);
+                        if (hasFree) {
+                            return item;
+                        }
+                    }
+                } catch (e) {
+                    console.error(`Failed to filter free provider for ${item.id}:`, e);
+                }
+                return null;
+            })
+        );
+
+        return checkedCandidates.filter((item): item is any => item !== null);
+    } catch (error) {
+        console.error('Failed getStrictlyFreeMediaAction:', error);
         return [];
     }
 }

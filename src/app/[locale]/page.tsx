@@ -6,8 +6,8 @@ import {
   discoverMedia,
   getCategoryMedia,
   getWatchProviders,
+  getMediaTrailer,
 } from '@/lib/tmdb';
-import { HeroCarousel } from '@/components/hero-carousel';
 import { HomeRedesign } from '@/components/home/HomeRedesign';
 import { getTranslations } from 'next-intl/server';
 
@@ -18,7 +18,6 @@ async function filterStrictlyFree(items: any[], type: 'movie' | 'tv') {
       try {
         const providers = await getWatchProviders(item.id, type);
         if (!providers) return null;
-        // Check if it has ad-supported ('ads') or genuinely free streaming ('free') providers in the region (defaults to US)
         const hasFree = (providers.ads && providers.ads.length > 0) ||
                         (providers.free && providers.free.length > 0);
         if (hasFree) {
@@ -26,6 +25,24 @@ async function filterStrictlyFree(items: any[], type: 'movie' | 'tv') {
         }
       } catch (e) {
         console.error(`Failed to filter watch providers for ${type} ${item.id}:`, e);
+      }
+      return null;
+    })
+  );
+  return results.filter((item): item is any => item !== null);
+}
+
+// Server-side filter to verify upcoming media items strictly have video trailers
+async function filterUpcomingWithTrailers(items: any[], type: 'movie' | 'tv') {
+  const results = await Promise.all(
+    items.map(async (item) => {
+      try {
+        const trailerKey = await getMediaTrailer(type, item.id);
+        if (trailerKey) {
+          return { ...item, trailerKey };
+        }
+      } catch (e) {
+        console.error(`Failed to check trailer for ${type} ${item.id}:`, e);
       }
       return null;
     })
@@ -157,7 +174,6 @@ export default async function Home({
             rtScore = `${syntheticScore}%`;
             rtStatus = syntheticScore >= 60 ? 'fresh' : 'rotten';
           } else {
-            // GLOBAL RT ENFORCEMENT: Never leave RT score empty
             rtScore = 'TBD';
             rtStatus = 'fresh';
           }
@@ -175,18 +191,22 @@ export default async function Home({
   const strictlyFreeMovies = await filterStrictlyFree(rawFreeMovies, 'movie');
   const strictlyFreeShows = await filterStrictlyFree(rawFreeShows, 'tv');
 
+  // Verify and filter upcoming trailers (strictly exclude those without trailer video key)
+  const validatedUpcomingMovies = await filterUpcomingWithTrailers(upcomingMovies, 'movie');
+  const validatedUpcomingShows = await filterUpcomingWithTrailers(upcomingShows, 'tv');
+
   // Enrich initial datasets
   const enrichedNowPlaying = await injectRTScores(nowPlaying); // Fetch all movies for cinemas dynamically
-  const enrichedTrendingMovies = await injectRTScores(trendingMovies.slice(0, 5));
-  const enrichedTrendingShows = await injectRTScores(trendingShows.slice(0, 5));
-  const enrichedUpcomingMovies = await injectRTScores(upcomingMovies.slice(0, 10));
-  const enrichedUpcomingShows = await injectRTScores(upcomingShows.slice(0, 10));
-  const enrichedFreeMovies = await injectRTScores(strictlyFreeMovies.slice(0, 20));
-  const enrichedFreeShows = await injectRTScores(strictlyFreeShows.slice(0, 20));
+  const enrichedTrendingMovies = await injectRTScores(trendingMovies.slice(0, 6)); // Display exactly 6 trending movies
+  const enrichedTrendingShows = await injectRTScores(trendingShows.slice(0, 6)); // Display exactly 6 trending TV shows
+  const enrichedUpcomingMovies = await injectRTScores(validatedUpcomingMovies.slice(0, 10));
+  const enrichedUpcomingShows = await injectRTScores(validatedUpcomingShows.slice(0, 10));
+  const enrichedFreeMovies = await injectRTScores(strictlyFreeMovies.slice(0, 20)); // Return up to 20 (>=15) free movies
+  const enrichedFreeShows = await injectRTScores(strictlyFreeShows.slice(0, 20)); // Return up to 20 (>=15) free TV shows
 
-  // Dynamic mixed Trending Carousel (5 Trending Movies + 5 Trending TV Shows alternating)
+  // Dynamic mixed Trending Carousel (6 Trending Movies + 6 Trending TV Shows alternating, total 12)
   const carouselMix: any[] = [];
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 6; i++) {
     if (enrichedTrendingMovies[i]) {
       carouselMix.push({ ...enrichedTrendingMovies[i], media_type: 'movie' });
     }
@@ -196,24 +216,17 @@ export default async function Home({
   }
 
   return (
-    <div className="pb-16 -mt-16 sm:-mt-20">
-      {/* Hero Carousel */}
-      <HeroCarousel movies={carouselMix} />
-
-      {/* Main Content Area */}
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-12 relative z-20">
-        <HomeRedesign
-          initialNowPlaying={enrichedNowPlaying}
-          initialPopularTrailers={popularTrailersData.results || []}
-          initialStreamingTrailers={streamingTrailersData.results || []}
-          initialRentTrailers={rentTrailersData.results || []}
-          initialTheaterTrailers={theaterTrailersData.results || []}
-          initialUpcomingMovies={enrichedUpcomingMovies}
-          initialUpcomingShows={enrichedUpcomingShows}
-          initialFreeMovies={enrichedFreeMovies}
-          initialFreeShows={enrichedFreeShows}
-        />
-      </div>
-    </div>
+    <HomeRedesign
+      initialTrending={carouselMix}
+      initialNowPlaying={enrichedNowPlaying}
+      initialPopularTrailers={popularTrailersData.results || []}
+      initialStreamingTrailers={streamingTrailersData.results || []}
+      initialRentTrailers={rentTrailersData.results || []}
+      initialTheaterTrailers={theaterTrailersData.results || []}
+      initialUpcomingMovies={enrichedUpcomingMovies}
+      initialUpcomingShows={enrichedUpcomingShows}
+      initialFreeMovies={enrichedFreeMovies}
+      initialFreeShows={enrichedFreeShows}
+    />
   );
 }
