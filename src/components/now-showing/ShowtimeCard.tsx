@@ -61,11 +61,11 @@ export default function ShowtimeCard({ movie, onShowtimesClick }: Props) {
     return (
         <div className="group relative rounded-xl overflow-hidden bg-gray-800/50 border border-gray-700/50 hover:bg-gray-800 transition-colors flex flex-col h-full">
             {movie.link ? (
-                <Link href={movie.link as never} className="relative aspect-[4/5] w-full overflow-hidden block">
+                <Link href={movie.link as never} className="relative w-full overflow-hidden block" style={{ aspectRatio: '2/3' }}>
                     {content}
                 </Link>
             ) : (
-                <div className="relative aspect-[4/5] w-full overflow-hidden block">
+                <div className="relative w-full overflow-hidden block" style={{ aspectRatio: '2/3' }}>
                     {content}
                 </div>
             )}

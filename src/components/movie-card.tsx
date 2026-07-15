@@ -70,7 +70,7 @@ export function MovieCard({
         <Link href={href} className="group block" id={`card-${mediaType}-${id}`}>
             <div className="relative overflow-hidden rounded-[var(--radius-lg)] bg-background-card border border-border transition-all duration-[var(--transition-base)] hover:border-border-hover hover:shadow-[var(--shadow-elevated)] hover:-translate-y-1">
                 {/* Poster */}
-                <div className="relative aspect-[2/3] w-full overflow-hidden">
+                <div className="relative w-full overflow-hidden" style={{ aspectRatio: '2/3' }}>
                     {posterPath && !imgError ? (
                         <Image
                             src={`${IMAGE_SIZES.poster.medium}${posterPath}`}
@@ -96,30 +96,30 @@ export function MovieCard({
 
                     {/* Rating badge(s) */}
                     {(rating || rtScore) && (
-                        <div className="absolute top-2 right-2 flex flex-col items-end gap-1">
+                        <div className="absolute top-2 right-2 flex flex-col items-end gap-1 max-w-[45%]">
                             {rating && (
-                                <div className="flex items-center gap-1 rounded-full bg-black/70 px-2 py-0.5 text-xs font-semibold backdrop-blur-sm">
-                                    <Star className="h-3 w-3 fill-accent text-accent" />
-                                    <span>{rating}</span>
+                                <div className="flex items-center gap-1 rounded-full bg-black/70 px-2 py-0.5 text-xs font-semibold backdrop-blur-sm max-w-full">
+                                    <Star className="h-3 w-3 fill-accent text-accent shrink-0" />
+                                    <span className="truncate">{rating}</span>
                                 </div>
                             )}
                             {rtScore && (
-                                <div className={`flex items-center gap-1 rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-bold backdrop-blur-sm ${rtStatus === 'fresh' ? 'text-green-500' : 'text-red-500'}`}>
-                                    <span role="img" aria-label="Rotten Tomatoes">🍅</span>
-                                    <span>{rtScore}</span>
+                                <div className={`flex items-center gap-1 rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-bold backdrop-blur-sm max-w-full ${rtStatus === 'fresh' ? 'text-green-500' : 'text-red-500'}`}>
+                                    <span role="img" aria-label="Rotten Tomatoes" className="shrink-0">🍅</span>
+                                    <span className="truncate">{rtScore}</span>
                                 </div>
                             )}
                         </div>
                     )}
 
                     {/* Media type badge */}
-                    <div className="absolute top-2 left-2 flex items-center gap-1 rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider backdrop-blur-sm">
+                    <div className="absolute top-2 left-2 flex items-center gap-1 rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider backdrop-blur-sm max-w-[45%]">
                         {mediaType === 'tv' ? (
-                            <Tv className="h-3 w-3 text-info" />
+                            <Tv className="h-3 w-3 text-info shrink-0" />
                         ) : (
-                            <Film className="h-3 w-3 text-accent" />
+                            <Film className="h-3 w-3 text-accent shrink-0" />
                         )}
-                        <span>{mediaType === 'tv' ? 'TV' : 'Film'}</span>
+                        <span className="truncate">{mediaType === 'tv' ? 'TV' : 'Film'}</span>
                     </div>
 
                     {/* Status badge */}
@@ -178,7 +178,7 @@ function StatusBadge({ status }: { status: string }) {
 
     return (
         <span
-            className={`inline-block rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${color}`}
+            className={`inline-block rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider max-w-full truncate ${color}`}
         >
             {label}
         </span>

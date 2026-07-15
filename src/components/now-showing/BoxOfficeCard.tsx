@@ -33,7 +33,7 @@ export default function BoxOfficeCard({ movie }: { movie: MovieData }) {
 
     return (
         <div className="group relative rounded-2xl overflow-hidden bg-gray-900 border border-gray-800 transition-all hover:border-indigo-500/50 hover:shadow-[0_0_30px_rgba(99,102,241,0.15)] flex flex-col h-full">
-            <div className="relative aspect-[2/3] w-full overflow-hidden">
+            <div className="relative w-full overflow-hidden" style={{ aspectRatio: '2/3' }}>
                 {movie.rank && (
                     <div className={`absolute top-3 left-3 z-20 w-12 h-12 flex items-center justify-center font-black text-xl rounded-full shadow-[0_4px_10px_rgba(0,0,0,0.5)] border-2 backdrop-blur-md ${getBadgeStyle(movie.rank)}`}>
                         {movie.rank}

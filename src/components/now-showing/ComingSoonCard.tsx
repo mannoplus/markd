@@ -23,7 +23,7 @@ export default function ComingSoonCard({ movie }: { movie: MovieData }) {
 
     return (
         <div className="group relative rounded-xl overflow-hidden bg-gray-900 border border-pink-500/10 hover:border-pink-500/40 transition-colors flex flex-col h-full shadow-lg">
-            <div className="relative aspect-[4/5] w-full overflow-hidden">
+            <div className="relative w-full overflow-hidden" style={{ aspectRatio: '2/3' }}>
                 <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent z-10 opacity-90"></div>
                 
                 {movie.poster && !imgError ? (
@@ -47,7 +47,7 @@ export default function ComingSoonCard({ movie }: { movie: MovieData }) {
                 )}
                 
                 <div className="absolute inset-x-0 bottom-0 p-4 z-20 flex flex-col items-center text-center">
-                    <span className="inline-block px-3 py-1 mb-3 text-[10px] font-bold uppercase tracking-widest text-pink-300 bg-pink-500/20 rounded-full border border-pink-500/30 backdrop-blur-md">
+                    <span className="inline-block px-3 py-1 mb-3 text-[10px] font-bold uppercase tracking-widest text-pink-300 bg-pink-500/20 rounded-full border border-pink-500/30 backdrop-blur-md max-w-full truncate">
                         {t('comingSoonBadge')}
                     </span>
                     <h3 className="font-bold text-white text-md line-clamp-2 leading-snug drop-shadow-md">

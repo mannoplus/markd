@@ -578,9 +578,9 @@ export function HomeRedesign({
                                 <div
                                     key={item.id}
                                     onClick={() => handleTrailerClick(item)}
-                                    className="w-[280px] sm:w-[320px] shrink-0 snap-start group relative rounded-2xl overflow-hidden bg-background-elevated/40 border border-border/40 hover:border-accent/40 transition-all duration-300 cursor-pointer shadow-lg hover:shadow-2xl"
+                                    className="w-64 md:w-80 shrink-0 snap-start group relative rounded-2xl overflow-hidden bg-background-elevated/40 border border-border/40 hover:border-accent/40 transition-all duration-300 cursor-pointer shadow-lg hover:shadow-2xl"
                                 >
-                                    <div className="aspect-video w-full bg-background-elevated relative overflow-hidden">
+                                    <div className="w-full bg-background-elevated relative overflow-hidden" style={{ aspectRatio: '16/9' }}>
                                         {item.backdrop_path ? (
                                             // eslint-disable-next-line @next/next/no-img-element
                                             <img
@@ -659,7 +659,7 @@ export function HomeRedesign({
                         ) : null}
                         <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 snap-x">
                             {nowPlayingMovies.map((movie: TMDBTrendingResult) => (
-                                <div key={movie.id} className="w-[160px] sm:w-[200px] shrink-0 snap-start fade-in">
+                                <div key={movie.id} className="w-40 md:w-48 shrink-0 snap-start fade-in">
                                     <MovieCard
                                         id={movie.id}
                                         title={movie.title || movie.name || ''}
@@ -727,7 +727,7 @@ export function HomeRedesign({
                         ) : null}
                         <div className="flex overflow-x-auto gap-6 pb-4 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 snap-x">
                             {upcomingMovies.map((movie: TMDBTrendingResult) => (
-                                <div key={movie.id} className="w-[160px] sm:w-[200px] shrink-0 snap-start">
+                                <div key={movie.id} className="w-40 md:w-48 shrink-0 snap-start">
                                     <MovieCard
                                         id={movie.id}
                                         title={movie.title || movie.name || ''}
@@ -795,7 +795,7 @@ export function HomeRedesign({
                         ) : null}
                         <div className="flex overflow-x-auto gap-6 pb-4 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 snap-x">
                             {upcomingShows.map((show: TMDBTrendingResult) => (
-                                <div key={show.id} className="w-[160px] sm:w-[200px] shrink-0 snap-start">
+                                <div key={show.id} className="w-40 md:w-48 shrink-0 snap-start">
                                     <MovieCard
                                         id={show.id}
                                         title={show.title || show.name || ''}
@@ -878,10 +878,10 @@ export function HomeRedesign({
                                 <div
                                     key={item.id}
                                     onClick={() => handleFreeItemClick(item)}
-                                    className="w-[160px] sm:w-[200px] shrink-0 snap-start bg-[#12121a] border border-border/40 hover:border-accent/40 rounded-2xl p-4 space-y-3 cursor-pointer group transition-all hover:scale-[1.02] shadow-lg flex flex-col justify-between"
+                                    className="w-40 md:w-48 shrink-0 snap-start bg-[#12121a] border border-border/40 hover:border-accent/40 rounded-2xl p-4 space-y-3 cursor-pointer group transition-all hover:scale-[1.02] shadow-lg flex flex-col justify-between"
                                 >
                                     <div className="space-y-2">
-                                        <div className="aspect-[2/3] w-full rounded-xl overflow-hidden bg-background-elevated relative border border-border/20">
+                                        <div className="w-full rounded-xl overflow-hidden bg-background-elevated relative border border-border/20" style={{ aspectRatio: '2/3' }}>
                                             {item.poster_path ? (
                                                 // eslint-disable-next-line @next/next/no-img-element
                                                 <img
