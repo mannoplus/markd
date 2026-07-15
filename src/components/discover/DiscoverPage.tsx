@@ -242,6 +242,7 @@ export function DiscoverPage({ mediaType }: DiscoverPageProps) {
         fetchPage(1, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
+        isInitialLoad,
         filters.category,
         filters.sort,
         filters.region,

@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Search, Library, LayoutDashboard, LogIn, X, TrendingUp, Film, Tv, ChevronDown } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { LanguageSwitcher } from '@/components/language-switcher';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 import { useTranslations } from 'next-intl';
@@ -17,6 +17,41 @@ export function Navbar() {
     const [user, setUser] = useState<User | null>(null);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [openMenu, setOpenMenu] = useState<string | null>(null);
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    const handleMouseEnter = (href: string) => {
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+            timeoutRef.current = null;
+        }
+        setOpenMenu(href);
+    };
+
+    const handleMouseLeave = () => {
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+        }
+        timeoutRef.current = setTimeout(() => {
+            setOpenMenu(null);
+        }, 300);
+    };
+
+    const handleSubLinkClick = () => {
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+            timeoutRef.current = null;
+        }
+        setOpenMenu(null);
+    };
+
+    // Clean up timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+        };
+    }, []);
 
     const NAV_LINKS = [
         { href: '/movies', label: t('movies'), icon: Film },
@@ -107,8 +142,8 @@ export function Navbar() {
                                 <div
                                     key={href}
                                     className="relative py-2"
-                                    onMouseEnter={() => setOpenMenu(href)}
-                                    onMouseLeave={() => setOpenMenu(null)}
+                                    onMouseEnter={() => handleMouseEnter(href)}
+                                    onMouseLeave={handleMouseLeave}
                                 >
                                     <button
                                         type="button"
@@ -133,7 +168,7 @@ export function Navbar() {
                                             <Link
                                                 key={item.href}
                                                 href={item.href as Parameters<typeof Link>[0]['href']}
-                                                onClick={() => setOpenMenu(null)}
+                                                onClick={handleSubLinkClick}
                                                 className="w-full text-left rounded-lg px-3 py-2 text-xs font-semibold text-foreground-muted hover:bg-background-elevated hover:text-foreground transition-all truncate"
                                             >
                                                 {item.label}
