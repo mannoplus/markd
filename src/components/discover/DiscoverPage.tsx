@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
+import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 import type { TMDBTrendingResult } from '@/types';
@@ -36,6 +37,7 @@ interface DiscoverPageProps {
 export function DiscoverPage({ mediaType }: DiscoverPageProps) {
     const t = useTranslations('Discover');
     const config = mediaType === 'movie' ? movieConfig : tvConfig;
+    const searchParams = useSearchParams();
 
     // Supabase Auth State
     const [user, setUser] = useState<User | null>(null);
@@ -101,7 +103,6 @@ export function DiscoverPage({ mediaType }: DiscoverPageProps) {
             });
 
         // Read initial state from URL on mount
-        const searchParams = new URLSearchParams(window.location.search);
         const parsedFilters: DiscoverFilterState = { ...initialFilterState };
 
         if (searchParams.get('category')) parsedFilters.category = searchParams.get('category')!;
@@ -122,6 +123,8 @@ export function DiscoverPage({ mediaType }: DiscoverPageProps) {
         if (searchParams.get('min_votes')) parsedFilters.min_votes = Number(searchParams.get('min_votes'));
         if (searchParams.get('availability')) parsedFilters.availability = searchParams.get('availability')!;
         if (searchParams.get('show_me')) parsedFilters.show_me = searchParams.get('show_me')!;
+        if (searchParams.get('keywords')) parsedFilters.keywords = searchParams.get('keywords')!;
+        if (searchParams.get('keyword_id')) parsedFilters.keyword_id = searchParams.get('keyword_id')!;
 
         // Adjust category default sort if sort is omitted
         if (!searchParams.get('sort')) {
@@ -134,6 +137,77 @@ export function DiscoverPage({ mediaType }: DiscoverPageProps) {
         setIsInitialLoad(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [mediaType]);
+
+    // Listen to URL search params changes to update filters state (e.g. from header nav clicks)
+    useEffect(() => {
+        if (isInitialLoad) return;
+
+        const catParam = searchParams.get('category') || 'popular';
+        const sortParam = searchParams.get('sort') || '';
+        const regionParam = searchParams.get('region') || '';
+        const releaseTypesParam = searchParams.get('release_types') ? searchParams.get('release_types')!.split('|') : [];
+        const genresParam = searchParams.get('genres') ? searchParams.get('genres')!.split(',') : [];
+        const fromDateParam = searchParams.get('from_date') || '';
+        const toDateParam = searchParams.get('to_date') || '';
+        const minScoreParam = searchParams.get('min_score') ? Number(searchParams.get('min_score')) : 0;
+        const maxScoreParam = searchParams.get('max_score') ? Number(searchParams.get('max_score')) : 10;
+        const minRuntimeParam = searchParams.get('min_runtime') ? Number(searchParams.get('min_runtime')) : 0;
+        const maxRuntimeParam = searchParams.get('max_runtime') ? Number(searchParams.get('max_runtime')) : 400;
+        const minVotesParam = searchParams.get('min_votes') ? Number(searchParams.get('min_votes')) : 0;
+        const availabilityParam = searchParams.get('availability') || 'any';
+        const showMeParam = searchParams.get('show_me') || 'everything';
+        const keywordsParam = searchParams.get('keywords') || '';
+        const keywordIdParam = searchParams.get('keyword_id') || '';
+
+        // Resolve sort
+        let targetSort = sortParam;
+        if (!sortParam) {
+            const catConfig = config.categories.find((c) => c.value === catParam) || config.categories[0];
+            targetSort = catConfig.defaultSort;
+        }
+
+        // Check if anything has actually changed to prevent loops
+        const hasChanged =
+            filters.category !== catParam ||
+            filters.sort !== targetSort ||
+            filters.region !== regionParam ||
+            filters.from_date !== fromDateParam ||
+            filters.to_date !== toDateParam ||
+            filters.min_score !== minScoreParam ||
+            filters.max_score !== maxScoreParam ||
+            filters.min_runtime !== minRuntimeParam ||
+            filters.max_runtime !== maxRuntimeParam ||
+            filters.min_votes !== minVotesParam ||
+            filters.availability !== availabilityParam ||
+            filters.show_me !== showMeParam ||
+            filters.keywords !== keywordsParam ||
+            filters.keyword_id !== keywordIdParam ||
+            JSON.stringify(filters.genres) !== JSON.stringify(genresParam) ||
+            JSON.stringify(filters.release_types) !== JSON.stringify(releaseTypesParam);
+
+        if (hasChanged) {
+            setFilters({
+                category: catParam,
+                sort: targetSort,
+                region: regionParam,
+                release_types: releaseTypesParam,
+                genres: genresParam,
+                from_date: fromDateParam,
+                to_date: toDateParam,
+                min_score: minScoreParam,
+                max_score: maxScoreParam,
+                min_runtime: minRuntimeParam,
+                max_runtime: maxRuntimeParam,
+                min_votes: minVotesParam,
+                availability: availabilityParam,
+                show_me: showMeParam,
+                keywords: keywordsParam,
+                keyword_id: keywordIdParam,
+            });
+            prevCategoryRef.current = catParam;
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchParams, mediaType, isInitialLoad, config]);
 
     // Handle filter serialization & data fetching
     useEffect(() => {
@@ -158,6 +232,8 @@ export function DiscoverPage({ mediaType }: DiscoverPageProps) {
         if (filters.min_votes > 0) params.set('min_votes', String(filters.min_votes));
         if (filters.availability !== 'any') params.set('availability', filters.availability);
         if (filters.show_me !== 'everything') params.set('show_me', filters.show_me);
+        if (filters.keywords) params.set('keywords', filters.keywords);
+        if (filters.keyword_id) params.set('keyword_id', filters.keyword_id);
 
         const newSearch = params.toString();
         const nextUrl = newSearch ? `${window.location.pathname}?${newSearch}` : window.location.pathname;
@@ -175,6 +251,8 @@ export function DiscoverPage({ mediaType }: DiscoverPageProps) {
         filters.to_date,
         filters.availability,
         filters.show_me,
+        filters.keywords,
+        filters.keyword_id,
         debouncedMinScore,
         debouncedMaxScore,
         debouncedMinRuntime,
@@ -260,7 +338,7 @@ export function DiscoverPage({ mediaType }: DiscoverPageProps) {
     const isFiltered = isSidebarActive(filters, config.defaultSort);
 
     return (
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 space-y-8 min-h-screen">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-24 pb-8 md:pt-28 space-y-8 min-h-screen">
             {/* Top Navigation Category Row */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border pb-6">
                 <div className="space-y-1">

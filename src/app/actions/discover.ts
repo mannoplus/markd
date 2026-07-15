@@ -6,6 +6,7 @@ import {
     discoverMedia,
     getCategoryMedia,
     searchMultiWithPeople,
+    searchKeywords,
 } from '@/lib/tmdb';
 
 export async function getWatchRegionsAction() {
@@ -52,3 +53,13 @@ export async function searchMultiWithPeopleAction(query: string, page: number = 
         return { results: [], total_pages: 0, total_results: 0 };
     }
 }
+
+export async function searchKeywordsAction(query: string) {
+    try {
+        return await searchKeywords(query);
+    } catch (error) {
+        console.error('Failed to search keywords action:', error);
+        return [];
+    }
+}
+

@@ -24,7 +24,15 @@
         "boxOffice": "票房",
         "nowShowing": "現正上映",
         "signOut": "登出",
-        "deleteAccount": "刪除帳號"
+        "deleteAccount": "刪除帳號",
+        "popular": "熱門",
+        "nowPlaying": "現正上映",
+        "upcoming": "即將上映",
+        "topRated": "最高評分",
+        "airingToday": "今日播出",
+        "onTv": "電視播放",
+        "newReleases": "本週新片",
+        "comingSoon": "即將上映"
     },
     "Home": {
         "nowPlaying": "現正熱映",
@@ -259,6 +267,9 @@
         "noMoreResults": "沒有更多結果",
         "loadingMore": "載入結果中...",
         "loadMore": "載入更多結果",
-        "showFiltersButton": "展開篩選與排序"
+        "showFiltersButton": "切換篩選與排序",
+        "filterKeywords": "關鍵字",
+        "keywordsPlaceholder": "依關鍵字篩選...",
+        "keywordsSearchButton": "搜尋"
     }
 }

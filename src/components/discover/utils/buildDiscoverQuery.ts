@@ -13,6 +13,8 @@ export interface DiscoverFilterState {
     min_votes: number;
     availability: string; // 'any' | 'streaming' | 'theaters' | 'tv'
     show_me: string; // 'everything' | 'unseen'
+    keywords: string; // keyword query string
+    keyword_id: string; // keyword ID from TMDB
 }
 
 export const initialFilterState: DiscoverFilterState = {
@@ -30,6 +32,8 @@ export const initialFilterState: DiscoverFilterState = {
     min_votes: 0,
     availability: 'any',
     show_me: 'everything',
+    keywords: '',
+    keyword_id: '',
 };
 
 /**
@@ -60,6 +64,11 @@ export function buildDiscoverQueryParams(
     // Genres
     if (state.genres.length > 0) {
         params['with_genres'] = state.genres.join(',');
+    }
+
+    // Keywords
+    if (state.keyword_id) {
+        params['with_keywords'] = state.keyword_id;
     }
 
     // Release Date Range
@@ -126,6 +135,7 @@ export function isSidebarActive(
     if (state.min_votes > 0) return true;
     if (state.availability !== 'any') return true;
     if (state.show_me !== 'everything') return true;
+    if (state.keywords !== '') return true;
 
     return false;
 }

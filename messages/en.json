@@ -24,7 +24,15 @@
         "boxOffice": "Box Office",
         "nowShowing": "Now Showing",
         "signOut": "Sign Out",
-        "deleteAccount": "Delete Account"
+        "deleteAccount": "Delete Account",
+        "popular": "Popular",
+        "nowPlaying": "Now Playing",
+        "upcoming": "Upcoming",
+        "topRated": "Top Rated",
+        "airingToday": "Airing Today",
+        "onTv": "On TV",
+        "newReleases": "New Releases",
+        "comingSoon": "Coming Soon"
     },
     "Home": {
         "nowPlaying": "Now Playing in Cinemas",
@@ -259,6 +267,9 @@
         "noMoreResults": "No more results to show",
         "loadingMore": "Loading results...",
         "loadMore": "Load More Results",
-        "showFiltersButton": "Toggle Filters & Sorting"
+        "showFiltersButton": "Toggle Filters & Sorting",
+        "filterKeywords": "Keywords",
+        "keywordsPlaceholder": "Filter by keywords...",
+        "keywordsSearchButton": "Search"
     }
 }

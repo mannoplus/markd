@@ -1105,3 +1105,16 @@ export async function getCategoryMedia(
     };
 }
 
+/**
+ * Search for keywords matching a text query.
+ */
+export async function searchKeywords(query: string): Promise<{ id: number; name: string }[]> {
+    const data = await tmdbFetch<{ results: { id: number; name: string }[] }>(
+        '/search/keyword',
+        { query },
+        86400 // Cache keyword searches for 24 hours
+    );
+    return data.results || [];
+}
+
+

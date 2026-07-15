@@ -109,7 +109,7 @@ export default function Dashboard() {
 
             <div className="max-w-7xl mx-auto px-6 lg:px-8 space-y-24">
                 {/* Box Office Section */}
-                <section>
+                <section id="box-office" className="scroll-mt-24">
                     <div className="flex items-center justify-between mb-10">
                         <h2 className="text-3xl font-bold tracking-tight border-l-4 border-indigo-500 pl-4">{t('boxOffice')}</h2>
                     </div>
@@ -121,7 +121,7 @@ export default function Dashboard() {
                 </section>
 
                 {/* This Week New Releases Section */}
-                <section>
+                <section id="new-releases" className="scroll-mt-24">
                     <div className="flex items-center justify-between mb-10">
                         <h2 className="text-3xl font-bold tracking-tight border-l-4 border-purple-500 pl-4">{t('newReleases')}</h2>
                     </div>
@@ -133,7 +133,7 @@ export default function Dashboard() {
                 </section>
 
                 {/* Coming Soon Section */}
-                <section>
+                <section id="coming-soon" className="scroll-mt-24">
                     <div className="flex items-center justify-between mb-10">
                         <h2 className="text-3xl font-bold tracking-tight border-l-4 border-pink-500 pl-4">{t('comingSoon')}</h2>
                     </div>

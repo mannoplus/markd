@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, RefreshCw, Info } from 'lucide-react';
+import { ChevronDown, RefreshCw, Info, Calendar, Search } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { DiscoverFilterState } from './utils/buildDiscoverQuery';
+import { searchKeywordsAction } from '@/app/actions/discover';
 
 interface Genre {
     id: number;
@@ -36,10 +37,45 @@ export function FiltersSection({
         score: false,
         runtime: false,
         votes: false,
+        keywords: false,
     });
 
     const toggleSection = (section: string) => {
         setOpenSections((prev) => ({ ...prev, [section]: !prev[section] }));
+    };
+
+    // Keyword Filter Local State and Submit
+    const [keywordInput, setKeywordInput] = useState(state.keywords);
+    const [prevKeywords, setPrevKeywords] = useState(state.keywords);
+
+    if (state.keywords !== prevKeywords) {
+        setPrevKeywords(state.keywords);
+        setKeywordInput(state.keywords);
+    }
+
+    const handleKeywordSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!keywordInput.trim()) {
+            onChange({ keywords: '', keyword_id: '' });
+            return;
+        }
+
+        try {
+            const results = await searchKeywordsAction(keywordInput.trim());
+            if (results && results.length > 0) {
+                onChange({
+                    keywords: keywordInput.trim(),
+                    keyword_id: String(results[0].id)
+                });
+            } else {
+                onChange({
+                    keywords: keywordInput.trim(),
+                    keyword_id: '99999999' // fallback ID resulting in empty results
+                });
+            }
+        } catch (err) {
+            console.error('Failed to search keywords:', err);
+        }
     };
 
     // Date range validation
@@ -82,6 +118,8 @@ export function FiltersSection({
             min_votes: 0,
             availability: 'any',
             show_me: 'everything',
+            keywords: '',
+            keyword_id: '',
         });
     };
 
@@ -192,7 +230,7 @@ export function FiltersSection({
             </div>
 
             {/* Release Date Range */}
-            <div className="border border-border rounded-xl bg-background-card overflow-hidden">
+            <div className={`border border-border rounded-xl bg-background-card ${openSections.dates ? 'overflow-visible' : 'overflow-hidden'}`}>
                 <button
                     type="button"
                     onClick={() => toggleSection('dates')}
@@ -202,24 +240,30 @@ export function FiltersSection({
                     <ChevronDown className={`h-4 w-4 text-foreground-muted transition-transform duration-200 ${openSections.dates ? 'rotate-180' : ''}`} />
                 </button>
                 {openSections.dates && (
-                    <div className="px-4 pb-4 pt-2 space-y-4 border-t border-border/40">
+                    <div className="px-4 pb-4 pt-2 space-y-4 border-t border-border/40 overflow-visible">
                         <div className="space-y-1.5">
                             <label className="text-xs text-foreground-muted font-semibold block">{t('dateFrom')}</label>
-                            <input
-                                type="date"
-                                value={state.from_date}
-                                onChange={(e) => handleDateChange('from_date', e.target.value)}
-                                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-foreground focus:outline-none focus:ring-1 focus:ring-foreground"
-                            />
+                            <div className="relative flex items-center overflow-visible">
+                                <input
+                                    type="date"
+                                    value={state.from_date}
+                                    onChange={(e) => handleDateChange('from_date', e.target.value)}
+                                    className="w-full rounded-lg border border-border bg-background pl-3 pr-10 py-2.5 text-sm text-foreground focus:border-foreground focus:outline-none focus:ring-1 focus:ring-foreground cursor-pointer relative z-10 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                                />
+                                <Calendar className="absolute right-3 h-4 w-4 text-foreground-muted pointer-events-none z-20" />
+                            </div>
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-xs text-foreground-muted font-semibold block">{t('dateTo')}</label>
-                            <input
-                                type="date"
-                                value={state.to_date}
-                                onChange={(e) => handleDateChange('to_date', e.target.value)}
-                                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-foreground focus:outline-none focus:ring-1 focus:ring-foreground"
-                            />
+                            <div className="relative flex items-center overflow-visible">
+                                <input
+                                    type="date"
+                                    value={state.to_date}
+                                    onChange={(e) => handleDateChange('to_date', e.target.value)}
+                                    className="w-full rounded-lg border border-border bg-background pl-3 pr-10 py-2.5 text-sm text-foreground focus:border-foreground focus:outline-none focus:ring-1 focus:ring-foreground cursor-pointer relative z-10 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                                />
+                                <Calendar className="absolute right-3 h-4 w-4 text-foreground-muted pointer-events-none z-20" />
+                            </div>
                         </div>
                         {dateError && (
                             <p className="text-xs font-semibold text-error">{dateError}</p>
@@ -337,6 +381,38 @@ export function FiltersSection({
                             className="w-full cursor-pointer h-2 bg-background-elevated rounded-full border border-border appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-foreground [&::-webkit-slider-thumb]:shadow-md"
                         />
                     </div>
+                )}
+            </div>
+
+            {/* Keywords Filter */}
+            <div className="border border-border rounded-xl bg-background-card overflow-hidden">
+                <button
+                    type="button"
+                    onClick={() => toggleSection('keywords')}
+                    className="flex items-center justify-between w-full px-4 py-3.5 text-sm font-bold text-foreground text-left focus:outline-none"
+                >
+                    <span>{t('filterKeywords') || 'Keywords'}</span>
+                    <ChevronDown className={`h-4 w-4 text-foreground-muted transition-transform duration-200 ${openSections.keywords ? 'rotate-180' : ''}`} />
+                </button>
+                {openSections.keywords && (
+                    <form onSubmit={handleKeywordSubmit} className="px-4 pb-4 pt-2 border-t border-border/40 space-y-3">
+                        <div className="relative flex items-center">
+                            <input
+                                type="text"
+                                value={keywordInput}
+                                onChange={(e) => setKeywordInput(e.target.value)}
+                                placeholder={t('keywordsPlaceholder') || 'Filter by keywords...'}
+                                className="w-full rounded-lg border border-border bg-background pl-3 pr-10 py-2.5 text-sm text-foreground focus:border-foreground focus:outline-none focus:ring-1 focus:ring-foreground"
+                            />
+                            <Search className="absolute right-3 h-4 w-4 text-foreground-muted pointer-events-none" />
+                        </div>
+                        <button
+                            type="submit"
+                            className="w-full rounded-lg bg-accent text-background hover:bg-accent-hover font-bold py-2 text-xs transition-colors cursor-pointer select-none"
+                        >
+                            {t('keywordsSearchButton') || 'Search'}
+                        </button>
+                    </form>
                 )}
             </div>
         </div>

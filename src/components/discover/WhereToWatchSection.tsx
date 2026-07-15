@@ -101,7 +101,7 @@ export function WhereToWatchSection({
                     </button>
 
                     {isOpen && (
-                        <div className="absolute left-0 mt-2 w-full max-h-72 rounded-xl border border-border bg-background-elevated p-2 shadow-2xl glass z-50 flex flex-col overflow-hidden animate-in fade-in zoom-in-95">
+                        <div className="absolute left-0 mt-2 w-full max-h-72 rounded-xl border border-border bg-background-elevated p-2 shadow-2xl z-50 flex flex-col overflow-hidden animate-in fade-in zoom-in-95">
                             {/* Search bar inside country picker */}
                             <div className="relative flex items-center mb-2 px-2 pt-1 flex-shrink-0">
                                 <Search className="absolute left-5 h-4 w-4 text-foreground-subtle" />

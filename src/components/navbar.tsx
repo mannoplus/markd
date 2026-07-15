@@ -2,7 +2,7 @@
 
 import { Link } from '@/i18n/routing';
 import { usePathname } from 'next/navigation';
-import { Search, Library, LayoutDashboard, LogIn, X, TrendingUp, Film, Tv } from 'lucide-react';
+import { Search, Library, LayoutDashboard, LogIn, X, TrendingUp, Film, Tv, ChevronDown } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { useState, useEffect } from 'react';
@@ -16,6 +16,7 @@ export function Navbar() {
     const pathname = usePathname();
     const [user, setUser] = useState<User | null>(null);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [openMenu, setOpenMenu] = useState<string | null>(null);
 
     const NAV_LINKS = [
         { href: '/movies', label: t('movies'), icon: Film },
@@ -24,6 +25,26 @@ export function Navbar() {
         { href: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
         { href: '/library', label: t('library'), icon: Library },
     ];
+
+    const dropdownMenus: Record<string, { label: string; href: string }[]> = {
+        '/movies': [
+            { label: t('popular'), href: '/movies?category=popular' },
+            { label: t('nowPlaying'), href: '/movies?category=now_playing' },
+            { label: t('upcoming'), href: '/movies?category=upcoming' },
+            { label: t('topRated'), href: '/movies?category=top_rated' },
+        ],
+        '/tv-shows': [
+            { label: t('popular'), href: '/tv-shows?category=popular' },
+            { label: t('airingToday'), href: '/tv-shows?category=airing_today' },
+            { label: t('onTv'), href: '/tv-shows?category=on_tv' },
+            { label: t('topRated'), href: '/tv-shows?category=top_rated' },
+        ],
+        '/now-showing': [
+            { label: t('boxOffice'), href: '/now-showing#box-office' },
+            { label: t('newReleases'), href: '/now-showing#new-releases' },
+            { label: t('comingSoon'), href: '/now-showing#coming-soon' },
+        ],
+    };
 
     useEffect(() => {
         const supabase = createClient();
@@ -78,6 +99,51 @@ export function Navbar() {
                 <div className="hidden items-center gap-1 md:flex">
                     {NAV_LINKS.map(({ href, label, icon: Icon }) => {
                         const isActive = pathname.startsWith(href);
+                        const items = dropdownMenus[href];
+
+                        if (items) {
+                            const isOpen = openMenu === href;
+                            return (
+                                <div
+                                    key={href}
+                                    className="relative py-2"
+                                    onMouseEnter={() => setOpenMenu(href)}
+                                    onMouseLeave={() => setOpenMenu(null)}
+                                >
+                                    <button
+                                        type="button"
+                                        onClick={() => setOpenMenu(isOpen ? null : href)}
+                                        className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-[var(--transition-fast)] cursor-pointer select-none ${isActive
+                                            ? 'bg-accent-muted text-accent'
+                                            : 'text-foreground-muted hover:bg-background-elevated hover:text-foreground'
+                                            }`}
+                                    >
+                                        <Icon className="h-4 w-4" />
+                                        {label}
+                                        <ChevronDown className={`h-3 w-3 text-foreground-muted opacity-50 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                                    </button>
+
+                                    <div
+                                        className={`absolute top-full left-0 mt-1 w-44 rounded-xl border border-border bg-[#1c1c28] p-1.5 shadow-2xl z-50 flex flex-col transition-all duration-150 origin-top-left ${isOpen
+                                            ? 'opacity-100 scale-100 pointer-events-auto'
+                                            : 'opacity-0 scale-95 pointer-events-none'
+                                            }`}
+                                    >
+                                        {items.map((item) => (
+                                            <Link
+                                                key={item.href}
+                                                href={item.href as Parameters<typeof Link>[0]['href']}
+                                                onClick={() => setOpenMenu(null)}
+                                                className="w-full text-left rounded-lg px-3 py-2 text-xs font-semibold text-foreground-muted hover:bg-background-elevated hover:text-foreground transition-all truncate"
+                                            >
+                                                {item.label}
+                                            </Link>
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        }
+
                         return (
                             <Link
                                 key={href}
