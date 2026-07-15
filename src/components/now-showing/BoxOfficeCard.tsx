@@ -1,5 +1,10 @@
+'use client';
+
+import { useState } from 'react';
 import { Link } from '@/i18n/routing';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
+import { Film } from 'lucide-react';
+import { sanitizeTitle } from '../movie-card';
 
 interface MovieData {
     id: string;
@@ -12,6 +17,11 @@ interface MovieData {
 
 export default function BoxOfficeCard({ movie }: { movie: MovieData }) {
     const t = useTranslations('nowShowing');
+    const locale = useLocale();
+    const [imgError, setImgError] = useState(false);
+
+    const sanitizedTitle = sanitizeTitle(movie.title, locale);
+
     const getBadgeStyle = (rank: number) => {
         switch (rank) {
             case 1: return 'bg-gradient-to-br from-yellow-300 to-yellow-600 text-yellow-950 border-yellow-200';
@@ -31,22 +41,34 @@ export default function BoxOfficeCard({ movie }: { movie: MovieData }) {
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-transparent z-10 opacity-60"></div>
                 
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img 
-                    src={movie.poster} 
-                    alt={movie.title}
-                    className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
-                    loading="lazy"
-                />
+                {movie.poster && !imgError ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img 
+                        src={movie.poster} 
+                        alt={sanitizedTitle}
+                        className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
+                        loading="lazy"
+                        onError={() => setImgError(true)}
+                    />
+                ) : (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-900 to-black border border-border/20 z-0">
+                        <div className="text-center p-4">
+                            <Film className="h-10 w-10 text-indigo-500/60 mx-auto mb-2" />
+                            <div className="text-[10px] font-bold text-gray-400 tracking-wider uppercase font-sans">
+                                {t('posterUnavailable') || 'Poster Unavailable'}
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
             
             <div className="p-4 flex flex-col flex-grow justify-between relative z-20 bg-gray-900">
                 <h3 className="font-bold text-gray-100 line-clamp-2 leading-snug group-hover:text-indigo-400 transition-colors text-lg">
-                    {movie.title}
+                    {sanitizedTitle}
                 </h3>
                 {movie.link && (
                     <Link 
-                        href={movie.link as any} 
+                        href={movie.link as never} 
                         className="mt-4 text-xs font-bold uppercase tracking-wider text-indigo-400 hover:text-indigo-300 inline-flex items-center gap-1 w-fit transition-colors"
                     >
                         {t('viewDetails')}

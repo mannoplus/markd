@@ -523,11 +523,14 @@ export async function getTrending(
  * Get movies currently playing in theaters.
  */
 export async function getNowPlaying(
-    region: string = 'TW'
+    region: string = 'TW',
+    lang?: string
 ): Promise<TMDBTrendingResult[]> {
+    const params: Record<string, string> = { region };
+    if (lang) params.language = lang;
     const data = await tmdbFetch<{ results: TMDBTrendingResult[] }>(
         `/movie/now_playing`,
-        { region },
+        params,
         3600 // cache for 1 hour
     );
 
@@ -542,17 +545,20 @@ export async function getNowPlaying(
  * Get upcoming movies (March 27, 2026 onwards).
  */
 export async function getUpcomingMovies(
-    region: string = 'TW'
+    region: string = 'TW',
+    lang?: string
 ): Promise<TMDBTrendingResult[]> {
     const today = new Date().toISOString().split('T')[0];
+    const params: Record<string, string> = { 
+        region,
+        'primary_release_date.gte': today,
+        'sort_by': 'popularity.desc',
+        'with_release_type': '2|3' // Theatrical focus
+    };
+    if (lang) params.language = lang;
     const data = await tmdbFetch<{ results: TMDBTrendingResult[] }>(
         `/discover/movie`,
-        { 
-            region,
-            'primary_release_date.gte': today,
-            'sort_by': 'popularity.desc',
-            'with_release_type': '2|3' // Theatrical focus
-        },
+        params,
         21600 // cache for 6 hours
     );
 
@@ -566,19 +572,22 @@ export async function getUpcomingMovies(
  * Get upcoming TV shows showing only future releases (2026-03-27 onwards).
  */
 export async function getUpcomingTVShows(
-    region: string = 'TW'
+    region: string = 'TW',
+    lang?: string
 ): Promise<TMDBTrendingResult[]> {
     const today = new Date().toISOString().split('T')[0];
     // Status filter: 0: Returning Series, 1: Planned, 2: In Production, 5: Pilot
     // We want to avoid 3: Ended and 4: Canceled
+    const params: Record<string, string> = { 
+        'first_air_date.gte': today,
+        'sort_by': 'popularity.desc',
+        'with_status': '0|1|2|5',
+        'include_null_first_air_dates': 'false'
+    };
+    if (lang) params.language = lang;
     const data = await tmdbFetch<{ results: TMDBTrendingResult[] }>(
         `/discover/tv`,
-        { 
-            'first_air_date.gte': today,
-            'sort_by': 'popularity.desc',
-            'with_status': '0|1|2|5',
-            'include_null_first_air_dates': 'false'
-        },
+        params,
         21600 // cache for 6 hours
     );
 
@@ -1086,11 +1095,15 @@ export async function discoverMedia(
 export async function getCategoryMedia(
     endpoint: string,
     page: number = 1,
-    region?: string
+    region?: string,
+    lang?: string
 ): Promise<{ results: TMDBTrendingResult[]; total_pages: number; total_results: number }> {
     const params: Record<string, string> = { page: String(page) };
     if (region) {
         params.region = region;
+    }
+    if (lang) {
+        params.language = lang;
     }
     const data = await tmdbFetch<{
         results: Omit<TMDBTrendingResult, 'media_type'>[];

@@ -6,6 +6,7 @@ import { Link } from '@/i18n/routing';
 import { MovieCard } from '@/components/movie-card';
 import { HeroCarousel } from '@/components/hero-carousel';
 import type { TMDBTrendingResult, TMDBWatchProvider, TMDBWatchProviderResult } from '@/types';
+import { useLocale, useTranslations } from 'next-intl';
 import {
     getMediaTrailerAction,
     getNowPlayingAction,
@@ -80,6 +81,11 @@ export function HomeRedesign({
     // ----------------------------------------------------
     // Client State
     // ----------------------------------------------------
+    const locale = useLocale();
+    const t = useTranslations('Home');
+    const tNav = useTranslations('Navigation');
+    const tNowShowing = useTranslations('nowShowing');
+
     const [globalRegion, setGlobalRegion] = useState<string>('TW');
     const [trendingMedia, setTrendingMedia] = useState<TMDBTrendingResult[]>(initialTrending);
     const [trailerTab, setTrailerTab] = useState<'upcoming' | 'popular' | 'streaming' | 'rent' | 'theaters'>('upcoming');
@@ -146,8 +152,8 @@ export function HomeRedesign({
         const interval = setInterval(async () => {
             try {
                 const [movies, shows] = await Promise.all([
-                    getTrendingAction('movie', 'day', globalRegion),
-                    getTrendingAction('tv', 'day', globalRegion),
+                    getTrendingAction('movie', 'day', globalRegion, locale),
+                    getTrendingAction('tv', 'day', globalRegion, locale),
                 ]);
 
                 const mix: TMDBTrendingResult[] = [];
@@ -169,7 +175,7 @@ export function HomeRedesign({
         }, 300000); // 5 minutes
 
         return () => clearInterval(interval);
-    }, [globalRegion]);
+    }, [globalRegion, locale]);
 
     // ----------------------------------------------------
     // Section 1: Latest Trailers 5-Minute Background Sync (linked to globalRegion)
@@ -178,8 +184,8 @@ export function HomeRedesign({
         const interval = setInterval(async () => {
             try {
                 const [movies, shows] = await Promise.all([
-                    getUpcomingWithTrailersAction('movie', globalRegion),
-                    getUpcomingWithTrailersAction('tv', globalRegion),
+                    getUpcomingWithTrailersAction('movie', globalRegion, locale),
+                    getUpcomingWithTrailersAction('tv', globalRegion, locale),
                 ]);
 
                 if (movies.length > 0) {
@@ -204,7 +210,7 @@ export function HomeRedesign({
         }, 300000); // 5 minutes
 
         return () => clearInterval(interval);
-    }, [globalRegion]);
+    }, [globalRegion, locale]);
 
     // ----------------------------------------------------
     // Section 1: Trailer Action Trigger
@@ -234,7 +240,7 @@ export function HomeRedesign({
     const triggerCinemasUpdate = async () => {
         setIsLoadingCinemas(true);
         try {
-            const data = await getNowPlayingAction(globalRegion);
+            const data = await getNowPlayingAction(globalRegion, locale);
             setNowPlayingMovies(enrichClientRTScores(data));
         } catch (e) {
             console.error(e);
@@ -249,7 +255,7 @@ export function HomeRedesign({
     useEffect(() => {
         const interval = setInterval(async () => {
             try {
-                const data = await getNowPlayingAction(globalRegion);
+                const data = await getNowPlayingAction(globalRegion, locale);
                 setNowPlayingMovies(enrichClientRTScores(data));
             } catch (e) {
                 console.error('Failed to background auto-update cinemas:', e);
@@ -257,7 +263,7 @@ export function HomeRedesign({
         }, 21600000); // 6 hours
 
         return () => clearInterval(interval);
-    }, [globalRegion]);
+    }, [globalRegion, locale]);
 
     // ----------------------------------------------------
     // Section 3 & 4: Caching & Auto/Manual Update timers
@@ -319,12 +325,12 @@ export function HomeRedesign({
 
         return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [globalRegion]);
+    }, [globalRegion, locale]);
 
     const triggerMoviesUpdate = async () => {
         setIsUpdatingMovies(true);
         try {
-            const data = await getUpcomingMoviesAction(globalRegion);
+            const data = await getUpcomingMoviesAction(globalRegion, locale);
             const enriched = enrichClientRTScores(data.slice(0, 10));
             setUpcomingMovies(enriched);
             const now = Date.now();
@@ -341,7 +347,7 @@ export function HomeRedesign({
     const triggerShowsUpdate = async () => {
         setIsUpdatingShows(true);
         try {
-            const data = await getUpcomingTVShowsAction(globalRegion);
+            const data = await getUpcomingTVShowsAction(globalRegion, locale);
             const enriched = enrichClientRTScores(data.slice(0, 10));
             setUpcomingShows(enriched);
             const now = Date.now();
@@ -363,7 +369,7 @@ export function HomeRedesign({
         try {
             const randomPage = Math.floor(Math.random() * 20) + 1;
             const type = freeTab === 'movies' ? 'movie' : 'tv';
-            const data = await getStrictlyFreeQuotaAction(type, randomPage, globalRegion);
+            const data = await getStrictlyFreeQuotaAction(type, randomPage, globalRegion, locale);
             const enriched = enrichClientRTScores(data);
             if (freeTab === 'movies') {
                 setFreeMovies(enriched);
@@ -382,7 +388,7 @@ export function HomeRedesign({
         setIsLoadingProviders(true);
         setFreeProviders(null);
         try {
-            const providers = await getWatchProvidersAction(item.id, freeTab === 'movies' ? 'movie' : 'tv', globalRegion);
+            const providers = await getWatchProvidersAction(item.id, freeTab === 'movies' ? 'movie' : 'tv', globalRegion, locale);
             setFreeProviders(providers);
         } catch (e) {
             console.error(e);
@@ -417,17 +423,17 @@ export function HomeRedesign({
                 freeMoviesData,
                 freeShowsData,
             ] = await Promise.all([
-                getTrendingAction('movie', 'day', newRegion),
-                getTrendingAction('tv', 'day', newRegion),
-                getNowPlayingAction(newRegion),
-                getCategoryMediaAction('/movie/popular', 1, newRegion),
-                discoverMediaAction('movie', { with_watch_monetization_types: 'flatrate', watch_region: newRegion, sort_by: 'popularity.desc' }),
-                discoverMediaAction('movie', { with_watch_monetization_types: 'rent', watch_region: newRegion, sort_by: 'popularity.desc' }),
-                getCategoryMediaAction('/movie/now_playing', 1, newRegion),
-                getUpcomingWithTrailersAction('movie', newRegion),
-                getUpcomingWithTrailersAction('tv', newRegion),
-                getStrictlyFreeQuotaAction('movie', 1, newRegion),
-                getStrictlyFreeQuotaAction('tv', 1, newRegion),
+                getTrendingAction('movie', 'day', newRegion, locale),
+                getTrendingAction('tv', 'day', newRegion, locale),
+                getNowPlayingAction(newRegion, locale),
+                getCategoryMediaAction('/movie/popular', 1, newRegion, locale),
+                discoverMediaAction('movie', { with_watch_monetization_types: 'flatrate', watch_region: newRegion, sort_by: 'popularity.desc', language: locale === 'zh-TW' ? 'zh-TW' : 'en-US' }),
+                discoverMediaAction('movie', { with_watch_monetization_types: 'rent', watch_region: newRegion, sort_by: 'popularity.desc', language: locale === 'zh-TW' ? 'zh-TW' : 'en-US' }),
+                getCategoryMediaAction('/movie/now_playing', 1, newRegion, locale),
+                getUpcomingWithTrailersAction('movie', newRegion, locale),
+                getUpcomingWithTrailersAction('tv', newRegion, locale),
+                getStrictlyFreeQuotaAction('movie', 1, newRegion, locale),
+                getStrictlyFreeQuotaAction('tv', 1, newRegion, locale),
             ]);
 
             // Carousel mix (6 movies + 6 shows)
@@ -527,7 +533,9 @@ export function HomeRedesign({
                 <section className="space-y-6">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/40 pb-4">
                         <div className="flex items-center gap-3">
-                            <h2 className="text-2xl font-bold tracking-tight">Latest Trailers</h2>
+                            <h2 className="text-2xl font-bold tracking-tight">
+                                {t('latestTrailers') || 'Latest Trailers'}
+                            </h2>
                             <span className="rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-semibold text-accent font-sans">Hot</span>
                         </div>
 
@@ -542,11 +550,11 @@ export function HomeRedesign({
                                             : 'bg-background-elevated text-foreground-muted hover:bg-background-elevated-hover hover:text-foreground'
                                     }`}
                                 >
-                                    {tab === 'upcoming' && 'Upcoming'}
-                                    {tab === 'popular' && 'Popular'}
-                                    {tab === 'streaming' && 'Streaming on TV'}
-                                    {tab === 'rent' && 'For Rent'}
-                                    {tab === 'theaters' && 'In Theaters'}
+                                    {tab === 'upcoming' && (tNowShowing('upcoming') || 'Upcoming')}
+                                    {tab === 'popular' && (tNowShowing('popular') || 'Popular')}
+                                    {tab === 'streaming' && (tNowShowing('onTv') || 'Streaming on TV')}
+                                    {tab === 'rent' && (tNowShowing('forRent') || 'For Rent')}
+                                    {tab === 'theaters' && (tNowShowing('inTheaters') || 'In Theaters')}
                                 </button>
                             ))}
                         </div>
@@ -555,7 +563,7 @@ export function HomeRedesign({
                             href="/movies?category=popular"
                             className="text-sm font-semibold text-accent hover:text-accent-hover transition-colors"
                         >
-                            See More →
+                            {t('seeMore') || 'See More'} →
                         </Link>
                     </div>
 
@@ -611,10 +619,12 @@ export function HomeRedesign({
                 <section className="space-y-6">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/40 pb-4">
                         <div className="flex items-center gap-3">
-                            <h2 className="text-2xl font-bold tracking-tight">In Cinemas</h2>
+                            <h2 className="text-2xl font-bold tracking-tight">
+                                {t('inCinemas') || 'In Cinemas'}
+                            </h2>
                             <span className="flex items-center gap-1 text-xs text-foreground-muted">
                                 <MapPin className="h-3 w-3 text-accent" />
-                                Showing in Theaters
+                                {tNowShowing('inTheaters') || 'Showing in Theaters'}
                             </span>
                         </div>
 
@@ -629,14 +639,14 @@ export function HomeRedesign({
                                 ) : (
                                     <RotateCw className="h-3 w-3" />
                                 )}
-                                Update
+                                {t('updateBtn') || 'Update'}
                             </button>
 
                             <Link
                                 href={`/movies?category=now_playing&region=${globalRegion}`}
                                 className="text-sm font-semibold text-accent hover:text-accent-hover transition-colors"
                             >
-                                See More →
+                                {t('seeMore') || 'See More'} →
                             </Link>
                         </div>
                     </div>
@@ -672,11 +682,13 @@ export function HomeRedesign({
                 <section className="space-y-6">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/40 pb-4">
                         <div className="space-y-1">
-                            <h2 className="text-2xl font-bold tracking-tight">Upcoming Movies</h2>
+                            <h2 className="text-2xl font-bold tracking-tight">
+                                {t('upcomingMovies') || 'Upcoming Movies'}
+                            </h2>
                             <div className="flex items-center gap-2 text-[10px] font-bold text-foreground-muted uppercase tracking-wider">
                                 <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
                                 <span>
-                                    Last updated:{' '}
+                                    {tNowShowing('lastUpdated') || 'Last updated'}:{' '}
                                     {upcomingMoviesTime > 0
                                         ? new Date(upcomingMoviesTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                                         : 'Updating...'}
@@ -695,14 +707,14 @@ export function HomeRedesign({
                                 ) : (
                                     <RotateCw className="h-3 w-3" />
                                 )}
-                                Update
+                                {t('updateBtn') || 'Update'}
                             </button>
 
                             <Link
                                 href="/movies?category=upcoming"
                                 className="text-sm font-semibold text-accent hover:text-accent-hover transition-colors"
                             >
-                                See More →
+                                {t('seeMore') || 'See More'} →
                             </Link>
                         </div>
                     </div>
@@ -738,11 +750,13 @@ export function HomeRedesign({
                 <section className="space-y-6">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/40 pb-4">
                         <div className="space-y-1">
-                            <h2 className="text-2xl font-bold tracking-tight">Upcoming TV Shows</h2>
+                            <h2 className="text-2xl font-bold tracking-tight">
+                                {t('upcomingTvShows') || 'Upcoming TV Shows'}
+                            </h2>
                             <div className="flex items-center gap-2 text-[10px] font-bold text-foreground-muted uppercase tracking-wider">
                                 <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
                                 <span>
-                                    Last updated:{' '}
+                                    {tNowShowing('lastUpdated') || 'Last updated'}:{' '}
                                     {upcomingShowsTime > 0
                                         ? new Date(upcomingShowsTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                                         : 'Updating...'}
@@ -761,14 +775,14 @@ export function HomeRedesign({
                                 ) : (
                                     <RotateCw className="h-3 w-3" />
                                 )}
-                                Update
+                                {t('updateBtn') || 'Update'}
                             </button>
 
                             <Link
                                 href="/tv-shows?category=upcoming"
                                 className="text-sm font-semibold text-accent hover:text-accent-hover transition-colors"
                             >
-                                See More →
+                                {t('seeMore') || 'See More'} →
                             </Link>
                         </div>
                     </div>
@@ -804,7 +818,9 @@ export function HomeRedesign({
                 <section className="space-y-6">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/40 pb-4">
                         <div className="flex flex-wrap items-center gap-3">
-                            <h2 className="text-2xl font-bold tracking-tight">Free to Watch</h2>
+                            <h2 className="text-2xl font-bold tracking-tight">
+                                {t('freeToWatch') || 'Free to Watch'}
+                            </h2>
                             <div className="flex rounded-full bg-background-elevated p-1">
                                 <button
                                     onClick={() => setFreeTab('movies')}
@@ -814,7 +830,7 @@ export function HomeRedesign({
                                             : 'text-foreground-muted hover:text-foreground'
                                     }`}
                                 >
-                                    Movies
+                                    {tNav('movies')}
                                 </button>
                                 <button
                                     onClick={() => setFreeTab('tv')}
@@ -824,7 +840,7 @@ export function HomeRedesign({
                                             : 'text-foreground-muted hover:text-foreground'
                                     }`}
                                 >
-                                    TV Shows
+                                    {tNav('tvShows')}
                                 </button>
                             </div>
 
@@ -839,7 +855,7 @@ export function HomeRedesign({
                                 ) : (
                                     <RotateCw className="h-3 w-3" />
                                 )}
-                                Update
+                                {t('updateBtn') || 'Update'}
                             </button>
                         </div>
 
@@ -847,7 +863,7 @@ export function HomeRedesign({
                             href={(freeTab === 'movies' ? `/movies?availability=free` : `/tv-shows?availability=free`) as string}
                             className="text-sm font-semibold text-accent hover:text-accent-hover transition-colors"
                         >
-                            See More →
+                            {t('seeMore') || 'See More'} →
                         </Link>
                     </div>
 
@@ -879,7 +895,7 @@ export function HomeRedesign({
                                                 </div>
                                             )}
                                             <div className="absolute top-2 left-2 rounded-md bg-emerald-500/95 px-2 py-0.5 text-[9px] font-bold text-background uppercase tracking-wider font-sans">
-                                                Free
+                                                {t('freeToWatch') || 'Free'}
                                             </div>
                                         </div>
                                         <h3 className="font-bold text-xs truncate group-hover:text-accent transition-colors">
@@ -903,10 +919,10 @@ export function HomeRedesign({
                 <section className="border-t border-border/40 pt-8 mt-12 flex flex-col items-center justify-center space-y-4">
                     <div className="flex flex-col items-center space-y-1">
                         <span className="text-[10px] font-bold text-foreground-muted uppercase tracking-widest">
-                            Global Region Filter
+                            {t('globalRegionFilter') || 'Global Region Filter'}
                         </span>
-                        <h3 className="text-xs text-foreground-muted">
-                            Select region to localize theatrical, trending, trailers, and streaming options
+                        <h3 className="text-xs text-foreground-muted text-center">
+                            {t('regionSelectSub') || 'Select region to localize theatrical, trending, trailers, and streaming options'}
                         </h3>
                     </div>
 
@@ -918,7 +934,7 @@ export function HomeRedesign({
                         >
                             {CINEMA_COUNTRIES.map((c) => (
                                 <option key={c.code} value={c.code} className="bg-[#1c1c28] text-left">
-                                    {c.name} ({c.code})
+                                    {t(`region${c.code}`) || c.name} ({c.code})
                                 </option>
                             ))}
                         </select>

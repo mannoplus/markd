@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
@@ -36,6 +36,7 @@ interface DiscoverPageProps {
 
 export function DiscoverPage({ mediaType }: DiscoverPageProps) {
     const t = useTranslations('Discover');
+    const locale = useLocale();
     const config = mediaType === 'movie' ? movieConfig : tvConfig;
     const searchParams = useSearchParams();
 
@@ -279,10 +280,11 @@ export function DiscoverPage({ mediaType }: DiscoverPageProps) {
                 // If any sidebar filters or sorting are active, query discover
                 const queryParams = buildDiscoverQueryParams(filters, mediaType);
                 queryParams['page'] = String(targetPage);
+                queryParams['language'] = locale === 'zh-TW' ? 'zh-TW' : 'en-US';
                 data = await discoverMediaAction(mediaType, queryParams);
             } else {
                 // Otherwise fallback to plain category endpoint
-                data = await getCategoryMediaAction(activeCategory.endpoint, targetPage);
+                data = await getCategoryMediaAction(activeCategory.endpoint, targetPage, undefined, locale);
             }
 
             if (resetResults) {

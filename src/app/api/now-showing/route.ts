@@ -5,6 +5,30 @@ export const revalidate = 43200; // Cache for 12 hours (12 * 60 * 60)
 
 const EXCLUDED_TITLES = ['電影首頁', '本周新片', '本期首輪', '本期二輪', '近期上映', '新片快報', '電影'];
 
+// Regex sanitization utility to isolate Traditional Chinese and English title fragments
+export function sanitizeTitle(title: string, lang: string): string {
+    if (!title) return '';
+    const hasChinese = /[\u4e00-\u9fa5]/.test(title);
+    if (lang === 'zh-TW' || lang.startsWith('zh')) {
+        if (hasChinese) {
+            // Strip trailing English alphanumeric strings, e.g. "海洋奇緣 (真人版) Moana (Live-action)"
+            const cleaned = title.replace(/\s*[a-zA-Z][a-zA-Z0-9\s\-(),'&:!.]*$/, '').trim();
+            if (cleaned) return cleaned;
+        }
+    } else {
+        // English: strip Chinese characters and Chinese punctuation/brackets
+        if (hasChinese) {
+            const hasEnglish = /[a-zA-Z]/.test(title);
+            if (hasEnglish) {
+                // Replace Chinese characters with empty space
+                const cleaned = title.replace(/[\u4e00-\u9fa5\s（）()：:]+/g, ' ').trim();
+                if (cleaned) return cleaned;
+            }
+        }
+    }
+    return title;
+}
+
 async function fetchHtml(url: string) {
     try {
         const response = await fetch(url, {
@@ -46,12 +70,13 @@ async function extractMovies(html: string | null, limit?: number) {
 
 // Function to fetch poster and ID from TMDB using the movie title
 async function fetchTmdbPoster(movie: any, lang: string = 'zh-TW') {
-    let poster = `https://picsum.photos/seed/${encodeURIComponent(movie.title)}/400/600`;
+    const fallbackPoster = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600"><defs><linearGradient id="g" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="%231e1e2f"/><stop offset="100%" stop-color="%230a0a0f"/></linearGradient></defs><rect width="400" height="600" fill="url(%23g)"/><g fill="%23888899" text-anchor="middle" font-family="sans-serif"><circle cx="200" cy="240" r="40" stroke="%23444455" stroke-width="4" fill="none"/><path d="M185 240 L215 240 M200 225 L200 255" stroke="%23444455" stroke-width="4"/><text x="200" y="340" font-size="20" font-weight="bold">Poster Unavailable</text><text x="200" y="375" font-size="14" fill="%23555566">MARKD Entertainment</text></g></svg>`;
+    
+    let poster = fallbackPoster;
     let tmdbId = null;
     let link = null; // Default to null if TMDB fails
     
     // Clean up title for better TMDB search results
-    // ATM usually gives "海洋奇緣 Moana". Remove the English trailing part.
     let cleanTitle = movie.title.replace(/[a-zA-Z:\-0-9\s]+$/, '').trim();
     if (!cleanTitle) cleanTitle = movie.title.trim(); // fallback if it was all English
     
@@ -62,7 +87,8 @@ async function fetchTmdbPoster(movie: any, lang: string = 'zh-TW') {
             return { ...movie, poster, link };
         }
 
-        const url = `https://api.themoviedb.org/3/search/movie?api_key=${tmdbApiKey}&query=${encodeURIComponent(cleanTitle)}&language=${lang}&page=1`;
+        const tmdbLang = lang === 'en' ? 'en-US' : (lang === 'zh-TW' ? 'zh-TW' : lang);
+        const url = `https://api.themoviedb.org/3/search/movie?api_key=${tmdbApiKey}&query=${encodeURIComponent(cleanTitle)}&language=${tmdbLang}&page=1`;
         const response = await fetch(url, {
             headers: {
                 'accept': 'application/json'
@@ -89,6 +115,9 @@ async function fetchTmdbPoster(movie: any, lang: string = 'zh-TW') {
     } catch (e) {
         console.error("TMDB fetch error:", e);
     }
+
+    // Apply regex language sanitization to isolate local translation fragments
+    movie.title = sanitizeTitle(movie.title, lang);
 
     return { ...movie, poster, tmdbId, link };
 }
@@ -145,7 +174,7 @@ export async function GET(request: Request) {
 
         return NextResponse.json({
             success: true,
-            data: { boxOffice, thisWeekNew, comingSoon } // Removed firstRun
+            data: { boxOffice, thisWeekNew, comingSoon }
         }, {
             headers: {
                 'Cache-Control': 's-maxage=43200, stale-while-revalidate'

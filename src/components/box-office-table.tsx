@@ -82,7 +82,7 @@ export function BoxOfficeTable({ movies, onMovieSelect }: BoxOfficeTableProps) {
         });
     };
 
-    const SortIcon = ({ columnKey }: { columnKey: SortKey }) => {
+    const renderSortIcon = (columnKey: SortKey) => {
         if (sortConfig?.key !== columnKey) return null;
         return sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3 inline mb-0.5 ml-1" /> : <ChevronDown className="w-3 h-3 inline mb-0.5 ml-1" />;
     };
@@ -91,12 +91,12 @@ export function BoxOfficeTable({ movies, onMovieSelect }: BoxOfficeTableProps) {
         <div className="space-y-3">
             {/* Desktop Header — hidden on mobile */}
             <div className="hidden md:grid md:grid-cols-[3rem_minmax(0,2fr)_1fr_1fr_1fr_5rem] gap-4 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-foreground-subtle">
-                <button onClick={() => handleSort('rank')} className="text-left hover:text-foreground">#<SortIcon columnKey="rank" /></button>
+                <button onClick={() => handleSort('rank')} className="text-left hover:text-foreground">#{renderSortIcon('rank')}</button>
                 <span>{t('movie')}</span>
-                <button onClick={() => handleSort('revenue')} className="text-right hover:text-foreground">{t('weeklyRevenue')}<SortIcon columnKey="revenue" /></button>
-                <button onClick={() => handleSort('budget')} className="text-right hover:text-foreground">{t('budget')}<SortIcon columnKey="budget" /></button>
+                <button onClick={() => handleSort('revenue')} className="text-right hover:text-foreground">{t('weeklyRevenue')}{renderSortIcon('revenue')}</button>
+                <button onClick={() => handleSort('budget')} className="text-right hover:text-foreground">{t('budget')}{renderSortIcon('budget')}</button>
                 <button onClick={() => handleSort('vote_average')} className="text-right hover:text-foreground">
-                    {t('rating')} <SortIcon columnKey="vote_average" />
+                    {t('rating')} {renderSortIcon('vote_average')}
                 </button>
                 <span className="text-right">{t('weekChange')}</span>
             </div>

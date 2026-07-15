@@ -1,9 +1,35 @@
 'use client';
 
+import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Star, Tv, Film } from 'lucide-react';
 import { IMAGE_SIZES } from '@/lib/tmdb';
+import { useLocale, useTranslations } from 'next-intl';
+
+// Regex sanitization utility to isolate Traditional Chinese and English title fragments
+export function sanitizeTitle(title: string, lang: string): string {
+    if (!title) return '';
+    const hasChinese = /[\u4e00-\u9fa5]/.test(title);
+    if (lang === 'zh-TW' || lang.startsWith('zh')) {
+        if (hasChinese) {
+            // Strip trailing English alphanumeric strings, e.g. "海洋奇緣 (真人版) Moana (Live-action)"
+            const cleaned = title.replace(/\s*[a-zA-Z][a-zA-Z0-9\s\-(),'&:!.]*$/, '').trim();
+            if (cleaned) return cleaned;
+        }
+    } else {
+        // English: strip Chinese characters and Chinese punctuation/brackets
+        if (hasChinese) {
+            const hasEnglish = /[a-zA-Z]/.test(title);
+            if (hasEnglish) {
+                // Replace Chinese characters with empty space
+                const cleaned = title.replace(/[\u4e00-\u9fa5\s（）()：:]+/g, ' ').trim();
+                if (cleaned) return cleaned;
+            }
+        }
+    }
+    return title;
+}
 
 interface MovieCardProps {
     id: number;
@@ -30,43 +56,40 @@ export function MovieCard({
     rtScore,
     rtStatus,
 }: MovieCardProps) {
+    const locale = useLocale();
+    const t = useTranslations('nowShowing');
+    const [imgError, setImgError] = useState<boolean>(false);
+
     const year = releaseDate ? new Date(releaseDate).getFullYear() : null;
     const href = `/${mediaType}/${id}`;
     const rating = voteAverage ? voteAverage.toFixed(1) : null;
+
+    const sanitizedTitle = sanitizeTitle(title, locale);
 
     return (
         <Link href={href} className="group block" id={`card-${mediaType}-${id}`}>
             <div className="relative overflow-hidden rounded-[var(--radius-lg)] bg-background-card border border-border transition-all duration-[var(--transition-base)] hover:border-border-hover hover:shadow-[var(--shadow-elevated)] hover:-translate-y-1">
                 {/* Poster */}
                 <div className="relative aspect-[2/3] w-full overflow-hidden">
-                    {posterPath ? (
+                    {posterPath && !imgError ? (
                         <Image
                             src={`${IMAGE_SIZES.poster.medium}${posterPath}`}
-                            alt={title}
+                            alt={sanitizedTitle}
                             fill
                             sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 200px"
                             className="object-cover transition-transform duration-[var(--transition-slow)] group-hover:scale-105"
-                            onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.style.display = 'none';
-                                const parent = target.parentElement;
-                                if (parent) {
-                                    parent.innerHTML = `
-                                        <div class="flex h-full w-full items-center justify-center bg-background-elevated">
-                                            <div class="text-center p-4">
-                                                <Film class="h-12 w-12 text-foreground-subtle mx-auto mb-2" />
-                                                <div class="text-xs text-foreground-muted">Poster Coming Soon</div>
-                                            </div>
-                                        </div>
-                                    `;
-                                }
-                            }}
+                            onError={() => setImgError(true)}
                         />
                     ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-background-elevated">
+                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-gray-900 to-black border border-border/20">
                             <div className="text-center p-4">
-                                <Film className="h-12 w-12 text-foreground-subtle mx-auto mb-2" />
-                                <div className="text-xs text-foreground-muted">Poster Coming Soon</div>
+                                <Film className="h-10 w-10 text-accent/60 mx-auto mb-2 animate-pulse" />
+                                <div className="text-[11px] font-bold text-foreground/80 tracking-wide uppercase font-sans">
+                                    {t('posterUnavailable') || 'Poster Unavailable'}
+                                </div>
+                                <div className="text-[9px] text-foreground-muted font-sans mt-0.5">
+                                    MARKD
+                                </div>
                             </div>
                         </div>
                     )}
@@ -113,7 +136,7 @@ export function MovieCard({
                 {/* Info */}
                 <div className="p-3">
                     <h3 className="truncate text-sm font-semibold leading-tight transition-colors group-hover:text-accent">
-                        {title}
+                        {sanitizedTitle}
                     </h3>
                     {year && (
                         <p className="mt-1 text-xs text-foreground-muted">{year}</p>

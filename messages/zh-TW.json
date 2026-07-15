@@ -42,6 +42,14 @@
         "upcomingTvShows": "即將播出的電視節目",
         "heroBadge": "現正熱映",
         "viewDetails": "查看詳情",
+        "latestTrailers": "最新預告",
+        "inCinemas": "院線熱映",
+        "upcomingMoviesAndTvs": "即將上映的電影與電視節目",
+        "freeToWatch": "免費觀看",
+        "updateBtn": "更新",
+        "seeMore": "查看更多",
+        "globalRegionFilter": "全球地區篩選",
+        "regionSelectSub": "選擇地區以在地化院線、熱門、預告片與串流選項。",
         "regionUS": "美國",
         "regionTW": "台灣",
         "regionCN": "中國",
@@ -57,7 +65,20 @@
         "regionES": "西班牙",
         "regionIT": "義大利",
         "regionRU": "俄羅斯",
-        "regionID": "印尼"
+        "regionID": "印尼",
+        "regionCA": "加拿大",
+        "regionNZ": "紐西蘭",
+        "regionSG": "新加坡",
+        "regionHK": "香港",
+        "regionMY": "馬來西亞",
+        "regionTH": "泰國",
+        "regionVN": "越南",
+        "regionPH": "菲律賓",
+        "regionNL": "荷蘭",
+        "regionSE": "瑞典",
+        "regionCH": "瑞士",
+        "regionAR": "阿根廷",
+        "regionZA": "南非"
     },
     "Footer": {
         "text": "由影迷精心打造，為影迷而生。電影與電視節目資料由 <tmdb>TMDB</tmdb> 提供。 © 2026 MARKD"
@@ -207,7 +228,8 @@
         "moreInfo": "更多資訊",
         "comingSoonBadge": "近期上映",
         "loading": "正在載入控制台...",
-        "error": "載入資料時發生錯誤"
+        "error": "載入資料時發生錯誤",
+        "posterUnavailable": "暫無海報"
     },
     "Discover": {
         "moviesTitle": "探索電影",

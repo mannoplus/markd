@@ -42,6 +42,14 @@
         "upcomingTvShows": "Upcoming TV Shows",
         "heroBadge": "Now Playing in Theaters",
         "viewDetails": "View Details",
+        "latestTrailers": "Latest Trailers",
+        "inCinemas": "In Cinemas",
+        "upcomingMoviesAndTvs": "Upcoming Movies and TVs",
+        "freeToWatch": "Free to Watch",
+        "updateBtn": "Update",
+        "seeMore": "See More",
+        "globalRegionFilter": "Global Region Filter",
+        "regionSelectSub": "Select region to localize theatrical, trending, trailers, and streaming options.",
         "regionUS": "United States",
         "regionTW": "Taiwan",
         "regionCN": "China",
@@ -57,7 +65,20 @@
         "regionES": "Spain",
         "regionIT": "Italy",
         "regionRU": "Russia",
-        "regionID": "Indonesia"
+        "regionID": "Indonesia",
+        "regionCA": "Canada",
+        "regionNZ": "New Zealand",
+        "regionSG": "Singapore",
+        "regionHK": "Hong Kong",
+        "regionMY": "Malaysia",
+        "regionTH": "Thailand",
+        "regionVN": "Vietnam",
+        "regionPH": "Philippines",
+        "regionNL": "Netherlands",
+        "regionSE": "Sweden",
+        "regionCH": "Switzerland",
+        "regionAR": "Argentina",
+        "regionZA": "South Africa"
     },
     "Footer": {
         "text": "Crafted by fans, for fans. Movie and TV show data courtesy of <tmdb>TMDB</tmdb>. © 2026 MARKD."
@@ -207,7 +228,8 @@
         "moreInfo": "More Info",
         "comingSoonBadge": "Coming Soon",
         "loading": "Loading Dashboard...",
-        "error": "Error Loading Data"
+        "error": "Error Loading Data",
+        "posterUnavailable": "Poster Unavailable"
     },
     "Discover": {
         "moviesTitle": "Discover Movies",
