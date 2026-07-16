@@ -7,10 +7,11 @@ import Image from 'next/image';
 import { 
     Star, Clock, Calendar, Film, Heart, Bookmark, Globe, 
     Loader2, Play, Plus, Trash2, ArrowUp,
-    Facebook, Instagram, Twitter
+    Facebook, Instagram, Twitter, Sparkles
 } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { useRegion } from '@/context/RegionContext';
+import { AiChatBox } from '@/components/AiChatBox';
 import { getWatchProvidersAction, getMovieReleaseDatesAction } from '@/app/actions/discover';
 import { upsertMediaItem, deleteMediaItem } from '@/app/actions';
 import { createClient } from '@/lib/supabase/client';
@@ -54,6 +55,7 @@ export function MovieDetailsClient({ initialMovie, initialUserItem }: MovieDetai
     // Full Credits Modal, Trailer Modal, and scroll-to-top status
     const [isCreditsModalOpen, setIsCreditsModalOpen] = useState(false);
     const [isTrailerModalOpen, setIsTrailerModalOpen] = useState(false);
+    const [isAiChatOpen, setIsAiChatOpen] = useState(false);
     const [lightboxImage, setLightboxImage] = useState<string | null>(null);
     const [showScrollTop, setShowScrollTop] = useState(false);
 
@@ -412,7 +414,7 @@ export function MovieDetailsClient({ initialMovie, initialUserItem }: MovieDetai
                         {/* Tracking Panel (Repositioned under poster) */}
                         <div className="rounded-2xl border border-border/30 bg-background-elevated/60 backdrop-blur-2xl p-4 space-y-4 shadow-xl">
                             <h3 className="text-[11px] font-extrabold uppercase tracking-widest text-foreground-muted pb-1.5 border-b border-border/15">
-                                Tracking Workspace
+                                {t('trackingWorkspace')}
                             </h3>
 
                             {!user ? (
@@ -668,6 +670,16 @@ export function MovieDetailsClient({ initialMovie, initialUserItem }: MovieDetai
                                             <span>Trailer</span>
                                         </button>
                                     )}
+
+                                    {/* Ask AI Pill Button */}
+                                    <button
+                                        onClick={() => setIsAiChatOpen(true)}
+                                        data-ai-trigger="true"
+                                        className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-accent/15 border border-accent/30 font-extrabold text-xs tracking-wider h-8 hover:bg-accent/25 hover:border-accent hover:shadow-[0_0_12px_rgba(20,240,240,0.35)] transition-all cursor-pointer text-accent"
+                                    >
+                                        <Sparkles className="h-3.5 w-3.5 animate-pulse" />
+                                        <span>Ask AI</span>
+                                    </button>
                                 </div>
                                 {isCertFallback && cert && (
                                     <p className="text-[10px] text-foreground-muted/70 italic">
@@ -716,14 +728,14 @@ export function MovieDetailsClient({ initialMovie, initialUserItem }: MovieDetai
                             </div>
                             <div className="w-[1px] h-4 bg-border/20 hidden sm:block" />
                             <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-bold uppercase tracking-widest text-foreground-muted">Budget:</span>
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-foreground-muted">{t('budget')}:</span>
                                 <span className="font-extrabold text-foreground">{formatRevenue(details.budget)}</span>
                             </div>
                         </div>
 
                         {/* Production Crew Credits */}
                         <div className="space-y-4 bg-[#0c0c12]/20 border border-border/10 p-5 rounded-2xl">
-                            <h3 className="text-lg font-bold border-b border-border/20 pb-2">Production</h3>
+                            <h3 className="text-lg font-bold border-b border-border/20 pb-2">{t('production')}</h3>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 text-sm">
                                 {director && (
                                     <div className="space-y-1">
@@ -1098,6 +1110,17 @@ export function MovieDetailsClient({ initialMovie, initialUserItem }: MovieDetai
                     </div>
                 </div>
             )}
+
+            {/* AI Chat Box overlay component */}
+            <AiChatBox
+                mediaId={details.id}
+                mediaType="movie"
+                title={details.title}
+                overview={details.overview}
+                locale={locale}
+                isOpen={isAiChatOpen}
+                setIsOpen={setIsAiChatOpen}
+            />
         </div>
     );
 }

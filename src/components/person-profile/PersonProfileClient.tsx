@@ -5,18 +5,20 @@ import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { 
     Instagram, Facebook, Twitter, MapPin, Calendar, 
-    ChevronDown, ChevronUp, UserCheck
+    ChevronDown, ChevronUp
 } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import type { TMDBPersonDetails } from '@/types';
 
 interface PersonProfileClientProps {
     person: TMDBPersonDetails;
+    locale: string;
 }
 
-export function PersonProfileClient({ person }: PersonProfileClientProps) {
+export function PersonProfileClient({ person, locale }: PersonProfileClientProps) {
     const t = useTranslations('Person');
     const [isBioExpanded, setIsBioExpanded] = useState(false);
+    const [activeRoleTab, setActiveRoleTab] = useState<'all' | 'acting' | 'directing' | 'producing'>('all');
 
     // Dedup and sort credits for "Known For" (sorted by vote average or popularity)
     const knownForCredits = Array.from(
@@ -43,6 +45,20 @@ export function PersonProfileClient({ person }: PersonProfileClientProps) {
         return b.year - a.year;
     });
 
+    // Detect valid roles dynamically
+    const hasActing = timelineCredits.some(c => c.roleType === 'cast');
+    const hasDirecting = timelineCredits.some(c => c.roleType === 'crew' && c.job === 'Director');
+    const hasProducing = timelineCredits.some(c => c.roleType === 'crew' && c.job === 'Producer');
+
+    // Filtered timeline based on active tab
+    const filteredCredits = timelineCredits.filter(c => {
+        if (activeRoleTab === 'all') return true;
+        if (activeRoleTab === 'acting') return c.roleType === 'cast';
+        if (activeRoleTab === 'directing') return c.roleType === 'crew' && c.job === 'Director';
+        if (activeRoleTab === 'producing') return c.roleType === 'crew' && c.job === 'Producer';
+        return true;
+    });
+
     const hasLongBio = person.biography && person.biography.length > 350;
     const displayedBio = isBioExpanded || !hasLongBio
         ? person.biography 
@@ -56,38 +72,62 @@ export function PersonProfileClient({ person }: PersonProfileClientProps) {
         { id: ext.facebook_id, url: (id: string) => `https://facebook.com/${id}`, icon: Facebook },
     ].filter(s => s.id);
 
-    // Gender lookup
-    const getGenderName = (gNum?: number) => {
+    // Gender translation lookup
+    const getGenderLabel = (gNum?: number) => {
         switch (gNum) {
-            case 1: return 'Female';
-            case 2: return 'Male';
-            case 3: return 'Non-binary';
-            default: return 'Not specified';
+            case 1: return t('female');
+            case 2: return t('male');
+            case 3: return t('nonBinary');
+            default: return t('noBio').includes('我們') ? '暫無資訊' : 'Not specified';
         }
     };
 
+    // Find English name if primary name is Chinese
+    const findEnglishName = () => {
+        if (/^[a-zA-Z\s\-\.\,\'\’]+$/.test(person.name)) {
+            return null;
+        }
+        if (person.also_known_as) {
+            for (const alias of person.also_known_as) {
+                if (/^[a-zA-Z\s\-\.\,\'\’]+$/.test(alias)) {
+                    return alias;
+                }
+            }
+        }
+        return null;
+    };
+
+    const englishName = findEnglishName();
+    const isChinese = locale === 'zh-TW' || locale === 'zh';
+
     return (
-        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 mt-16 md:mt-24 fade-in">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 mt-16 md:mt-24 fade-in font-sans">
             {/* Header Section */}
-            <div className="flex flex-col md:flex-row gap-6 items-center border-b border-border/20 pb-6 mb-8">
-                <div className="relative w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-2 border-accent/40 shadow-lg shrink-0 bg-background-elevated">
+            <div className="flex flex-col md:flex-row gap-8 items-center md:items-end border-b border-border/20 pb-8 mb-8">
+                {/* Profile Picture Optimized */}
+                <div className="relative w-40 h-40 md:w-56 md:h-56 rounded-2xl overflow-hidden border border-border/30 shadow-2xl shrink-0 bg-background-elevated">
                     {person.profile_path ? (
                         <Image
-                            src={`https://image.tmdb.org/t/p/w300${person.profile_path}`}
+                            src={`https://image.tmdb.org/t/p/h632${person.profile_path}`}
                             alt={person.name}
                             fill
                             className="object-cover"
                             priority
                         />
                     ) : (
-                        <div className="flex h-full w-full items-center justify-center text-foreground-muted font-bold text-2xl uppercase">
+                        <div className="flex h-full w-full items-center justify-center text-foreground-muted font-black text-4xl uppercase">
                             {person.name.slice(0, 2)}
                         </div>
                     )}
                 </div>
-                <div className="space-y-1 text-center md:text-left">
+                <div className="space-y-2 text-center md:text-left md:mb-2">
                     <h1 className="text-3xl md:text-5xl font-black tracking-tight">{person.name}</h1>
-                    <p className="text-xs md:text-sm font-extrabold uppercase tracking-widest text-accent/80">
+                    {isChinese && englishName && (
+                        <h2 className="text-xl md:text-2xl font-bold text-foreground-muted/80 tracking-normal mt-1">
+                            {englishName}
+                        </h2>
+                    )}
+                    <p className="text-xs md:text-sm font-extrabold uppercase tracking-widest text-accent/85">
                         {person.known_for_department}
                     </p>
                 </div>
@@ -120,19 +160,25 @@ export function PersonProfileClient({ person }: PersonProfileClientProps) {
                     )}
 
                     {/* Metadata attributes */}
-                    <div className="space-y-4 text-xs font-sans">
+                    <div className="space-y-4 text-xs">
                         <h2 className="text-sm font-extrabold uppercase tracking-widest text-foreground/80 mb-2">
                             {t('personalInfo')}
                         </h2>
                         
                         <div className="space-y-3">
                             <div>
-                                <span className="text-[10px] font-bold text-foreground-muted uppercase block tracking-wider">Gender</span>
-                                <span className="text-sm font-semibold text-foreground">{getGenderName(person.gender)}</span>
+                                <span className="text-[10px] font-bold text-foreground-muted uppercase block tracking-wider">
+                                    {t('gender')}
+                                </span>
+                                <span className="text-sm font-semibold text-foreground">
+                                    {getGenderLabel(person.gender)}
+                                </span>
                             </div>
 
                             <div>
-                                <span className="text-[10px] font-bold text-foreground-muted uppercase block tracking-wider">{t('born')}</span>
+                                <span className="text-[10px] font-bold text-foreground-muted uppercase block tracking-wider">
+                                    {t('born')}
+                                </span>
                                 <span className="text-sm font-semibold text-foreground flex items-center gap-1 mt-0.5">
                                     <Calendar className="h-3 w-3 text-accent" />
                                     {person.birthday ? new Date(person.birthday).toLocaleDateString() : '-'}
@@ -141,7 +187,9 @@ export function PersonProfileClient({ person }: PersonProfileClientProps) {
 
                             {person.deathday && (
                                 <div>
-                                    <span className="text-[10px] font-bold text-foreground-muted uppercase block tracking-wider">{t('died')}</span>
+                                    <span className="text-[10px] font-bold text-foreground-muted uppercase block tracking-wider">
+                                        {t('died')}
+                                    </span>
                                     <span className="text-sm font-semibold text-foreground flex items-center gap-1 mt-0.5">
                                         <Calendar className="h-3 w-3 text-red-400" />
                                         {new Date(person.deathday).toLocaleDateString()}
@@ -150,7 +198,9 @@ export function PersonProfileClient({ person }: PersonProfileClientProps) {
                             )}
 
                             <div>
-                                <span className="text-[10px] font-bold text-foreground-muted uppercase block tracking-wider">{t('placeOfBirth')}</span>
+                                <span className="text-[10px] font-bold text-foreground-muted uppercase block tracking-wider">
+                                    {t('placeOfBirth')}
+                                </span>
                                 <span className="text-sm font-semibold text-foreground flex items-start gap-1 mt-0.5">
                                     <MapPin className="h-3.5 w-3.5 text-accent mt-0.5 shrink-0" />
                                     <span>{person.place_of_birth || '-'}</span>
@@ -159,7 +209,9 @@ export function PersonProfileClient({ person }: PersonProfileClientProps) {
 
                             {person.also_known_as && person.also_known_as.length > 0 && (
                                 <div>
-                                    <span className="text-[10px] font-bold text-foreground-muted uppercase block tracking-wider">Also Known As</span>
+                                    <span className="text-[10px] font-bold text-foreground-muted uppercase block tracking-wider">
+                                        {t('alsoKnownAs')}
+                                    </span>
                                     <div className="flex flex-wrap gap-1 mt-1">
                                         {person.also_known_as.slice(0, 5).map((name, idx) => (
                                             <span 
@@ -254,36 +306,89 @@ export function PersonProfileClient({ person }: PersonProfileClientProps) {
                     {/* Career Timeline */}
                     {timelineCredits.length > 0 && (
                         <div className="space-y-4 bg-[#0c0c12]/20 border border-border/10 p-5 rounded-2xl">
-                            <div className="flex items-center justify-between border-b border-border/20 pb-2 mb-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border/20 pb-3 gap-3">
                                 <h2 className="text-lg font-bold">Career & Credits</h2>
-                                <span className="bg-accent/10 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase text-accent border border-accent/20 flex items-center gap-1">
-                                    <UserCheck className="h-3 w-3" />
-                                    {timelineCredits.length} Credits
-                                </span>
+                                
+                                {/* Dynamic Multi-Role Tabs */}
+                                <div className="flex items-center gap-1 bg-[#12121a] p-1 rounded-xl border border-border/20 overflow-x-auto max-w-full">
+                                    <button
+                                        onClick={() => setActiveRoleTab('all')}
+                                        className={`px-3 py-1 rounded-lg text-[10px] font-extrabold uppercase transition-all cursor-pointer whitespace-nowrap ${
+                                            activeRoleTab === 'all' 
+                                                ? 'bg-accent text-background shadow-md' 
+                                                : 'text-foreground-muted hover:text-foreground'
+                                        }`}
+                                    >
+                                        All ({timelineCredits.length})
+                                    </button>
+                                    {hasActing && (
+                                        <button
+                                            onClick={() => setActiveRoleTab('acting')}
+                                            className={`px-3 py-1 rounded-lg text-[10px] font-extrabold uppercase transition-all cursor-pointer whitespace-nowrap ${
+                                                activeRoleTab === 'acting' 
+                                                    ? 'bg-accent text-background shadow-md' 
+                                                    : 'text-foreground-muted hover:text-foreground'
+                                            }`}
+                                        >
+                                            {t('acting')}
+                                        </button>
+                                    )}
+                                    {hasDirecting && (
+                                        <button
+                                            onClick={() => setActiveRoleTab('directing')}
+                                            className={`px-3 py-1 rounded-lg text-[10px] font-extrabold uppercase transition-all cursor-pointer whitespace-nowrap ${
+                                                activeRoleTab === 'directing' 
+                                                    ? 'bg-accent text-background shadow-md' 
+                                                    : 'text-foreground-muted hover:text-foreground'
+                                            }`}
+                                        >
+                                            {t('directing')}
+                                        </button>
+                                    )}
+                                    {hasProducing && (
+                                        <button
+                                            onClick={() => setActiveRoleTab('producing')}
+                                            className={`px-3 py-1 rounded-lg text-[10px] font-extrabold uppercase transition-all cursor-pointer whitespace-nowrap ${
+                                                activeRoleTab === 'producing' 
+                                                    ? 'bg-accent text-background shadow-md' 
+                                                    : 'text-foreground-muted hover:text-foreground'
+                                            }`}
+                                        >
+                                            {t('producing')}
+                                        </button>
+                                    )}
+                                </div>
                             </div>
+
                             <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 scrollbar-thin">
-                                {timelineCredits.map((credit, idx) => (
-                                    <div key={idx} className="flex gap-4 items-start border-l-2 border-border/20 pl-4 py-1 relative hover:border-accent/40 transition-colors">
-                                        <div className="absolute -left-[6px] top-2.5 h-[10px] w-[10px] rounded-full bg-accent/30 border border-background-elevated" />
-                                        <div className="w-16 shrink-0 text-xs font-bold text-foreground-muted mt-0.5 font-sans">
-                                            {credit.year || '—'}
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                            <Link
-                                                href={credit.media_type === 'movie' ? `/movie/${credit.id}` : `/tv/${credit.id}`}
-                                                className="font-bold text-foreground hover:text-accent transition-colors text-sm hover:underline"
-                                            >
-                                                {credit.title || credit.name}
-                                            </Link>
-                                            <p className="text-[11px] text-foreground-muted mt-0.5">
-                                                {credit.roleType === 'cast' 
-                                                    ? (credit.character ? `as ${credit.character}` : 'Acting')
-                                                    : (credit.job ? `${credit.job}` : 'Crew')
-                                                } • <span className="capitalize">{credit.media_type === 'movie' ? 'Movie' : 'TV Show'}</span>
-                                            </p>
-                                        </div>
+                                {filteredCredits.length === 0 ? (
+                                    <div className="text-center py-8 text-xs text-foreground-muted italic">
+                                        No credits found for this category.
                                     </div>
-                                ))}
+                                ) : (
+                                    filteredCredits.map((credit, idx) => (
+                                        <div key={idx} className="flex gap-4 items-start border-l-2 border-border/20 pl-4 py-1 relative hover:border-accent/40 transition-colors">
+                                            <div className="absolute -left-[6px] top-2.5 h-[10px] w-[10px] rounded-full bg-accent/30 border border-background-elevated" />
+                                            <div className="w-16 shrink-0 text-xs font-bold text-foreground-muted mt-0.5 font-sans">
+                                                {credit.year || '—'}
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <Link
+                                                    href={credit.media_type === 'movie' ? `/movie/${credit.id}` : `/tv/${credit.id}`}
+                                                    className="font-bold text-foreground hover:text-accent transition-colors text-sm hover:underline"
+                                                >
+                                                    {credit.title || credit.name}
+                                                </Link>
+                                                <p className="text-[11px] text-foreground-muted mt-0.5">
+                                                    {credit.roleType === 'cast' 
+                                                        ? (credit.character ? `as ${credit.character}` : t('acting'))
+                                                        : (credit.job ? `${credit.job}` : 'Crew')
+                                                    } • <span className="capitalize">{credit.media_type === 'movie' ? 'Movie' : 'TV Show'}</span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
                             </div>
                         </div>
                     )}

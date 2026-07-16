@@ -18,8 +18,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     }
 }
 
-export default async function PersonPage({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;
+export default async function PersonPage({ params }: { params: Promise<{ id: string; locale: string }> }) {
+    const { id, locale } = await params;
 
     if (!id || isNaN(Number(id))) {
         notFound();
@@ -38,6 +38,6 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
     }
 
     return (
-        <PersonProfileClient person={person} />
+        <PersonProfileClient person={person} locale={locale} />
     );
 }

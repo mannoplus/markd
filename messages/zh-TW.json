@@ -116,6 +116,9 @@
         "status": "狀態",
         "runtime": "片長",
         "revenue": "票房",
+        "budget": "預算",
+        "trackingWorkspace": "追蹤工作區",
+        "production": "製作公司",
         "notAvailable": "暫無資訊",
         "genres": "類型",
         "tagline": "宣傳標語",
@@ -165,7 +168,15 @@
         "placeOfBirth": "出生地點",
         "biography": "個人簡介",
         "noBio": "我們尚未有 {name} 的個人簡介。",
-        "knownForTitle": "知名作品"
+        "knownForTitle": "知名作品",
+        "gender": "性別",
+        "alsoKnownAs": "又名",
+        "acting": "演員",
+        "directing": "導演",
+        "producing": "製片",
+        "male": "男",
+        "female": "女",
+        "nonBinary": "非二元性別"
     },
     "Search": {
         "title": "搜尋 MARKD",
@@ -343,5 +354,32 @@
         "filterKeywords": "關鍵字",
         "keywordsPlaceholder": "依關鍵字篩選...",
         "keywordsSearchButton": "搜尋"
+    },
+    "Settings": {
+        "title": "設定",
+        "apiKeys": "API 金鑰設定",
+        "save": "儲存金鑰",
+        "saved": "金鑰已儲存！",
+        "help": "說明",
+        "bilingualHelp": "API 金鑰指引 (雙語說明)",
+        "openai": "OpenAI 金鑰",
+        "anthropic": "Anthropic 金鑰",
+        "mistral": "Mistral 金鑰",
+        "kimi": "Kimi 金鑰",
+        "qwen": "通義千問 金鑰",
+        "meta": "Meta AI 金鑰",
+        "glm": "智譜清言 金鑰",
+        "deepseek": "DeepSeek 金鑰",
+        "grok": "Grok 金鑰",
+        "minimax": "MiniMax 金鑰"
+    },
+    "AiChat": {
+        "title": "詢問 AI",
+        "inputPlaceholder": "輸入關於此影劇的問題...",
+        "clear": "清除對話",
+        "suggestions": "推薦問題",
+        "noApiKey": "請先至設定頁面設定您的 LLM API 金鑰以開始對話。",
+        "minimize": "最小化",
+        "restore": "還原對話"
     }
 }

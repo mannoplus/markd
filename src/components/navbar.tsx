@@ -2,7 +2,7 @@
 
 import { Link } from '@/i18n/routing';
 import { usePathname } from 'next/navigation';
-import { Search, Library, LayoutDashboard, LogIn, X, Film, Tv, ChevronDown } from 'lucide-react';
+import { Search, Library, LayoutDashboard, LogIn, X, Film, Tv, ChevronDown, Key } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { useState, useEffect, useRef } from 'react';
@@ -226,6 +226,13 @@ export function Navbar() {
                                         {user.email}
                                     </p>
                                 </div>
+                                <Link
+                                    href="/settings"
+                                    className="w-full text-left rounded-md px-2 py-1.5 text-sm text-foreground hover:bg-background transition-colors flex items-center gap-2 mb-1"
+                                >
+                                    <Key className="h-4 w-4" />
+                                    Settings
+                                </Link>
                                 <form action={async () => {
                                     const { logout } = await import('@/app/[locale]/login/actions');
                                     await logout();

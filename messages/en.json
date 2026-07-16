@@ -116,6 +116,9 @@
         "status": "Status",
         "runtime": "Runtime",
         "revenue": "Box Office",
+        "budget": "Budget",
+        "trackingWorkspace": "Tracking Workspace",
+        "production": "Production",
         "notAvailable": "Not available",
         "genres": "Genres",
         "tagline": "Tagline",
@@ -165,7 +168,15 @@
         "placeOfBirth": "Place of Birth",
         "biography": "Biography",
         "noBio": "We don't have a biography for {name}.",
-        "knownForTitle": "Known For"
+        "knownForTitle": "Known For",
+        "gender": "Gender",
+        "alsoKnownAs": "Also known as",
+        "acting": "Acting",
+        "directing": "Directing",
+        "producing": "Producing",
+        "male": "Male",
+        "female": "Female",
+        "nonBinary": "Non-binary"
     },
     "Search": {
         "title": "Search MARKD",
@@ -343,5 +354,32 @@
         "filterKeywords": "Keywords",
         "keywordsPlaceholder": "Filter by keywords...",
         "keywordsSearchButton": "Search"
+    },
+    "Settings": {
+        "title": "Settings",
+        "apiKeys": "API Key Configuration",
+        "save": "Save Keys",
+        "saved": "Keys Saved!",
+        "help": "Help",
+        "bilingualHelp": "API Key Guide (雙語說明)",
+        "openai": "OpenAI Key",
+        "anthropic": "Anthropic Key",
+        "mistral": "Mistral Key",
+        "kimi": "Kimi Key",
+        "qwen": "Qwen Key",
+        "meta": "Meta AI Key",
+        "glm": "GLM Key",
+        "deepseek": "DeepSeek Key",
+        "grok": "Grok Key",
+        "minimax": "MiniMax Key"
+    },
+    "AiChat": {
+        "title": "Ask AI",
+        "inputPlaceholder": "Ask a question about this title...",
+        "clear": "Clear Chat",
+        "suggestions": "Suggestions",
+        "noApiKey": "Please configure your LLM API Keys in the Settings page to start chatting.",
+        "minimize": "Minimize",
+        "restore": "Restore AI Chat"
     }
 }
