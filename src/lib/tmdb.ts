@@ -217,16 +217,26 @@ export async function getMovieDetails(id: number): Promise<{
     rtAudienceScore?: string;
     rtAudienceStatus?: 'fresh' | 'rotten';
     imdbRating?: string;
+    release_dates?: { results: unknown[] };
+    images?: { backdrops: unknown[]; posters: unknown[] };
+    recommendations?: { results: unknown[] };
+    keywords?: { keywords: unknown[] };
+    videos?: { results: unknown[] };
+    crew?: TMDBCrewMember[];
 }> {
     const data = await tmdbFetch<
         TMDBMovieDetails & {
             credits: { cast: TMDBCastMember[]; crew: TMDBCrewMember[] };
             videos?: { results: TMDBVideo[] };
             external_ids?: { imdb_id?: string };
+            release_dates?: { results: unknown[] };
+            images?: { backdrops: unknown[]; posters: unknown[] };
+            recommendations?: { results: unknown[] };
+            keywords?: { keywords: unknown[] };
         }
-    >(`/movie/${id}`, { append_to_response: 'credits,videos,external_ids' });
+    >(`/movie/${id}`, { append_to_response: 'credits,videos,external_ids,release_dates,images,recommendations,keywords' });
 
-    const { credits, videos, external_ids, ...details } = data;
+    const { credits, videos, external_ids, release_dates, images, recommendations, keywords, ...details } = data;
 
     const director = credits.crew.find((c) => c.job === 'Director') || null;
     const trailer = videos?.results?.find((v) => v.type === 'Trailer' && v.site === 'YouTube') || null;
@@ -261,7 +271,7 @@ export async function getMovieDetails(id: number): Promise<{
 
     return {
         details,
-        cast: credits.cast.slice(0, 15), // Top 15 billed cast
+        cast: credits.cast, // Return full cast
         director,
         trailer,
         rtScore,
@@ -269,6 +279,12 @@ export async function getMovieDetails(id: number): Promise<{
         rtAudienceScore,
         rtAudienceStatus,
         imdbRating,
+        release_dates,
+        images,
+        recommendations,
+        keywords,
+        videos,
+        crew: credits.crew,
     };
 }
 
@@ -412,6 +428,13 @@ export async function getTVDetails(id: number): Promise<{
     rtStatus?: 'fresh' | 'rotten';
     rtAudienceScore?: string;
     rtAudienceStatus?: 'fresh' | 'rotten';
+    imdbRating?: string;
+    content_ratings?: { results: unknown[] };
+    images?: { backdrops: unknown[]; posters: unknown[] };
+    recommendations?: { results: unknown[] };
+    keywords?: { results: unknown[] };
+    videos?: { results: unknown[] };
+    crew?: TMDBCrewMember[];
 }> {
     const data = await tmdbFetch<
         TMDBTVDetails & {
@@ -419,10 +442,14 @@ export async function getTVDetails(id: number): Promise<{
             videos?: { results: TMDBVideo[] };
             created_by?: { id: number; name: string; profile_path: string | null }[];
             external_ids?: { imdb_id?: string };
+            content_ratings?: { results: unknown[] };
+            images?: { backdrops: unknown[]; posters: unknown[] };
+            recommendations?: { results: unknown[] };
+            keywords?: { results: unknown[] };
         }
-    >(`/tv/${id}`, { append_to_response: 'credits,videos,external_ids' });
+    >(`/tv/${id}`, { append_to_response: 'credits,videos,external_ids,content_ratings,images,recommendations,keywords' });
 
-    const { credits, videos, created_by, external_ids, ...details } = data;
+    const { credits, videos, created_by, external_ids, content_ratings, images, recommendations, keywords, ...details } = data;
 
     // For TV, "Director" isn't always primary. "Created By" is better, or Executive Producer.
     const creator = (created_by && created_by.length > 0) ? created_by[0] : null;
@@ -434,6 +461,7 @@ export async function getTVDetails(id: number): Promise<{
     let rtStatus: 'fresh' | 'rotten' | undefined = undefined;
     let rtAudienceScore: string | undefined = undefined;
     let rtAudienceStatus: 'fresh' | 'rotten' | undefined = undefined;
+    let imdbRating: string | undefined = undefined;
     
     if (external_ids?.imdb_id) {
         const rtData = await fetchRTScoreWithFallbacks(external_ids.imdb_id, details.name);
@@ -441,17 +469,25 @@ export async function getTVDetails(id: number): Promise<{
         rtStatus = rtData.rtStatus;
         rtAudienceScore = rtData.rtAudienceScore;
         rtAudienceStatus = rtData.rtAudienceStatus;
+        imdbRating = rtData.imdbRating;
     }
 
     return {
         details,
-        cast: credits.cast.slice(0, 15),
+        cast: credits.cast, // Return full cast
         director: creator,
         trailer,
         rtScore,
         rtStatus,
         rtAudienceScore,
         rtAudienceStatus,
+        imdbRating,
+        content_ratings,
+        images,
+        recommendations,
+        keywords,
+        videos,
+        crew: credits.crew,
     };
 }
 
@@ -1148,6 +1184,20 @@ export async function getMediaTrailer(type: 'movie' | 'tv', id: number): Promise
         console.error(`Failed to fetch trailer for ${type} ${id}:`, e);
         return null;
     }
+}
+
+/**
+ * Get release dates list for a movie.
+ */
+export async function getMovieReleaseDates(id: number): Promise<{ results: unknown[] }> {
+    return await tmdbFetch<{ results: unknown[] }>(`/movie/${id}/release_dates`);
+}
+
+/**
+ * Get content ratings list for a TV show.
+ */
+export async function getTVContentRatings(id: number): Promise<{ results: unknown[] }> {
+    return await tmdbFetch<{ results: unknown[] }>(`/tv/${id}/content_ratings`);
 }
 
 

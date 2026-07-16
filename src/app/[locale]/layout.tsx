@@ -8,6 +8,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
+import { RegionProvider } from '@/context/RegionContext';
 
 const inter = Inter({
   variable: "--font-geist-sans",
@@ -52,10 +53,12 @@ export default async function RootLayout({
     <html lang={locale} className="dark" suppressHydrationWarning>
       <body className={`${inter.variable} antialiased`} suppressHydrationWarning>
         <NextIntlClientProvider messages={messages}>
-          <Navbar />
-          <main className="min-h-screen pb-24 md:pb-0">{children}</main>
-          <Footer />
-          <BottomNav />
+          <RegionProvider>
+            <Navbar />
+            <main className="min-h-screen pb-24 md:pb-0">{children}</main>
+            <Footer />
+            <BottomNav />
+          </RegionProvider>
         </NextIntlClientProvider>
       </body>
     </html>

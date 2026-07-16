@@ -204,4 +204,24 @@ export async function getUpcomingWithTrailersAction(type: 'movie' | 'tv', region
     }
 }
 
+export async function getMovieReleaseDatesAction(id: number) {
+    try {
+        const { getMovieReleaseDates } = await import('@/lib/tmdb');
+        return await getMovieReleaseDates(id);
+    } catch (e) {
+        console.error('Failed getMovieReleaseDatesAction:', e);
+        return { results: [] };
+    }
+}
+
+export async function getTVContentRatingsAction(id: number) {
+    try {
+        const { getTVContentRatings } = await import('@/lib/tmdb');
+        return await getTVContentRatings(id);
+    } catch (e) {
+        console.error('Failed getTVContentRatingsAction:', e);
+        return { results: [] };
+    }
+}
+
 

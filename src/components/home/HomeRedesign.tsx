@@ -7,6 +7,7 @@ import { MovieCard } from '@/components/movie-card';
 import { HeroCarousel } from '@/components/hero-carousel';
 import type { TMDBTrendingResult, TMDBWatchProvider, TMDBWatchProviderResult } from '@/types';
 import { useLocale, useTranslations } from 'next-intl';
+import { useRegion } from '@/context/RegionContext';
 import {
     getMediaTrailerAction,
     getNowPlayingAction,
@@ -86,7 +87,7 @@ export function HomeRedesign({
     const tNav = useTranslations('Navigation');
     const tNowShowing = useTranslations('nowShowing');
 
-    const [globalRegion, setGlobalRegion] = useState<string>('TW');
+    const { region: globalRegion, setRegion: setGlobalRegion } = useRegion();
     const [trendingMedia, setTrendingMedia] = useState<TMDBTrendingResult[]>(initialTrending);
     const [trailerTab, setTrailerTab] = useState<'upcoming' | 'popular' | 'streaming' | 'rent' | 'theaters'>('upcoming');
     const [freeTab, setFreeTab] = useState<'movies' | 'tv'>('movies');
