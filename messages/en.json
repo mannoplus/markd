@@ -229,7 +229,13 @@
         "comingSoonBadge": "Coming Soon",
         "loading": "Loading Dashboard...",
         "error": "Error Loading Data",
-        "posterUnavailable": "Poster Unavailable"
+        "posterUnavailable": "Poster Unavailable",
+        "upcoming": "Upcoming",
+        "popular": "Popular",
+        "onTv": "Streaming on TV",
+        "forRent": "For Rent",
+        "inTheaters": "In Theaters",
+        "lastUpdated": "Last Updated"
     },
     "Discover": {
         "moviesTitle": "Discover Movies",

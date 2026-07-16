@@ -229,7 +229,13 @@
         "comingSoonBadge": "近期上映",
         "loading": "正在載入控制台...",
         "error": "載入資料時發生錯誤",
-        "posterUnavailable": "暫無海報"
+        "posterUnavailable": "暫無海報",
+        "upcoming": "即將上映",
+        "popular": "熱門",
+        "onTv": "電視上放映",
+        "forRent": "租借",
+        "inTheaters": "院線",
+        "lastUpdated": "最後更新"
     },
     "Discover": {
         "moviesTitle": "探索電影",

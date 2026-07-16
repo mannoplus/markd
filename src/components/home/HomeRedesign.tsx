@@ -540,23 +540,31 @@ export function HomeRedesign({
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2">
-                            {(['upcoming', 'popular', 'streaming', 'rent', 'theaters'] as const).map((tab) => (
-                                <button
-                                    key={tab}
-                                    onClick={() => setTrailerTab(tab)}
-                                    className={`rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-wider transition-all duration-300 ${
-                                        trailerTab === tab
-                                            ? 'bg-accent text-background shadow-lg shadow-accent/20'
-                                            : 'bg-background-elevated text-foreground-muted hover:bg-background-elevated-hover hover:text-foreground'
-                                    }`}
-                                >
-                                    {tab === 'upcoming' && (tNowShowing('upcoming') || 'Upcoming')}
-                                    {tab === 'popular' && (tNowShowing('popular') || 'Popular')}
-                                    {tab === 'streaming' && (tNowShowing('onTv') || 'Streaming on TV')}
-                                    {tab === 'rent' && (tNowShowing('forRent') || 'For Rent')}
-                                    {tab === 'theaters' && (tNowShowing('inTheaters') || 'In Theaters')}
-                                </button>
-                            ))}
+                            {(['upcoming', 'popular', 'streaming', 'rent', 'theaters'] as const).map((tab) => {
+                                const getTabLabel = () => {
+                                    switch (tab) {
+                                        case 'upcoming': return tNowShowing('upcoming');
+                                        case 'popular': return tNowShowing('popular');
+                                        case 'streaming': return tNowShowing('onTv');
+                                        case 'rent': return tNowShowing('forRent');
+                                        case 'theaters': return tNowShowing('inTheaters');
+                                        default: return tab;
+                                    }
+                                };
+                                return (
+                                    <button
+                                        key={tab}
+                                        onClick={() => setTrailerTab(tab)}
+                                        className={`rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-wider transition-all duration-300 ${
+                                            trailerTab === tab
+                                                ? 'bg-accent text-background shadow-lg shadow-accent/20'
+                                                : 'bg-background-elevated text-foreground-muted hover:bg-background-elevated-hover hover:text-foreground'
+                                        }`}
+                                    >
+                                        {getTabLabel()}
+                                    </button>
+                                );
+                            })}
                         </div>
 
                         <Link
@@ -685,10 +693,12 @@ export function HomeRedesign({
                             <h2 className="text-2xl font-bold tracking-tight">
                                 {t('upcomingMovies') || 'Upcoming Movies'}
                             </h2>
-                            <div className="flex items-center gap-2 text-[10px] font-bold text-foreground-muted uppercase tracking-wider">
+                            <div className="flex items-center gap-2 text-[10px] font-bold text-foreground-muted tracking-wider">
                                 <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-                                <span>
-                                    {tNowShowing('lastUpdated') || 'Last updated'}:{' '}
+                                <span className="uppercase">
+                                    {tNowShowing('lastUpdated') || 'Last updated'}:
+                                </span>
+                                <span className="font-sans font-medium text-foreground-muted">
                                     {upcomingMoviesTime > 0
                                         ? new Date(upcomingMoviesTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                                         : 'Updating...'}
@@ -753,10 +763,12 @@ export function HomeRedesign({
                             <h2 className="text-2xl font-bold tracking-tight">
                                 {t('upcomingTvShows') || 'Upcoming TV Shows'}
                             </h2>
-                            <div className="flex items-center gap-2 text-[10px] font-bold text-foreground-muted uppercase tracking-wider">
+                            <div className="flex items-center gap-2 text-[10px] font-bold text-foreground-muted tracking-wider">
                                 <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-                                <span>
-                                    {tNowShowing('lastUpdated') || 'Last updated'}:{' '}
+                                <span className="uppercase">
+                                    {tNowShowing('lastUpdated') || 'Last updated'}:
+                                </span>
+                                <span className="font-sans font-medium text-foreground-muted">
                                     {upcomingShowsTime > 0
                                         ? new Date(upcomingShowsTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                                         : 'Updating...'}
