@@ -12,12 +12,12 @@ export async function GET(request: Request) {
             });
         }
 
-        // Revalidate the API endpoint cache so the next request fetches fresh data
-        revalidatePath('/api/now-showing');
+        // Revalidate the root page cache so the next request fetches fresh data
+        revalidatePath('/');
 
         return NextResponse.json({
             success: true,
-            message: 'Now showing cache successfully revalidated'
+            message: 'Home page cache successfully revalidated'
         });
     } catch (error) {
         console.error('Error during cron execution:', error);

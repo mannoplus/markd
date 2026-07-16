@@ -2,7 +2,7 @@
 
 import { Link } from '@/i18n/routing';
 import { usePathname } from 'next/navigation';
-import { Search, Library, LayoutDashboard, LogIn, X, TrendingUp, Film, Tv, ChevronDown } from 'lucide-react';
+import { Search, Library, LayoutDashboard, LogIn, X, Film, Tv, ChevronDown } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { useState, useEffect, useRef } from 'react';
@@ -56,7 +56,6 @@ export function Navbar() {
     const NAV_LINKS = [
         { href: '/movies', label: t('movies'), icon: Film },
         { href: '/tv-shows', label: t('tvShows'), icon: Tv },
-        { href: '/now-showing', label: t('nowShowing'), icon: TrendingUp },
         { href: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
         { href: '/library', label: t('library'), icon: Library },
     ];
@@ -73,11 +72,6 @@ export function Navbar() {
             { label: t('airingToday'), href: '/tv-shows?category=airing_today' },
             { label: t('onTv'), href: '/tv-shows?category=on_tv' },
             { label: t('topRated'), href: '/tv-shows?category=top_rated' },
-        ],
-        '/now-showing': [
-            { label: t('boxOffice'), href: '/now-showing#box-office' },
-            { label: t('newReleases'), href: '/now-showing#new-releases' },
-            { label: t('comingSoon'), href: '/now-showing#coming-soon' },
         ],
     };
 

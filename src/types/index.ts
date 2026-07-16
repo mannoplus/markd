@@ -149,6 +149,7 @@ export interface TMDBTrendingResult {
     popularity: number;
     rtScore?: string;
     rtStatus?: 'fresh' | 'rotten';
+    trailerKey?: string;
 }
 
 export interface TMDBPersonDetails {
@@ -160,8 +161,19 @@ export interface TMDBPersonDetails {
     place_of_birth: string | null;
     profile_path: string | null;
     known_for_department: string;
+    gender?: number;
+    also_known_as?: string[];
+    external_ids?: {
+        imdb_id?: string;
+        facebook_id?: string;
+        instagram_id?: string;
+        twitter_id?: string;
+        tiktok_id?: string;
+        youtube_id?: string;
+    };
     combined_credits: {
         cast: TMDBPersonCredit[];
+        crew: TMDBPersonCredit[];
     };
 }
 
@@ -170,12 +182,14 @@ export interface TMDBPersonCredit {
     media_type: 'movie' | 'tv';
     title?: string; // for movies
     name?: string;  // for tv
-    character: string;
+    character?: string;
     poster_path: string | null;
     release_date?: string; // for movies
     first_air_date?: string; // for tv
     vote_average: number;
     order?: number;
+    job?: string;
+    department?: string;
 }
 
 // ---------- Box Office ----------

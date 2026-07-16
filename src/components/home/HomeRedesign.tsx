@@ -54,6 +54,29 @@ const CINEMA_COUNTRIES = [
     { name: 'South Africa', code: 'ZA' },
 ];
 
+const getProviderUrl = (name: string, fallback: string) => {
+    const lower = name.toLowerCase();
+    if (lower.includes('netflix')) return 'https://www.netflix.com';
+    if (lower.includes('amazon') || lower.includes('prime video')) return 'https://www.primevideo.com';
+    if (lower.includes('apple tv') || lower.includes('apple')) return 'https://tv.apple.com';
+    if (lower.includes('google play') || lower.includes('google')) return 'https://play.google.com/store/movies';
+    if (lower.includes('youtube')) return 'https://www.youtube.com';
+    if (lower.includes('disney')) return 'https://www.disneyplus.com';
+    if (lower.includes('fandango') || lower.includes('vudu')) return 'https://www.vudu.com';
+    if (lower.includes('hbo') || lower.includes('max')) return 'https://www.max.com';
+    if (lower.includes('hulu')) return 'https://www.hulu.com';
+    if (lower.includes('paramount')) return 'https://www.paramountplus.com';
+    if (lower.includes('peacock')) return 'https://www.peacocktv.com';
+    if (lower.includes('catchplay')) return 'https://www.catchplay.com';
+    if (lower.includes('myvideo')) return 'https://www.myvideo.net.tw';
+    if (lower.includes('friday')) return 'https://video.friday.tw';
+    if (lower.includes('hami')) return 'https://hamivideo.hinet.net';
+    if (lower.includes('line tv')) return 'https://www.linetv.tw';
+    if (lower.includes('kktv')) return 'https://www.kktv.me';
+    if (lower.includes('litv')) return 'https://www.litv.tv';
+    return fallback || 'https://www.justwatch.com';
+};
+
 interface HomeRedesignProps {
     initialTrending: TMDBTrendingResult[];
     initialNowPlaying: TMDBTrendingResult[];
@@ -115,6 +138,35 @@ export function HomeRedesign({
     const [upcomingShows, setUpcomingShows] = useState<TMDBTrendingResult[]>(initialUpcomingShows);
     const [upcomingShowsTime, setUpcomingShowsTime] = useState<number>(0);
     const [isUpdatingShows, setIsUpdatingShows] = useState<boolean>(false);
+
+    // Section 1: Hover Trailer Video Preview States
+    const [hoveredTrailerId, setHoveredTrailerId] = useState<number | null>(null);
+    const [hoveredTrailerKey, setHoveredTrailerKey] = useState<string | null>(null);
+
+    const handleTrailerMouseEnter = async (item: TMDBTrendingResult) => {
+        setHoveredTrailerId(item.id);
+        if (item.trailerKey) {
+            setHoveredTrailerKey(item.trailerKey);
+        } else {
+            setHoveredTrailerKey(null);
+            try {
+                const key = await getMediaTrailerAction(item.media_type || 'movie', item.id);
+                setHoveredTrailerId((currentId) => {
+                    if (currentId === item.id) {
+                        setHoveredTrailerKey(key);
+                    }
+                    return currentId;
+                });
+            } catch (e) {
+                console.error(e);
+            }
+        }
+    };
+
+    const handleTrailerMouseLeave = () => {
+        setHoveredTrailerId(null);
+        setHoveredTrailerKey(null);
+    };
 
     // Section 5: Free Providers State
     const [freeMovies, setFreeMovies] = useState<TMDBTrendingResult[]>(initialFreeMovies);
@@ -587,26 +639,39 @@ export function HomeRedesign({
                                 <div
                                     key={item.id}
                                     onClick={() => handleTrailerClick(item)}
+                                    onMouseEnter={() => handleTrailerMouseEnter(item)}
+                                    onMouseLeave={handleTrailerMouseLeave}
                                     className="w-64 md:w-80 shrink-0 snap-start group relative rounded-2xl overflow-hidden bg-background-elevated/40 border border-border/40 hover:border-accent/40 transition-all duration-300 cursor-pointer shadow-lg hover:shadow-2xl"
                                 >
                                     <div className="w-full bg-background-elevated relative overflow-hidden" style={{ aspectRatio: '16/9' }}>
-                                        {item.backdrop_path ? (
-                                            // eslint-disable-next-line @next/next/no-img-element
-                                            <img
-                                                src={`https://image.tmdb.org/t/p/w780${item.backdrop_path}`}
-                                                alt={item.title || item.name || ''}
-                                                className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                        {hoveredTrailerId === item.id && hoveredTrailerKey ? (
+                                            <iframe
+                                                src={`https://www.youtube.com/embed/${hoveredTrailerKey}?autoplay=1&mute=1&controls=0&loop=1&playlist=${hoveredTrailerKey}&rel=0&playsinline=1`}
+                                                title={item.title || item.name || ''}
+                                                className="absolute inset-0 h-full w-full object-cover pointer-events-none transition-opacity duration-300"
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                             />
                                         ) : (
-                                            <div className="flex h-full w-full items-center justify-center text-foreground-subtle">
-                                                <Film className="h-8 w-8" />
-                                            </div>
+                                            <>
+                                                {item.backdrop_path ? (
+                                                    // eslint-disable-next-line @next/next/no-img-element
+                                                    <img
+                                                        src={`https://image.tmdb.org/t/p/w780${item.backdrop_path}`}
+                                                        alt={item.title || item.name || ''}
+                                                        className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                    />
+                                                ) : (
+                                                    <div className="flex h-full w-full items-center justify-center text-foreground-subtle">
+                                                        <Film className="h-8 w-8" />
+                                                    </div>
+                                                )}
+                                                <div className="absolute inset-0 bg-black/45 flex items-center justify-center opacity-70 group-hover:opacity-100 transition-opacity">
+                                                    <div className="rounded-full bg-accent p-3.5 text-background shadow-xl scale-95 group-hover:scale-110 transition-transform duration-300">
+                                                        <Play className="h-5 w-5 fill-current" />
+                                                    </div>
+                                                </div>
+                                            </>
                                         )}
-                                        <div className="absolute inset-0 bg-black/45 flex items-center justify-center opacity-70 group-hover:opacity-100 transition-opacity">
-                                            <div className="rounded-full bg-accent p-3.5 text-background shadow-xl scale-95 group-hover:scale-110 transition-transform duration-300">
-                                                <Play className="h-5 w-5 fill-current" />
-                                            </div>
-                                        </div>
                                     </div>
                                     <div className="p-4 space-y-1 bg-[#12121a]">
                                         <h3 className="font-bold text-sm truncate group-hover:text-accent transition-colors">
@@ -1060,9 +1125,12 @@ export function HomeRedesign({
                                     <div className="space-y-3">
                                         <div className="grid grid-cols-2 gap-3">
                                             {[...(freeProviders.ads || []), ...(freeProviders.free || [])].map((prov: TMDBWatchProvider) => (
-                                                <div
+                                                <a
                                                     key={prov.provider_id}
-                                                    className="flex items-center gap-2.5 rounded-xl bg-background-elevated p-2 border border-border/20"
+                                                    href={getProviderUrl(prov.provider_name, freeProviders.link || '')}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center gap-2.5 rounded-xl bg-background-elevated p-2 border border-border/20 hover:border-accent/40 transition-colors cursor-pointer"
                                                 >
                                                     {/* eslint-disable-next-line @next/next/no-img-element */}
                                                     <img
@@ -1073,20 +1141,20 @@ export function HomeRedesign({
                                                     <span className="text-[10px] font-semibold text-foreground truncate">
                                                         {prov.provider_name}
                                                     </span>
-                                                </div>
+                                                </a>
                                             ))}
                                         </div>
-                                        <p className="text-[10px] text-foreground-muted leading-relaxed font-sans">
-                                            This title is available free with ads or through public broadcasting providers. Click the button below to view official playback links.
-                                        </p>
                                     </div>
                                 ) : freeProviders && freeProviders.flatrate ? (
                                     <div className="space-y-3">
                                         <div className="grid grid-cols-2 gap-3">
                                             {freeProviders.flatrate.map((prov: TMDBWatchProvider) => (
-                                                <div
+                                                <a
                                                     key={prov.provider_id}
-                                                    className="flex items-center gap-2.5 rounded-xl bg-background-elevated p-2 border border-border/20"
+                                                    href={getProviderUrl(prov.provider_name, freeProviders.link || '')}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center gap-2.5 rounded-xl bg-background-elevated p-2 border border-border/20 hover:border-accent/40 transition-colors cursor-pointer"
                                                 >
                                                     {/* eslint-disable-next-line @next/next/no-img-element */}
                                                     <img
@@ -1097,7 +1165,7 @@ export function HomeRedesign({
                                                     <span className="text-[10px] font-semibold text-foreground truncate">
                                                         {prov.provider_name}
                                                     </span>
-                                                </div>
+                                                </a>
                                             ))}
                                         </div>
                                         <div className="rounded-lg bg-yellow-500/10 p-2.5 border border-yellow-500/20 text-[10px] text-yellow-400 font-sans">
@@ -1110,16 +1178,13 @@ export function HomeRedesign({
                                     </div>
                                 )}
 
-                                {freeProviders && freeProviders.link ? (
-                                    <a
-                                        href={freeProviders.link}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="w-full inline-flex items-center justify-center rounded-xl bg-accent py-3 text-xs font-bold text-background hover:bg-accent-hover transition-colors shadow-md font-sans"
-                                    >
-                                        Watch on JustWatch
-                                    </a>
-                                ) : null}
+                                <Link
+                                    href={freeTab === 'movies' ? `/movie/${activeFreeItem.id}` : `/tv/${activeFreeItem.id}`}
+                                    onClick={() => setActiveFreeItem(null)}
+                                    className="w-full inline-flex items-center justify-center rounded-xl bg-accent py-3 text-xs font-bold text-background hover:bg-accent-hover transition-colors shadow-md font-sans"
+                                >
+                                    View Movie Details
+                                </Link>
                             </div>
                         </div>
                     </div>

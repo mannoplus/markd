@@ -721,7 +721,7 @@ export async function getFullMediaDetails(id: number, type: MediaType) {
 export async function getPersonDetails(id: number): Promise<TMDBPersonDetails> {
     const data = await tmdbFetch<TMDBPersonDetails>(
         `/person/${id}`,
-        { append_to_response: 'combined_credits' }
+        { append_to_response: 'combined_credits,external_ids' }
     );
     return data;
 }
