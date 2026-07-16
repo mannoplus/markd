@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { getFullMediaDetails } from '@/lib/tmdb';
 import { notFound } from 'next/navigation';
 import { getUserMediaItem } from '@/app/actions';
@@ -14,21 +15,25 @@ export default async function MovieDetailsPage({
         notFound();
     }
 
+    let movie: any = null;
+    let userItem: any = null;
+
     try {
-        const movie = await getFullMediaDetails(Number(id), 'movie');
+        movie = await getFullMediaDetails(Number(id), 'movie');
         if (!movie || !movie.details) {
             notFound();
         }
-        const { data: userItem } = await getUserMediaItem(Number(id), 'movie');
-
-        return (
-            <MovieDetailsClient
-                initialMovie={movie}
-                initialUserItem={userItem}
-            />
-        );
+        const { data } = await getUserMediaItem(Number(id), 'movie');
+        userItem = data;
     } catch (error) {
         console.error(error);
         notFound();
     }
+
+    return (
+        <MovieDetailsClient
+            initialMovie={movie}
+            initialUserItem={userItem}
+        />
+    );
 }

@@ -6,8 +6,8 @@ import { useLocale, useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { 
     Star, Clock, Calendar, Film, Heart, Bookmark, Globe, 
-    Loader2, Play, Plus, Trash2,
-    Facebook, Instagram, Twitter, Tv
+    Loader2, Play, Plus, Trash2, ArrowUp, Tv,
+    Facebook, Instagram, Twitter
 } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { useRegion } from '@/context/RegionContext';
@@ -51,10 +51,11 @@ export function TVDetailsClient({ initialTV, initialUserItem }: TVDetailsClientP
     const [activeMediaTab, setActiveMediaTab] = useState<'backdrops' | 'posters' | 'videos'>('backdrops');
     const [visibleMediaCount, setVisibleMediaCount] = useState(12);
 
-    // Full Credits Modal & Trailer Modal
+    // Full Credits Modal, Trailer Modal, and scroll-to-top status
     const [isCreditsModalOpen, setIsCreditsModalOpen] = useState(false);
     const [isTrailerModalOpen, setIsTrailerModalOpen] = useState(false);
     const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+    const [showScrollTop, setShowScrollTop] = useState(false);
 
     // TV Tracking progress inputs
     const [seasonProgress, setSeasonProgress] = useState<number>(initialUserItem?.season_progress || 0);
@@ -117,6 +118,16 @@ export function TVDetailsClient({ initialTV, initialUserItem }: TVDetailsClientP
             setEpisodeProgress(userItem.episode_progress || 0);
         }
     }, [userItem]);
+
+    // Handle Scroll for Scroll-to-Top Button
+    useEffect(() => {
+        const handleScroll = () => {
+            const threshold = document.documentElement.scrollHeight - window.innerHeight - 300;
+            setShowScrollTop(window.scrollY >= threshold && window.scrollY > 100);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     // Compute certification & localized release date
     const getLocalizationData = () => {
@@ -229,6 +240,36 @@ export function TVDetailsClient({ initialTV, initialUserItem }: TVDetailsClientP
     const getStatusLabel = (statusVal: string) => {
         const key = statusVal === 'plan_to_watch' ? 'planToWatch' : statusVal;
         return t(key);
+    };
+
+    // Map watch provider tab string to localized tab label
+    const getProviderTabLabel = (tabVal: string) => {
+        if (tabVal === 'flatrate') return t('stream');
+        return t(tabVal);
+    };
+
+    // Map streaming providers to their official website urls directly
+    const getProviderUrl = (name: string, fallback: string) => {
+        const lower = name.toLowerCase();
+        if (lower.includes('netflix')) return 'https://www.netflix.com';
+        if (lower.includes('amazon') || lower.includes('prime video')) return 'https://www.primevideo.com';
+        if (lower.includes('apple tv') || lower.includes('apple')) return 'https://tv.apple.com';
+        if (lower.includes('google play') || lower.includes('google')) return 'https://play.google.com/store/movies';
+        if (lower.includes('youtube')) return 'https://www.youtube.com';
+        if (lower.includes('disney')) return 'https://www.disneyplus.com';
+        if (lower.includes('fandango') || lower.includes('vudu')) return 'https://www.vudu.com';
+        if (lower.includes('hbo') || lower.includes('max')) return 'https://www.max.com';
+        if (lower.includes('hulu')) return 'https://www.hulu.com';
+        if (lower.includes('paramount')) return 'https://www.paramountplus.com';
+        if (lower.includes('peacock')) return 'https://www.peacocktv.com';
+        if (lower.includes('catchplay')) return 'https://www.catchplay.com';
+        if (lower.includes('myvideo')) return 'https://www.myvideo.net.tw';
+        if (lower.includes('friday')) return 'https://video.friday.tw';
+        if (lower.includes('hami')) return 'https://hamivideo.hinet.net';
+        if (lower.includes('line tv')) return 'https://www.linetv.tw';
+        if (lower.includes('kktv')) return 'https://www.kktv.me';
+        if (lower.includes('litv')) return 'https://www.litv.tv';
+        return fallback || 'https://www.justwatch.com';
     };
 
     // User Tracking Operations
@@ -398,19 +439,6 @@ export function TVDetailsClient({ initialTV, initialUserItem }: TVDetailsClientP
                     <div className="absolute inset-0 bg-background-elevated/20" />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-[#07070a] via-[#07070a]/60 to-transparent z-10" />
-
-                {/* Play Trailer Button */}
-                {heroTrailer && (
-                    <div className="absolute inset-0 z-20 flex items-center justify-center">
-                        <button
-                            onClick={() => setIsTrailerModalOpen(true)}
-                            className="group flex items-center gap-3 px-6 py-3.5 rounded-full bg-accent text-background text-xs font-black uppercase tracking-wider hover:bg-accent-hover transition-all hover:scale-105 active:scale-95 shadow-xl shadow-accent/30 cursor-pointer"
-                        >
-                            <Play className="h-4 w-4 fill-background text-background" />
-                            Play Trailer
-                        </button>
-                    </div>
-                )}
             </div>
 
             {/* Content Body */}
@@ -620,7 +648,7 @@ export function TVDetailsClient({ initialTV, initialUserItem }: TVDetailsClientP
                                                     : 'text-foreground-subtle hover:text-foreground hover:bg-background-elevated/35'
                                             }`}
                                         >
-                                            {t(tab)}
+                                            {getProviderTabLabel(tab)}
                                         </button>
                                     ))}
                                 </div>
@@ -635,7 +663,7 @@ export function TVDetailsClient({ initialTV, initialUserItem }: TVDetailsClientP
                                     {providerList.map((p: any) => (
                                         <a
                                             key={p.provider_id}
-                                            href={providers?.link || '#'}
+                                            href={getProviderUrl(p.provider_name, providers?.link || '')}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             title={p.provider_name}
@@ -729,6 +757,17 @@ export function TVDetailsClient({ initialTV, initialUserItem }: TVDetailsClientP
                                                 </div>
                                             )}
                                         </div>
+                                    )}
+
+                                    {/* Inline Play Trailer Badge (Pill styled with glowing effects) */}
+                                    {heroTrailer && (
+                                        <button
+                                            onClick={() => setIsTrailerModalOpen(true)}
+                                            className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-accent/15 border border-accent/30 font-extrabold text-xs tracking-wider h-8 hover:bg-accent/25 hover:border-accent hover:shadow-[0_0_12px_rgba(20,240,240,0.35)] transition-all cursor-pointer text-accent"
+                                        >
+                                            <Play className="h-3.5 w-3.5 fill-current" />
+                                            <span>Trailer</span>
+                                        </button>
                                     )}
                                 </div>
                                 {isCertFallback && cert && (
@@ -945,16 +984,24 @@ export function TVDetailsClient({ initialTV, initialUserItem }: TVDetailsClientP
                                     ))}
                                 </div>
 
-                                {activeMediaItems.length > visibleMediaCount && (
-                                    <div className="flex justify-center pt-2">
+                                <div className="flex justify-center gap-4 pt-2">
+                                    {activeMediaItems.length > visibleMediaCount && (
                                         <button
                                             onClick={() => setVisibleMediaCount((prev) => prev + 12)}
-                                            className="px-4 py-2 rounded-xl border border-border bg-background hover:bg-background-elevated text-xs font-bold transition-all cursor-pointer"
+                                            className="px-4 py-2 rounded-xl border border-border bg-background hover:bg-background-elevated text-xs font-bold transition-all cursor-pointer text-foreground hover:text-accent"
                                         >
                                             {t('viewMore')}
                                         </button>
-                                    </div>
-                                )}
+                                    )}
+                                    {visibleMediaCount > 12 && (
+                                        <button
+                                            onClick={() => setVisibleMediaCount(12)}
+                                            className="px-4 py-2 rounded-xl border border-border bg-background hover:bg-background-elevated text-xs font-bold transition-all cursor-pointer text-foreground-muted hover:text-foreground"
+                                        >
+                                            View Less
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         )}
 
@@ -976,7 +1023,7 @@ export function TVDetailsClient({ initialTV, initialUserItem }: TVDetailsClientP
                             </div>
                         )}
 
-                        {/* Footer Recommendations (Redesigned uniform responsive grid) */}
+                        {/* Footer Recommendations */}
                         {recommendations.length > 0 && (
                             <div className="space-y-4 pt-6 border-t border-border/10">
                                 <h3 className="text-lg font-bold">{t('recommendations')}</h3>
@@ -1000,6 +1047,17 @@ export function TVDetailsClient({ initialTV, initialUserItem }: TVDetailsClientP
                     </div>
                 </div>
             </div>
+
+            {/* Scroll to Top floating button */}
+            {showScrollTop && (
+                <button
+                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                    className="fixed bottom-6 right-6 z-50 p-3 rounded-full bg-accent text-background hover:bg-accent-hover active:scale-95 transition-all shadow-lg hover:shadow-accent/25 flex items-center justify-center cursor-pointer border border-accent/20"
+                    title="Scroll to Top"
+                >
+                    <ArrowUp className="h-5 w-5" />
+                </button>
+            )}
 
             {/* Trailer Modal Popup */}
             {isTrailerModalOpen && heroTrailer && (
@@ -1047,11 +1105,11 @@ export function TVDetailsClient({ initialTV, initialUserItem }: TVDetailsClientP
                 </div>
             )}
 
-            {/* Full Credits Modal */}
+            {/* Full Credits Modal (Cast/Crew sections separated with rounded profile avatars) */}
             {isCreditsModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/85 backdrop-blur-sm" onClick={() => setIsCreditsModalOpen(false)} />
-                    <div className="relative w-full max-w-2xl max-h-[80vh] overflow-y-auto rounded-2xl bg-[#0c0c12] border border-border p-6 shadow-2xl z-10 space-y-6">
+                    <div className="relative w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-2xl bg-[#0c0c12] border border-border p-6 shadow-2xl z-10 space-y-6">
                         <div className="flex justify-between items-center border-b border-border/20 pb-3">
                             <h2 className="text-xl font-bold">{t('fullCredits')}</h2>
                             <button
@@ -1063,23 +1121,69 @@ export function TVDetailsClient({ initialTV, initialUserItem }: TVDetailsClientP
                         </div>
                         <div className="space-y-6 text-sm">
                             <div>
-                                <h3 className="font-extrabold text-accent uppercase tracking-widest text-xs mb-3">Cast ({cast.length})</h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <h3 className="font-extrabold text-accent uppercase tracking-widest text-xs mb-3 border-b border-border/25 pb-1">
+                                    Cast ({cast.length})
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[350px] overflow-y-auto pr-2 scrollbar-thin">
                                     {cast.map((c) => (
-                                        <div key={c.id} className="flex justify-between py-1 border-b border-border/10">
-                                            <Link href={`/person/${c.id}`} className="font-semibold text-accent hover:underline">{c.name}</Link>
-                                            <span className="text-foreground-muted truncate max-w-[180px]">{c.character}</span>
+                                        <div key={c.id} className="flex items-center gap-3 py-1.5 border-b border-border/10">
+                                            <div className="relative h-9 w-9 rounded-full overflow-hidden shrink-0 border border-border/30 bg-background-elevated">
+                                                {c.profile_path ? (
+                                                    <img
+                                                        src={`https://image.tmdb.org/t/p/w200${c.profile_path}`}
+                                                        alt={c.name}
+                                                        className="h-full w-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="flex h-full w-full items-center justify-center text-[10px] text-foreground-muted uppercase font-bold">
+                                                        {c.name.slice(0, 2)}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <Link 
+                                                    href={`/person/${c.id}`} 
+                                                    onClick={() => setIsCreditsModalOpen(false)} 
+                                                    className="font-semibold text-accent hover:underline block truncate"
+                                                >
+                                                    {c.name}
+                                                </Link>
+                                                <span className="text-[11px] text-foreground-muted block truncate">{c.character}</span>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
                             </div>
                             <div>
-                                <h3 className="font-extrabold text-accent uppercase tracking-widest text-xs mb-3">Crew ({crew.length})</h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <h3 className="font-extrabold text-accent uppercase tracking-widest text-xs mb-3 border-b border-border/25 pb-1">
+                                    Crew ({crew.length})
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[350px] overflow-y-auto pr-2 scrollbar-thin">
                                     {crew.map((c, idx) => (
-                                        <div key={idx} className="flex justify-between py-1 border-b border-border/10">
-                                            <Link href={`/person/${c.id}`} className="font-semibold text-accent hover:underline">{c.name}</Link>
-                                            <span className="text-foreground-muted">{c.job} ({c.department})</span>
+                                        <div key={idx} className="flex items-center gap-3 py-1.5 border-b border-border/10">
+                                            <div className="relative h-9 w-9 rounded-full overflow-hidden shrink-0 border border-border/30 bg-background-elevated">
+                                                {c.profile_path ? (
+                                                    <img
+                                                        src={`https://image.tmdb.org/t/p/w200${c.profile_path}`}
+                                                        alt={c.name}
+                                                        className="h-full w-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="flex h-full w-full items-center justify-center text-[10px] text-foreground-muted uppercase font-bold">
+                                                        {c.name.slice(0, 2)}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <Link 
+                                                    href={`/person/${c.id}`} 
+                                                    onClick={() => setIsCreditsModalOpen(false)} 
+                                                    className="font-semibold text-accent hover:underline block truncate"
+                                                >
+                                                    {c.name}
+                                                </Link>
+                                                <span className="text-[11px] text-foreground-muted block truncate">{c.job} ({c.department})</span>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>

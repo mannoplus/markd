@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { getFullMediaDetails } from '@/lib/tmdb';
 import { notFound } from 'next/navigation';
 import { getUserMediaItem } from '@/app/actions';
@@ -14,21 +15,25 @@ export default async function TVDetailsPage({
         notFound();
     }
 
+    let tv: any = null;
+    let userItem: any = null;
+
     try {
-        const tv = await getFullMediaDetails(Number(id), 'tv');
+        tv = await getFullMediaDetails(Number(id), 'tv');
         if (!tv || !tv.details) {
             notFound();
         }
-        const { data: userItem } = await getUserMediaItem(Number(id), 'tv');
-
-        return (
-            <TVDetailsClient
-                initialTV={tv}
-                initialUserItem={userItem}
-            />
-        );
+        const { data } = await getUserMediaItem(Number(id), 'tv');
+        userItem = data;
     } catch (error) {
         console.error(error);
         notFound();
     }
+
+    return (
+        <TVDetailsClient
+            initialTV={tv}
+            initialUserItem={userItem}
+        />
+    );
 }
