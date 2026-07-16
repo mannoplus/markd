@@ -6,7 +6,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { 
     Star, Clock, Calendar, Film, Heart, Bookmark, Globe, 
-    Loader2, Plus, Trash2, ExternalLink,
+    Loader2, Play, Plus, Trash2,
     Facebook, Instagram, Twitter, Tv
 } from 'lucide-react';
 import { Link } from '@/i18n/routing';
@@ -51,8 +51,10 @@ export function TVDetailsClient({ initialTV, initialUserItem }: TVDetailsClientP
     const [activeMediaTab, setActiveMediaTab] = useState<'backdrops' | 'posters' | 'videos'>('backdrops');
     const [visibleMediaCount, setVisibleMediaCount] = useState(12);
 
-    // Full Credits Modal
+    // Full Credits Modal & Trailer Modal
     const [isCreditsModalOpen, setIsCreditsModalOpen] = useState(false);
+    const [isTrailerModalOpen, setIsTrailerModalOpen] = useState(false);
+    const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
     // TV Tracking progress inputs
     const [seasonProgress, setSeasonProgress] = useState<number>(initialUserItem?.season_progress || 0);
@@ -71,7 +73,7 @@ export function TVDetailsClient({ initialTV, initialUserItem }: TVDetailsClientP
         });
     }, [details.id]);
 
-    // Update watch providers and content ratings whenever region changes
+    // Update watch providers and content ratings when region changes
     useEffect(() => {
         let active = true;
 
@@ -86,7 +88,6 @@ export function TVDetailsClient({ initialTV, initialUserItem }: TVDetailsClientP
                 if (active) setIsLoadingProviders(false);
             }
 
-            // Fetch updated content ratings if they weren't in the initial payload
             try {
                 const res = await getTVContentRatingsAction(details.id);
                 if (active && res && res.results) {
@@ -136,6 +137,29 @@ export function TVDetailsClient({ initialTV, initialUserItem }: TVDetailsClientP
     };
 
     const { cert, isFallback: isCertFallback } = getLocalizationData();
+
+    // Clean release date formatting
+    const formatCleanDate = (dateStr: string) => {
+        if (!dateStr) return 'N/A';
+        const datePart = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr.split(' ')[0];
+        const parts = datePart.split('-');
+        if (parts.length !== 3) return dateStr;
+        
+        const year = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1;
+        const day = parseInt(parts[2], 10);
+        
+        try {
+            const d = new Date(year, month, day);
+            return d.toLocaleDateString(locale === 'zh-TW' ? 'zh-TW' : 'en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        } catch {
+            return dateStr;
+        }
+    };
 
     // Map language code to full display name
     const getLanguageName = (code: string) => {
@@ -200,6 +224,12 @@ export function TVDetailsClient({ initialTV, initialUserItem }: TVDetailsClientP
 
     // Keywords Parsing (TV show keywords are under results)
     const keywordList = initialTV.keywords?.results || [];
+
+    // Translate Watch Status nicely
+    const getStatusLabel = (statusVal: string) => {
+        const key = statusVal === 'plan_to_watch' ? 'planToWatch' : statusVal;
+        return t(key);
+    };
 
     // User Tracking Operations
     const handleStatusUpdate = (status: string) => {
@@ -326,7 +356,7 @@ export function TVDetailsClient({ initialTV, initialUserItem }: TVDetailsClientP
         localStorage.setItem(`markd_bookmarked_${user.id}_tv_${details.id}`, String(nextState));
     };
 
-    // Media Gallery Filtration
+    // Media Gallery Filtering
     const backdrops = initialTV.images?.backdrops || [];
     const posters = initialTV.images?.posters || [];
     const videoGallery = (initialTV.videos?.results || []).filter((v: TMDBVideo) => v.id !== heroTrailer?.id);
@@ -354,38 +384,40 @@ export function TVDetailsClient({ initialTV, initialUserItem }: TVDetailsClientP
 
     return (
         <div className="min-h-screen bg-[#07070a] text-foreground pb-16">
-            {/* 1. Hero Trailer Backdrop */}
-            {heroTrailer ? (
-                <div className="relative h-[50vh] md:h-[70vh] w-full border-b border-border/20 overflow-hidden">
-                    <iframe
-                        src={`https://www.youtube.com/embed/${heroTrailer.key}?autoplay=1&mute=1&controls=0&loop=1&playlist=${heroTrailer.key}&showinfo=0&rel=0&modestbranding=1`}
-                        title={details.name}
-                        className="absolute inset-0 w-full h-[120%] -translate-y-[10%] pointer-events-none scale-105 opacity-60"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#07070a] via-transparent to-black/40 z-10" />
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#07070a] via-transparent to-transparent z-10" />
-                </div>
-            ) : details.backdrop_path ? (
-                <div className="relative h-[40vh] md:h-[60vh] w-full overflow-hidden">
+            {/* 1. Backdrop Area */}
+            <div className="relative h-[40vh] md:h-[60vh] w-full overflow-hidden bg-black border-b border-border/20">
+                {details.backdrop_path ? (
                     <Image
                         src={`https://image.tmdb.org/t/p/original${details.backdrop_path}`}
                         alt={details.name}
                         fill
-                        className="object-cover object-top opacity-55"
+                        className="object-cover object-top opacity-50"
                         priority
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#07070a] via-[#07070a]/60 to-transparent z-10" />
-                </div>
-            ) : (
-                <div className="h-[20vh] bg-background-elevated" />
-            )}
+                ) : (
+                    <div className="absolute inset-0 bg-background-elevated/20" />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#07070a] via-[#07070a]/60 to-transparent z-10" />
+
+                {/* Play Trailer Button */}
+                {heroTrailer && (
+                    <div className="absolute inset-0 z-20 flex items-center justify-center">
+                        <button
+                            onClick={() => setIsTrailerModalOpen(true)}
+                            className="group flex items-center gap-3 px-6 py-3.5 rounded-full bg-accent text-background text-xs font-black uppercase tracking-wider hover:bg-accent-hover transition-all hover:scale-105 active:scale-95 shadow-xl shadow-accent/30 cursor-pointer"
+                        >
+                            <Play className="h-4 w-4 fill-background text-background" />
+                            Play Trailer
+                        </button>
+                    </div>
+                )}
+            </div>
 
             {/* Content Body */}
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 -mt-24 md:-mt-48 relative z-25">
                 <div className="flex flex-col lg:flex-row gap-8 items-start">
                     
-                    {/* Left Column (Poster, Providers, Social, Tracking) */}
+                    {/* Left Column (Poster, Tracking Workspace, Providers, Social) */}
                     <div className="w-full lg:w-80 shrink-0 space-y-6">
                         
                         {/* Poster */}
@@ -405,100 +437,25 @@ export function TVDetailsClient({ initialTV, initialUserItem }: TVDetailsClientP
                             )}
                         </div>
 
-                        {/* Watch Providers Panel */}
-                        <div className="rounded-2xl border border-border/40 bg-background-elevated/40 backdrop-blur-xl p-5 space-y-4">
-                            <div className="flex justify-between items-center pb-2 border-b border-border/20">
-                                <h3 className="text-sm font-bold uppercase tracking-wider">{t('whereToWatch')}</h3>
-                                <div className="flex gap-2">
-                                    {(['flatrate', 'rent', 'buy'] as const).map((tab) => (
-                                        <button
-                                            key={tab}
-                                            onClick={() => setActiveProviderTab(tab)}
-                                            className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider transition-colors ${
-                                                activeProviderTab === tab
-                                                    ? 'bg-accent text-background'
-                                                    : 'text-foreground-muted hover:text-foreground'
-                                            }`}
-                                        >
-                                            {t(tab)}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {isLoadingProviders ? (
-                                <div className="flex justify-center py-6">
-                                    <Loader2 className="h-6 w-6 text-accent animate-spin" />
-                                </div>
-                            ) : providerList.length > 0 ? (
-                                <div className="flex flex-wrap gap-2.5">
-                                    {providerList.map((p: any) => (
-                                        <a
-                                            key={p.provider_id}
-                                            href={providers?.link || '#'}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            title={p.provider_name}
-                                            className="relative h-10 w-10 rounded-lg overflow-hidden border border-border/20 hover:border-accent/40 transition-colors shadow-md block"
-                                        >
-                                            <img
-                                                src={`https://image.tmdb.org/t/p/original${p.logo_path}`}
-                                                alt={p.provider_name}
-                                                className="h-full w-full object-cover"
-                                            />
-                                        </a>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="text-xs text-foreground-muted py-2">{t('notAvailable')}</p>
-                            )}
-
-                            <div className="pt-2 border-t border-border/10 flex items-center justify-between text-[9px] text-foreground-muted">
-                                <span>{t('justWatchAttribution')}</span>
-                                <ExternalLink className="h-2.5 w-2.5" />
-                            </div>
-                        </div>
-
-                        {/* Social/External Links */}
-                        {socialLinks.length > 0 && (
-                            <div className="flex justify-center gap-3">
-                                {socialLinks.map((s: any, idx) => {
-                                    const Icon = s.icon;
-                                    return (
-                                        <a
-                                            key={idx}
-                                            href={s.isDirect ? s.id : s.url(s.id)}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="p-2.5 rounded-full border border-border/40 bg-background-elevated/40 hover:bg-background-elevated hover:border-accent/40 text-foreground-muted hover:text-foreground transition-all duration-300"
-                                        >
-                                            <Icon className="h-4 w-4" />
-                                        </a>
-                                    );
-                                })}
-                            </div>
-                        )}
-
-                        {/* Tracking Panel */}
-                        <div className="rounded-2xl border border-border/40 bg-background-elevated/60 backdrop-blur-2xl p-5 space-y-5">
-                            <h3 className="text-xs font-bold uppercase tracking-widest text-foreground pb-2 border-b border-border/20">
+                        {/* Tracking Panel (Repositioned under poster) */}
+                        <div className="rounded-2xl border border-border/30 bg-background-elevated/60 backdrop-blur-2xl p-4 space-y-4 shadow-xl">
+                            <h3 className="text-[11px] font-extrabold uppercase tracking-widest text-foreground-muted pb-1.5 border-b border-border/15">
                                 Tracking Workspace
                             </h3>
 
                             {!user ? (
                                 <Link
                                     href="/login"
-                                    className="flex w-full items-center justify-center rounded-xl bg-accent px-4 py-2.5 text-center text-xs font-bold text-background transition-all hover:bg-accent-hover active:scale-[0.98] shadow-lg shadow-accent/20"
+                                    className="flex w-full items-center justify-center rounded-xl bg-accent px-4 py-2.5 text-center text-xs font-black uppercase tracking-wider text-background transition-all hover:bg-accent-hover active:scale-[0.98] shadow-lg shadow-accent/20"
                                 >
                                     {t('loginToTrack')}
                                 </Link>
                             ) : (
                                 <div className="space-y-4">
-                                    {/* Add / Remove from Library */}
                                     <button
                                         onClick={handleToggleLibrary}
                                         disabled={isPending}
-                                        className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all active:scale-[0.98] cursor-pointer shadow-md ${
+                                        className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-black uppercase tracking-wider transition-all active:scale-[0.98] cursor-pointer shadow-md ${
                                             userItem
                                                 ? 'bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20'
                                                 : 'bg-accent text-background hover:bg-accent-hover shadow-accent/20'
@@ -520,10 +477,10 @@ export function TVDetailsClient({ initialTV, initialUserItem }: TVDetailsClientP
                                     </button>
 
                                     {userItem && (
-                                        <div className="space-y-4 pt-2 border-t border-border/10 fade-in">
+                                        <div className="space-y-4 pt-3 border-t border-border/10 fade-in">
                                             {/* Watch Status Selector */}
                                             <div className="space-y-1.5">
-                                                <label className="text-[10px] font-bold uppercase tracking-wider text-foreground-muted">
+                                                <label className="text-[9px] font-black uppercase tracking-wider text-foreground-muted">
                                                     {t('status')}
                                                 </label>
                                                 <div className="grid grid-cols-2 gap-1.5">
@@ -531,27 +488,27 @@ export function TVDetailsClient({ initialTV, initialUserItem }: TVDetailsClientP
                                                         <button
                                                             key={status}
                                                             onClick={() => handleStatusUpdate(status)}
-                                                            className={`text-[10px] font-bold py-1.5 px-2 rounded-lg border text-center transition-all ${
+                                                            className={`text-[9px] font-black py-1.5 px-2 rounded-lg border text-center transition-all ${
                                                                 userItem.status === status
                                                                     ? 'bg-accent/10 border-accent text-accent'
                                                                     : 'bg-background-elevated/40 border-border/20 text-foreground-muted hover:border-border/40 hover:text-foreground'
                                                             }`}
                                                         >
-                                                            {t(status)}
+                                                            {getStatusLabel(status)}
                                                         </button>
                                                     ))}
                                                 </div>
                                             </div>
 
                                             {/* Episode Progress Counter for TV */}
-                                            <div className="space-y-3 pt-1">
-                                                <label className="text-[10px] font-bold uppercase tracking-wider text-foreground-muted">
+                                            <div className="space-y-3 pt-1 border-t border-border/5">
+                                                <label className="text-[9px] font-black uppercase tracking-wider text-foreground-muted">
                                                     Progress
                                                 </label>
                                                 <div className="grid grid-cols-2 gap-2 text-xs">
                                                     <div className="space-y-1">
-                                                        <span className="text-[9px] text-foreground-muted uppercase tracking-wider">{t('season')}</span>
-                                                        <div className="flex items-center gap-1.5 bg-background-elevated/80 rounded-lg border border-border/20 px-2 py-1">
+                                                        <span className="text-[8px] text-foreground-muted uppercase tracking-wider">{t('season')}</span>
+                                                        <div className="flex items-center gap-1 bg-background-elevated/80 rounded-lg border border-border/20 px-1.5 py-0.5">
                                                             <input
                                                                 type="number"
                                                                 min="0"
@@ -564,12 +521,12 @@ export function TVDetailsClient({ initialTV, initialUserItem }: TVDetailsClientP
                                                                 }}
                                                                 className="w-full bg-transparent text-center font-bold focus:outline-none"
                                                             />
-                                                            <span className="text-[10px] text-foreground-muted">/ {details.number_of_seasons}</span>
+                                                            <span className="text-[9px] text-foreground-muted">/{details.number_of_seasons}</span>
                                                         </div>
                                                     </div>
                                                     <div className="space-y-1">
-                                                        <span className="text-[9px] text-foreground-muted uppercase tracking-wider">Episode</span>
-                                                        <div className="flex items-center gap-1.5 bg-background-elevated/80 rounded-lg border border-border/20 px-2 py-1">
+                                                        <span className="text-[8px] text-foreground-muted uppercase tracking-wider">Episode</span>
+                                                        <div className="flex items-center gap-1 bg-background-elevated/80 rounded-lg border border-border/20 px-1.5 py-0.5">
                                                             <input
                                                                 type="number"
                                                                 min="0"
@@ -582,28 +539,28 @@ export function TVDetailsClient({ initialTV, initialUserItem }: TVDetailsClientP
                                                                 }}
                                                                 className="w-full bg-transparent text-center font-bold focus:outline-none"
                                                             />
-                                                            <span className="text-[10px] text-foreground-muted">/ {details.number_of_episodes}</span>
+                                                            <span className="text-[9px] text-foreground-muted">/{details.number_of_episodes}</span>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
 
                                             {/* Rating system */}
-                                            <div className="space-y-1.5">
+                                            <div className="space-y-1.5 border-t border-border/5 pt-1">
                                                 <div className="flex justify-between items-center">
-                                                    <label className="text-[10px] font-bold uppercase tracking-wider text-foreground-muted">
+                                                    <label className="text-[9px] font-black uppercase tracking-wider text-foreground-muted">
                                                         {t('rating')}
                                                     </label>
                                                     {userItem.rating && (
                                                         <span className="text-[10px] font-bold text-accent">{userItem.rating} / 10</span>
                                                     )}
                                                 </div>
-                                                <div className="flex items-center gap-1">
+                                                <div className="flex items-center justify-between bg-background-elevated/40 border border-border/20 rounded-lg p-1.5">
                                                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
                                                         <button
                                                             key={star}
                                                             onClick={() => handleRatingUpdate(userItem.rating === star ? null : star)}
-                                                            className="focus:outline-none transition-transform hover:scale-110"
+                                                            className="focus:outline-none transition-transform hover:scale-120"
                                                         >
                                                             <Star
                                                                 className={`h-4.5 w-4.5 ${
@@ -618,7 +575,7 @@ export function TVDetailsClient({ initialTV, initialUserItem }: TVDetailsClientP
                                             </div>
 
                                             {/* Like / Bookmark toggles */}
-                                            <div className="grid grid-cols-2 gap-2 pt-2">
+                                            <div className="grid grid-cols-2 gap-2 pt-1.5">
                                                 <button
                                                     onClick={handleToggleLike}
                                                     className={`flex items-center justify-center gap-2 rounded-xl py-2 text-xs font-bold border transition-all ${
@@ -647,10 +604,79 @@ export function TVDetailsClient({ initialTV, initialUserItem }: TVDetailsClientP
                                 </div>
                             )}
                         </div>
+
+                        {/* Compact Watch Providers */}
+                        <div className="rounded-2xl border border-border/30 bg-background-elevated/40 backdrop-blur-xl p-4 space-y-3 shadow-md">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1.5 border-b border-border/15">
+                                <h3 className="text-[11px] font-extrabold uppercase tracking-wider text-foreground-muted">{t('whereToWatch')}</h3>
+                                <div className="flex gap-1 bg-background/40 p-0.5 rounded-lg border border-border/25">
+                                    {(['flatrate', 'rent', 'buy'] as const).map((tab) => (
+                                        <button
+                                            key={tab}
+                                            onClick={() => setActiveProviderTab(tab)}
+                                            className={`text-[9px] font-black px-2 py-1 rounded-md uppercase tracking-wider transition-colors ${
+                                                activeProviderTab === tab
+                                                    ? 'bg-accent text-background'
+                                                    : 'text-foreground-subtle hover:text-foreground hover:bg-background-elevated/35'
+                                            }`}
+                                        >
+                                            {t(tab)}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {isLoadingProviders ? (
+                                <div className="flex justify-center py-4">
+                                    <Loader2 className="h-5 w-5 text-accent animate-spin" />
+                                </div>
+                            ) : providerList.length > 0 ? (
+                                <div className="flex flex-wrap gap-2">
+                                    {providerList.map((p: any) => (
+                                        <a
+                                            key={p.provider_id}
+                                            href={providers?.link || '#'}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            title={p.provider_name}
+                                            className="relative h-8 w-8 rounded-lg overflow-hidden border border-border/20 hover:border-accent/40 transition-colors shadow-sm block"
+                                        >
+                                            <img
+                                                src={`https://image.tmdb.org/t/p/original${p.logo_path}`}
+                                                alt={p.provider_name}
+                                                className="h-full w-full object-cover"
+                                            />
+                                        </a>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-[10px] text-foreground-muted py-1">{t('notAvailable')}</p>
+                            )}
+                        </div>
+
+                        {/* Social/External Links */}
+                        {socialLinks.length > 0 && (
+                            <div className="flex justify-center gap-3">
+                                {socialLinks.map((s: any, idx) => {
+                                    const Icon = s.icon;
+                                    return (
+                                        <a
+                                            key={idx}
+                                            href={s.isDirect ? s.id : s.url(s.id)}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="p-2.5 rounded-full border border-border/40 bg-background-elevated/40 hover:bg-background-elevated hover:border-accent/40 text-foreground-muted hover:text-foreground transition-all duration-300 shadow-sm"
+                                        >
+                                            <Icon className="h-4 w-4" />
+                                        </a>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
 
-                    {/* Right Column */}
-                    <div className="flex-1 space-y-8 w-full">
+                    {/* Right Column (Info, Plot, Crew, Cast, Media, Similars) */}
+                    <div className="flex-1 space-y-8 w-full min-w-0">
                         
                         {/* Title Header */}
                         <div className="space-y-4">
@@ -666,49 +692,49 @@ export function TVDetailsClient({ initialTV, initialUserItem }: TVDetailsClientP
                             </div>
 
                             {/* Ratings & Certifications Pill Row */}
-                            <div className="flex flex-wrap items-center gap-3">
-                                {cert && (
-                                    <div className="flex flex-col">
-                                        <div className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-background-elevated border border-border font-extrabold text-xs tracking-wider">
+                            <div className="space-y-1.5">
+                                <div className="flex flex-wrap items-center gap-3">
+                                    {cert && (
+                                        <div className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-background-elevated border border-border font-extrabold text-xs tracking-wider h-8">
                                             <span className="text-foreground-muted text-[10px] uppercase font-bold">{t('certification')}:</span>
                                             <span className="text-foreground">{cert}</span>
                                         </div>
-                                        {isCertFallback && (
-                                            <span className="text-[9px] text-foreground-muted/70 mt-1">
-                                                {t('certificationNote', { country: region })}
-                                            </span>
-                                        )}
-                                    </div>
-                                )}
+                                    )}
 
-                                {details.vote_average > 0 && (
-                                    <div className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-background-elevated border border-border font-bold text-xs">
-                                        <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500" />
-                                        <span>{details.vote_average.toFixed(1)} / 10</span>
-                                        <span className="text-[10px] text-foreground-muted">TMDB</span>
-                                    </div>
-                                )}
-
-                                {initialTV.imdbRating && (
-                                    <div className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-amber-500/10 border border-amber-500/20 font-bold text-xs text-amber-500">
-                                        <span>IMDb</span>
-                                        <span className="text-foreground">{initialTV.imdbRating}</span>
-                                    </div>
-                                )}
-
-                                {initialTV.rtScore && initialTV.rtScore !== 'N/A' && (
-                                    <div className="flex items-center gap-3 font-bold text-xs">
-                                        <div className={`flex items-center gap-1 px-3 py-1 rounded-md ${initialTV.rtStatus === 'fresh' ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-500' : 'bg-red-500/10 border border-red-500/20 text-red-500'}`}>
-                                            <span className="text-sm">🍅</span>
-                                            <span>{initialTV.rtScore}</span>
+                                    {details.vote_average > 0 && (
+                                        <div className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-background-elevated border border-border font-bold text-xs h-8">
+                                            <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500" />
+                                            <span>{details.vote_average.toFixed(1)}</span>
+                                            <span className="text-[10px] text-foreground-muted">TMDB</span>
                                         </div>
-                                        {initialTV.rtAudienceScore && (
-                                            <div className={`flex items-center gap-1 px-3 py-1 rounded-md ${initialTV.rtAudienceStatus === 'fresh' ? 'bg-blue-500/10 border border-blue-500/20 text-blue-500' : 'bg-orange-500/10 border border-orange-500/20 text-orange-500'}`}>
-                                                <span className="text-sm">🍿</span>
-                                                <span>{initialTV.rtAudienceScore}</span>
+                                    )}
+
+                                    {initialTV.imdbRating && (
+                                        <div className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-amber-500/10 border border-amber-500/20 font-bold text-xs text-amber-500 h-8">
+                                            <span>IMDb</span>
+                                            <span className="text-foreground">{initialTV.imdbRating}</span>
+                                        </div>
+                                    )}
+
+                                    {initialTV.rtScore && initialTV.rtScore !== 'N/A' && (
+                                        <div className="flex items-center gap-2.5 font-bold text-xs h-8">
+                                            <div className={`flex items-center gap-1.5 px-3 py-1 rounded-md h-full ${initialTV.rtStatus === 'fresh' ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-500' : 'bg-red-500/10 border border-red-500/20 text-red-500'}`}>
+                                                <span className="text-sm">🍅</span>
+                                                <span>{initialTV.rtScore}</span>
                                             </div>
-                                        )}
-                                    </div>
+                                            {initialTV.rtAudienceScore && (
+                                                <div className={`flex items-center gap-1.5 px-3 py-1 rounded-md h-full ${initialTV.rtAudienceStatus === 'fresh' ? 'bg-blue-500/10 border border-blue-500/20 text-blue-500' : 'bg-orange-500/10 border border-orange-500/20 text-orange-500'}`}>
+                                                    <span className="text-sm">🍿</span>
+                                                    <span>{initialTV.rtAudienceScore}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                                {isCertFallback && cert && (
+                                    <p className="text-[10px] text-foreground-muted/70 italic">
+                                        {t('certificationNote', { country: region })}
+                                    </p>
                                 )}
                             </div>
 
@@ -716,7 +742,7 @@ export function TVDetailsClient({ initialTV, initialUserItem }: TVDetailsClientP
                             <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-foreground-muted border-t border-b border-border/20 py-3.5">
                                 <div className="flex items-center gap-1.5">
                                     <Calendar className="h-4 w-4" />
-                                    <span>{details.first_air_date}</span>
+                                    <span>{formatCleanDate(details.first_air_date)}</span>
                                 </div>
                                 {averageRuntimeStr && (
                                     <div className="flex items-center gap-1.5">
@@ -742,16 +768,16 @@ export function TVDetailsClient({ initialTV, initialUserItem }: TVDetailsClientP
                             </div>
                         </div>
 
-                        {/* Overview Plot */}
-                        <div className="space-y-3">
+                        {/* Synopsis section */}
+                        <div className="space-y-3 bg-[#0c0c12]/40 border border-border/15 p-5 rounded-2xl">
                             <h3 className="text-lg font-bold border-b border-border/20 pb-2">{t('synopsis')}</h3>
-                            <p className="text-foreground-muted leading-relaxed text-sm md:text-base">
+                            <p className="text-foreground-muted leading-relaxed text-sm md:text-base break-words">
                                 {details.overview}
                             </p>
                         </div>
 
                         {/* Production Crew Credits */}
-                        <div className="space-y-4">
+                        <div className="space-y-4 bg-[#0c0c12]/20 border border-border/10 p-5 rounded-2xl">
                             <h3 className="text-lg font-bold border-b border-border/20 pb-2">Production</h3>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 text-sm">
                                 {creator && (
@@ -802,9 +828,9 @@ export function TVDetailsClient({ initialTV, initialUserItem }: TVDetailsClientP
                                     <h3 className="text-lg font-bold">{t('topCast')}</h3>
                                     <button 
                                         onClick={() => setIsCreditsModalOpen(true)}
-                                        className="text-xs font-bold text-accent hover:text-accent-hover transition-colors"
+                                        className="text-xs font-black uppercase tracking-wider text-accent hover:text-accent-hover transition-colors px-3 py-1 rounded bg-accent/5 border border-accent/20 cursor-pointer"
                                     >
-                                        {t('fullCredits')} →
+                                        {t('fullCredits')}
                                     </button>
                                 </div>
                                 <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4">
@@ -842,9 +868,99 @@ export function TVDetailsClient({ initialTV, initialUserItem }: TVDetailsClientP
                             </div>
                         )}
 
-                        {/* Clickable Keywords */}
+                        {/* Expanded Media Grid Section */}
+                        {(backdrops.length > 0 || posters.length > 0 || videoGallery.length > 0) && (
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center border-b border-border/20 pb-2">
+                                    <h3 className="text-lg font-bold">{t('expandedMedia')}</h3>
+                                    <div className="flex gap-4 text-xs font-bold">
+                                        {backdrops.length > 0 && (
+                                            <button
+                                                onClick={() => { setActiveMediaTab('backdrops'); setVisibleMediaCount(12); }}
+                                                className={`transition-colors cursor-pointer ${activeMediaTab === 'backdrops' ? 'text-accent' : 'text-foreground-muted hover:text-foreground'}`}
+                                            >
+                                                {t('backdrops')} ({backdrops.length})
+                                            </button>
+                                        )}
+                                        {posters.length > 0 && (
+                                            <button
+                                                onClick={() => { setActiveMediaTab('posters'); setVisibleMediaCount(12); }}
+                                                className={`transition-colors cursor-pointer ${activeMediaTab === 'posters' ? 'text-accent' : 'text-foreground-muted hover:text-foreground'}`}
+                                            >
+                                                {t('posters')} ({posters.length})
+                                            </button>
+                                        )}
+                                        {videoGallery.length > 0 && (
+                                            <button
+                                                onClick={() => { setActiveMediaTab('videos'); setVisibleMediaCount(12); }}
+                                                className={`transition-colors cursor-pointer ${activeMediaTab === 'videos' ? 'text-accent' : 'text-foreground-muted hover:text-foreground'}`}
+                                            >
+                                                {t('videos')} ({videoGallery.length})
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                    {activeMediaItems.slice(0, visibleMediaCount).map((item: any, idx: number) => (
+                                        <div key={idx} className="relative rounded-xl overflow-hidden border border-border/20 bg-background-elevated/40" style={{ aspectRatio: activeMediaTab === 'posters' ? '2/3' : '16/9' }}>
+                                            {/* Photo/Video type indicator badge */}
+                                            <div className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded bg-black/75 backdrop-blur-sm border border-border/20 text-[9px] font-black uppercase tracking-wider flex items-center gap-1 text-foreground">
+                                                {activeMediaTab === 'videos' ? (
+                                                    <>
+                                                        <Play className="h-2.5 w-2.5 fill-current" />
+                                                        <span>Video</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Film className="h-2.5 w-2.5" />
+                                                        <span>Photo</span>
+                                                    </>
+                                                )}
+                                            </div>
+
+                                            {activeMediaTab === 'videos' ? (
+                                                <iframe
+                                                    src={`https://www.youtube.com/embed/${item.key}`}
+                                                    title={item.name}
+                                                    className="absolute inset-0 h-full w-full"
+                                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                    allowFullScreen
+                                                />
+                                            ) : (
+                                                <div 
+                                                    className="relative w-full h-full cursor-zoom-in"
+                                                    onClick={() => setLightboxImage(`https://image.tmdb.org/t/p/original${item.file_path}`)}
+                                                >
+                                                    <Image
+                                                        src={`https://image.tmdb.org/t/p/w500${item.file_path}`}
+                                                        alt="Media Gallery Asset"
+                                                        fill
+                                                        className="object-cover transition-transform duration-500 hover:scale-105"
+                                                        loading="lazy"
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {activeMediaItems.length > visibleMediaCount && (
+                                    <div className="flex justify-center pt-2">
+                                        <button
+                                            onClick={() => setVisibleMediaCount((prev) => prev + 12)}
+                                            className="px-4 py-2 rounded-xl border border-border bg-background hover:bg-background-elevated text-xs font-bold transition-all cursor-pointer"
+                                        >
+                                            {t('viewMore')}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Keywords (Repositioned under media) */}
                         {keywordList.length > 0 && (
-                            <div className="space-y-3">
+                            <div className="space-y-3 pt-4 border-t border-border/10">
                                 <h3 className="text-xs font-bold uppercase tracking-widest text-foreground-muted">{t('keywords')}</h3>
                                 <div className="flex flex-wrap gap-2">
                                     {keywordList.map((kw: any) => (
@@ -860,83 +976,13 @@ export function TVDetailsClient({ initialTV, initialUserItem }: TVDetailsClientP
                             </div>
                         )}
 
-                        {/* Expanded Media Grid Section */}
-                        {(backdrops.length > 0 || posters.length > 0 || videoGallery.length > 0) && (
-                            <div className="space-y-4">
-                                <div className="flex justify-between items-center border-b border-border/20 pb-2">
-                                    <h3 className="text-lg font-bold">{t('expandedMedia')}</h3>
-                                    <div className="flex gap-4 text-xs font-bold">
-                                        {backdrops.length > 0 && (
-                                            <button
-                                                onClick={() => { setActiveMediaTab('backdrops'); setVisibleMediaCount(12); }}
-                                                className={`transition-colors ${activeMediaTab === 'backdrops' ? 'text-accent' : 'text-foreground-muted hover:text-foreground'}`}
-                                            >
-                                                {t('backdrops')} ({backdrops.length})
-                                            </button>
-                                        )}
-                                        {posters.length > 0 && (
-                                            <button
-                                                onClick={() => { setActiveMediaTab('posters'); setVisibleMediaCount(12); }}
-                                                className={`transition-colors ${activeMediaTab === 'posters' ? 'text-accent' : 'text-foreground-muted hover:text-foreground'}`}
-                                            >
-                                                {t('posters')} ({posters.length})
-                                            </button>
-                                        )}
-                                        {videoGallery.length > 0 && (
-                                            <button
-                                                onClick={() => { setActiveMediaTab('videos'); setVisibleMediaCount(12); }}
-                                                className={`transition-colors ${activeMediaTab === 'videos' ? 'text-accent' : 'text-foreground-muted hover:text-foreground'}`}
-                                            >
-                                                {t('videos')} ({videoGallery.length})
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                    {activeMediaItems.slice(0, visibleMediaCount).map((item: any, idx: number) => (
-                                        <div key={idx} className="relative rounded-xl overflow-hidden border border-border/20 bg-background-elevated/40" style={{ aspectRatio: activeMediaTab === 'posters' ? '2/3' : '16/9' }}>
-                                            {activeMediaTab === 'videos' ? (
-                                                <iframe
-                                                    src={`https://www.youtube.com/embed/${item.key}`}
-                                                    title={item.name}
-                                                    className="absolute inset-0 h-full w-full"
-                                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                                    allowFullScreen
-                                                />
-                                            ) : (
-                                                <Image
-                                                    src={`https://image.tmdb.org/t/p/w500${item.file_path}`}
-                                                    alt="Media Gallery Asset"
-                                                    fill
-                                                    className="object-cover transition-transform duration-500 hover:scale-105"
-                                                    loading="lazy"
-                                                />
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-
-                                {activeMediaItems.length > visibleMediaCount && (
-                                    <div className="flex justify-center pt-2">
-                                        <button
-                                            onClick={() => setVisibleMediaCount((prev) => prev + 12)}
-                                            className="px-4 py-2 rounded-xl border border-border bg-background hover:bg-background-elevated text-xs font-bold transition-all"
-                                        >
-                                            {t('viewMore')}
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {/* Footer Recommendations */}
+                        {/* Footer Recommendations (Redesigned uniform responsive grid) */}
                         {recommendations.length > 0 && (
-                            <div className="space-y-4 pt-4 border-t border-border/10">
+                            <div className="space-y-4 pt-6 border-t border-border/10">
                                 <h3 className="text-lg font-bold">{t('recommendations')}</h3>
-                                <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 snap-x">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                                     {recommendations.slice(0, 12).map((item: any) => (
-                                        <div key={item.id} className="w-40 md:w-48 shrink-0 snap-start">
+                                        <div key={item.id} className="w-full">
                                             <MovieCard
                                                 id={item.id}
                                                 title={item.title || item.name}
@@ -955,6 +1001,52 @@ export function TVDetailsClient({ initialTV, initialUserItem }: TVDetailsClientP
                 </div>
             </div>
 
+            {/* Trailer Modal Popup */}
+            {isTrailerModalOpen && heroTrailer && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={() => setIsTrailerModalOpen(false)} />
+                    <div className="relative w-full max-w-4xl aspect-video rounded-2xl overflow-hidden border border-border shadow-2xl z-10 bg-black">
+                        <iframe
+                            src={`https://www.youtube.com/embed/${heroTrailer.key}?autoplay=1`}
+                            title={details.name}
+                            className="absolute inset-0 h-full w-full"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                        />
+                        <button
+                            onClick={() => setIsTrailerModalOpen(false)}
+                            className="absolute top-4 right-4 z-20 p-2 rounded-full bg-black/60 hover:bg-black/80 text-foreground transition-colors border border-border/20 cursor-pointer"
+                        >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Image Lightbox Modal */}
+            {lightboxImage && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/95 backdrop-blur-sm" onClick={() => setLightboxImage(null)} />
+                    <div className="relative max-w-full max-h-full rounded-xl overflow-hidden border border-border/40 shadow-2xl z-10 bg-black">
+                        <img
+                            src={lightboxImage}
+                            alt="Enlarged media asset"
+                            className="max-w-full max-h-[90vh] object-contain"
+                        />
+                        <button
+                            onClick={() => setLightboxImage(null)}
+                            className="absolute top-4 right-4 z-20 p-2 rounded-full bg-black/60 hover:bg-black/80 text-foreground transition-colors border border-border/20 cursor-pointer"
+                        >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Full Credits Modal */}
             {isCreditsModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -964,7 +1056,7 @@ export function TVDetailsClient({ initialTV, initialUserItem }: TVDetailsClientP
                             <h2 className="text-xl font-bold">{t('fullCredits')}</h2>
                             <button
                                 onClick={() => setIsCreditsModalOpen(false)}
-                                className="text-xs font-bold text-foreground-muted hover:text-foreground"
+                                className="text-xs font-bold text-foreground-muted hover:text-foreground cursor-pointer"
                             >
                                 Close
                             </button>
