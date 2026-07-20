@@ -2,7 +2,7 @@
 
 import { Link } from '@/i18n/routing';
 import { usePathname } from 'next/navigation';
-import { Search, Library, LayoutDashboard, LogIn, X, Film, Tv, ChevronDown, Key } from 'lucide-react';
+import { Search, Library, LayoutDashboard, LogIn, X, Film, Tv, ChevronDown, Key, Settings } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { useState, useEffect, useRef } from 'react';
@@ -212,6 +212,15 @@ export function Navbar() {
                     </button>
 
                     <LanguageSwitcher />
+
+                    <Link
+                        href="/settings"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-[#12121a] hover:bg-background-elevated hover:border-border-hover text-foreground-muted hover:text-foreground transition-all cursor-pointer"
+                        aria-label="Settings"
+                        title="Settings"
+                    >
+                        <Settings className="h-4 w-4" />
+                    </Link>
 
                     {user ? (
                         <div className="flex items-center gap-2 relative group/usermenu">

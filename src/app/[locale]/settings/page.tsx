@@ -3,9 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { 
-    HelpCircle, Eye, EyeOff, Save, Key, Globe, Info, CheckCircle, Settings, ShieldCheck, ShieldAlert, Shield
+    HelpCircle, Eye, EyeOff, Save, Key, Globe, Info, CheckCircle, Settings, ShieldCheck, ShieldAlert, Shield, Lock, User as UserIcon
 } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
+import { Link } from '@/i18n/routing';
+import { createClient } from '@/lib/supabase/client';
+import type { User } from '@supabase/supabase-js';
 
 // SVG Brand Logos as clean, uniformly sized inline components
 const OpenAiLogo = () => (
@@ -90,12 +93,16 @@ export default function SettingsPage() {
     const router = useRouter();
     const pathname = usePathname();
 
-    const [activeTab, setActiveTab] = useState<'apiKeys' | 'general'>('apiKeys');
+    const [activeTab, setActiveTab] = useState<'apiKeys' | 'general' | 'account'>('apiKeys');
     const [keys, setKeys] = useState<Record<string, string>>({});
     const [visibility, setVisibility] = useState<Record<string, boolean>>({});
     const [isHelpOpen, setIsHelpOpen] = useState(false);
     const [activeProvider, setActiveProvider] = useState<string>('openai');
     const [saveSuccess, setSaveSuccess] = useState(false);
+
+    // Supabase auth user state
+    const [user, setUser] = useState<User | null>(null);
+    const [isUserLoading, setIsUserLoading] = useState(true);
 
     // Validation state
     const [validationStates, setValidationStates] = useState<Record<string, 'active' | 'inactive' | 'invalid' | 'validating'>>({});
@@ -135,6 +142,15 @@ export default function SettingsPage() {
         });
         const timeframe = localStorage.getItem('markd_pref_timeframe') || 'day';
         const autoplay = localStorage.getItem('markd_pref_autoplay') !== 'false';
+
+        // Load Supabase User
+        const supabase = createClient();
+        supabase.auth.getUser().then(({ data }) => {
+            setUser(data.user);
+            setIsUserLoading(false);
+        }).catch(() => {
+            setIsUserLoading(false);
+        });
 
         setTimeout(() => {
             setKeys(loaded);
@@ -310,6 +326,17 @@ export default function SettingsPage() {
                     >
                         <Settings className="h-4 w-4" />
                         <span>{t('general')}</span>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('account')}
+                        className={`flex items-center gap-2.5 px-4 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer shrink-0 snap-start w-full justify-start ${
+                            activeTab === 'account'
+                                ? 'bg-accent/15 text-accent border-l-2 border-accent'
+                                : 'text-foreground-muted hover:bg-background-elevated hover:text-foreground'
+                        }`}
+                    >
+                        <UserIcon className="h-4 w-4" />
+                        <span>{pathname.startsWith('/zh-TW') ? '帳戶與同步' : 'Account & Sync'}</span>
                     </button>
                 </div>
 
@@ -511,6 +538,87 @@ export default function SettingsPage() {
                                     </button>
                                 </div>
                             </form>
+                        </div>
+                    )}
+
+                    {/* Panel 3: Account & Cloud Sync (Protected Sub-Section) */}
+                    {activeTab === 'account' && (
+                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                            <div className="border-b border-border/15 pb-3">
+                                <h2 className="text-lg font-black tracking-wider uppercase text-foreground">
+                                    {pathname.startsWith('/zh-TW') ? '帳戶與雲端同步' : 'Account & Cloud Sync'}
+                                </h2>
+                                <p className="text-xs text-foreground-muted">
+                                    {pathname.startsWith('/zh-TW') ? '管理您的雲端資料庫個人檔案與影劇清單同步設定。' : 'Manage your cloud database profile and watchlist synchronization settings.'}
+                                </p>
+                            </div>
+
+                            {isUserLoading ? (
+                                <div className="bg-[#0c0c12]/40 border border-border/20 rounded-2xl p-8 flex justify-center items-center">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-accent"></div>
+                                </div>
+                            ) : user ? (
+                                <div className="bg-[#0c0c12]/40 border border-border/20 rounded-2xl p-5 space-y-6 shadow-xl">
+                                    <div className="flex items-center gap-4 bg-[#12121a]/60 border border-border/15 p-4 rounded-xl">
+                                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-accent/20 border border-accent/40 text-accent font-black text-lg">
+                                            {user.email?.[0]?.toUpperCase() ?? 'U'}
+                                        </div>
+                                        <div>
+                                            <h3 className="text-sm font-black text-foreground">{user.email}</h3>
+                                            <p className="text-[10px] text-foreground-muted">User ID: {user.id}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-3 bg-[#12121a]/60 border border-border/15 p-4 rounded-xl">
+                                        <h4 className="text-xs font-black uppercase tracking-wider text-foreground">
+                                            {pathname.startsWith('/zh-TW') ? '同步功能列表' : 'Sync Capabilities'}
+                                        </h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs mt-2">
+                                            <div className="flex items-center gap-2 text-foreground-muted">
+                                                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                                                <span>{pathname.startsWith('/zh-TW') ? '影劇清單已同步' : 'Watchlist Synced'}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-foreground-muted">
+                                                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                                                <span>{pathname.startsWith('/zh-TW') ? 'API 金鑰已同步' : 'API Keys Synced'}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-foreground-muted">
+                                                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                                                <span>{pathname.startsWith('/zh-TW') ? '個人設定已同步' : 'Preferences Synced'}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-foreground-muted">
+                                                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                                                <span>{pathname.startsWith('/zh-TW') ? '多裝置雲端備份' : 'Multi-device active backups'}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="bg-[#0c0c12]/40 border border-border/20 rounded-2xl p-8 text-center space-y-4 shadow-xl">
+                                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-yellow-500/10 border border-yellow-500/25 text-yellow-400">
+                                        <Lock className="h-6 w-6" />
+                                    </div>
+                                    <div className="space-y-1.5 max-w-md mx-auto">
+                                        <h3 className="text-sm font-black text-foreground uppercase tracking-wider">
+                                            {pathname.startsWith('/zh-TW') ? '雲端存取已鎖定' : 'Cloud Access Locked'}
+                                        </h3>
+                                        <p className="text-xs text-foreground-muted leading-relaxed leading-5">
+                                            {pathname.startsWith('/zh-TW') 
+                                                ? '請先登入以啟用雲端同步功能。擁有 MARKD 帳戶後，您可以在所有裝置上安全地同步您的追蹤清單、設定及自訂 AI 金鑰。' 
+                                                : 'Please sign in to unlock cloud synchronization features. With a MARKD account, you can synchronize your watchlist, preferences, and custom AI keys securely across all devices.'
+                                            }
+                                        </p>
+                                    </div>
+                                    <div className="pt-2">
+                                        <Link
+                                            href="/login"
+                                            className="inline-flex items-center gap-2 rounded-xl bg-accent px-6 py-3 text-xs font-black uppercase tracking-wider text-background hover:bg-accent-hover active:scale-[0.98] transition-all cursor-pointer shadow-lg shadow-accent/20"
+                                        >
+                                            {pathname.startsWith('/zh-TW') ? '登入以啟用雲端同步' : 'Sign In to Cloud Sync'}
+                                        </Link>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
