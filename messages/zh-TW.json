@@ -362,6 +362,8 @@
         "saved": "金鑰已儲存！",
         "help": "說明",
         "bilingualHelp": "API 金鑰指引 (雙語說明)",
+        "general": "一般設定",
+        "apiKeysTab": "API 金鑰設定",
         "openai": "OpenAI 金鑰",
         "anthropic": "Anthropic 金鑰",
         "mistral": "Mistral 金鑰",

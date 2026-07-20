@@ -362,6 +362,8 @@
         "saved": "Keys Saved!",
         "help": "Help",
         "bilingualHelp": "API Key Guide (雙語說明)",
+        "general": "General Preferences",
+        "apiKeysTab": "API Key Configuration",
         "openai": "OpenAI Key",
         "anthropic": "Anthropic Key",
         "mistral": "Mistral Key",
