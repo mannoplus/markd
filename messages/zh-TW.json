@@ -373,15 +373,22 @@
         "glm": "智譜清言 金鑰",
         "deepseek": "DeepSeek 金鑰",
         "grok": "Grok 金鑰",
-        "minimax": "MiniMax 金鑰"
+        "minimax": "MiniMax 金鑰",
+        "active": "已啟用",
+        "keyRequired": "需要金鑰",
+        "invalidKey": "無效的金鑰",
+        "validating": "驗證中..."
     },
     "AiChat": {
         "title": "詢問 AI",
         "inputPlaceholder": "輸入關於此影劇的問題...",
+        "inputPlaceholderWithModel": "詢問 {modelName} 任何問題...",
         "clear": "清除對話",
         "suggestions": "推薦問題",
         "noApiKey": "請先至設定頁面設定您的 LLM API 金鑰以開始對話。",
         "minimize": "最小化",
-        "restore": "還原對話"
+        "restore": "還原對話",
+        "selectModel": "選擇 AI 模型",
+        "noActiveModels": "找不到任何已設定的金鑰。"
     }
 }

@@ -373,15 +373,22 @@
         "glm": "GLM Key",
         "deepseek": "DeepSeek Key",
         "grok": "Grok Key",
-        "minimax": "MiniMax Key"
+        "minimax": "MiniMax Key",
+        "active": "Active",
+        "keyRequired": "Key required",
+        "invalidKey": "Invalid API key",
+        "validating": "Validating..."
     },
     "AiChat": {
         "title": "Ask AI",
         "inputPlaceholder": "Ask a question about this title...",
+        "inputPlaceholderWithModel": "Ask {modelName} anything...",
         "clear": "Clear Chat",
         "suggestions": "Suggestions",
         "noApiKey": "Please configure your LLM API Keys in the Settings page to start chatting.",
         "minimize": "Minimize",
-        "restore": "Restore AI Chat"
+        "restore": "Restore AI Chat",
+        "selectModel": "Select AI Model",
+        "noActiveModels": "No configured models found."
     }
 }
