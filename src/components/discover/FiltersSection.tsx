@@ -5,6 +5,7 @@ import { ChevronDown, RefreshCw, Info, Calendar, Search } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { DiscoverFilterState } from './utils/buildDiscoverQuery';
 import { searchKeywordsAction } from '@/app/actions/discover';
+import { MobileDatePickerModal } from './MobileDatePickerModal';
 
 interface Genre {
     id: number;
@@ -43,6 +44,10 @@ export function FiltersSection({
     const toggleSection = (section: string) => {
         setOpenSections((prev) => ({ ...prev, [section]: !prev[section] }));
     };
+
+    // Mobile date picker states
+    const [isFromPickerOpen, setIsFromPickerOpen] = useState(false);
+    const [isToPickerOpen, setIsToPickerOpen] = useState(false);
 
     // Keyword Filter Local State and Submit
     const [keywordInput, setKeywordInput] = useState(state.keywords);
@@ -244,25 +249,53 @@ export function FiltersSection({
                         <div className="space-y-1.5">
                             <label className="text-xs text-foreground-muted font-semibold block">{t('dateFrom')}</label>
                             <div className="relative flex items-center overflow-visible">
-                                <input
-                                    type="date"
-                                    value={state.from_date}
-                                    onChange={(e) => handleDateChange('from_date', e.target.value)}
-                                    className="w-full rounded-lg border border-border bg-background pl-3 pr-10 py-2.5 text-sm text-foreground focus:border-foreground focus:outline-none focus:ring-1 focus:ring-foreground cursor-pointer relative z-10 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
-                                />
-                                <Calendar className="absolute right-3 h-4 w-4 text-foreground-muted pointer-events-none z-20" />
+                                {/* Desktop Input */}
+                                <div className="hidden md:flex relative items-center overflow-visible w-full">
+                                    <input
+                                        type="date"
+                                        value={state.from_date}
+                                        onChange={(e) => handleDateChange('from_date', e.target.value)}
+                                        className="w-full rounded-lg border border-border bg-background pl-3 pr-10 py-2.5 text-sm text-foreground focus:border-foreground focus:outline-none focus:ring-1 focus:ring-foreground cursor-pointer relative z-10 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                                    />
+                                    <Calendar className="absolute right-3 h-4 w-4 text-foreground-muted pointer-events-none z-20" />
+                                </div>
+                                {/* Mobile Trigger */}
+                                <button
+                                    type="button"
+                                    onClick={() => setIsFromPickerOpen(true)}
+                                    className="flex md:hidden w-full text-left rounded-lg border border-border bg-background pl-3 pr-10 py-2.5 text-sm text-foreground focus:border-foreground focus:outline-none focus:ring-1 focus:ring-foreground cursor-pointer relative items-center justify-between"
+                                >
+                                    <span className={state.from_date ? 'text-foreground font-semibold' : 'text-foreground-muted'}>
+                                        {state.from_date || 'YYYY-MM-DD'}
+                                    </span>
+                                    <Calendar className="absolute right-3 h-4 w-4 text-foreground-muted pointer-events-none" />
+                                </button>
                             </div>
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-xs text-foreground-muted font-semibold block">{t('dateTo')}</label>
                             <div className="relative flex items-center overflow-visible">
-                                <input
-                                    type="date"
-                                    value={state.to_date}
-                                    onChange={(e) => handleDateChange('to_date', e.target.value)}
-                                    className="w-full rounded-lg border border-border bg-background pl-3 pr-10 py-2.5 text-sm text-foreground focus:border-foreground focus:outline-none focus:ring-1 focus:ring-foreground cursor-pointer relative z-10 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
-                                />
-                                <Calendar className="absolute right-3 h-4 w-4 text-foreground-muted pointer-events-none z-20" />
+                                {/* Desktop Input */}
+                                <div className="hidden md:flex relative items-center overflow-visible w-full">
+                                    <input
+                                        type="date"
+                                        value={state.to_date}
+                                        onChange={(e) => handleDateChange('to_date', e.target.value)}
+                                        className="w-full rounded-lg border border-border bg-background pl-3 pr-10 py-2.5 text-sm text-foreground focus:border-foreground focus:outline-none focus:ring-1 focus:ring-foreground cursor-pointer relative z-10 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                                    />
+                                    <Calendar className="absolute right-3 h-4 w-4 text-foreground-muted pointer-events-none z-20" />
+                                </div>
+                                {/* Mobile Trigger */}
+                                <button
+                                    type="button"
+                                    onClick={() => setIsToPickerOpen(true)}
+                                    className="flex md:hidden w-full text-left rounded-lg border border-border bg-background pl-3 pr-10 py-2.5 text-sm text-foreground focus:border-foreground focus:outline-none focus:ring-1 focus:ring-foreground cursor-pointer relative items-center justify-between"
+                                >
+                                    <span className={state.to_date ? 'text-foreground font-semibold' : 'text-foreground-muted'}>
+                                        {state.to_date || 'YYYY-MM-DD'}
+                                    </span>
+                                    <Calendar className="absolute right-3 h-4 w-4 text-foreground-muted pointer-events-none" />
+                                </button>
                             </div>
                         </div>
                         {dateError && (
@@ -270,6 +303,22 @@ export function FiltersSection({
                         )}
                     </div>
                 )}
+
+                {/* Mobile Modals Render */}
+                <MobileDatePickerModal
+                    isOpen={isFromPickerOpen}
+                    onClose={() => setIsFromPickerOpen(false)}
+                    initialDate={state.from_date}
+                    onSelect={(date) => handleDateChange('from_date', date)}
+                    title={t('dateFrom')}
+                />
+                <MobileDatePickerModal
+                    isOpen={isToPickerOpen}
+                    onClose={() => setIsToPickerOpen(false)}
+                    initialDate={state.to_date}
+                    onSelect={(date) => handleDateChange('to_date', date)}
+                    title={t('dateTo')}
+                />
             </div>
 
             {/* Genres */}

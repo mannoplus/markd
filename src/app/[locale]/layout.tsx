@@ -55,7 +55,7 @@ export default async function RootLayout({
         <NextIntlClientProvider messages={messages}>
           <RegionProvider>
             <Navbar />
-            <main className="min-h-screen pb-24 md:pb-0">{children}</main>
+            <main className="min-h-screen pb-32 md:pb-0">{children}</main>
             <Footer />
             <BottomNav />
           </RegionProvider>

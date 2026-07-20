@@ -592,7 +592,7 @@ export function HomeRedesign({
                             <span className="rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-semibold text-accent font-sans">Hot</span>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex flex-nowrap md:flex-wrap items-center gap-2 overflow-x-auto md:overflow-visible scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 scroll-smooth">
                             {(['upcoming', 'popular', 'streaming', 'rent', 'theaters'] as const).map((tab) => {
                                 const getTabLabel = () => {
                                     switch (tab) {
@@ -608,7 +608,7 @@ export function HomeRedesign({
                                     <button
                                         key={tab}
                                         onClick={() => setTrailerTab(tab)}
-                                        className={`rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-wider transition-all duration-300 ${
+                                        className={`rounded-full px-3 py-1.5 md:px-4 text-xs font-bold uppercase tracking-wider transition-all duration-300 whitespace-nowrap shrink-0 ${
                                             trailerTab === tab
                                                 ? 'bg-accent text-background shadow-lg shadow-accent/20'
                                                 : 'bg-background-elevated text-foreground-muted hover:bg-background-elevated-hover hover:text-foreground'

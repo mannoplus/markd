@@ -17,19 +17,26 @@ export function BottomNav() {
     ];
 
     return (
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass border-t border-border pb-safe flex items-center justify-around h-[68px] px-2 shadow-[0_-4px_24px_rgba(0,0,0,0.4)]">
+        <nav 
+            className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass border-t border-border flex items-center justify-around px-2 shadow-[0_-4px_24px_rgba(0,0,0,0.4)]"
+            style={{
+                paddingBottom: 'calc(8px + env(safe-area-inset-bottom))',
+                height: 'calc(76px + env(safe-area-inset-bottom))'
+            }}
+        >
             {NAV_LINKS.map(({ href, activePath, label, icon: Icon }) => {
                 const isActive = pathname.startsWith(activePath);
                 return (
                     <Link
                         key={href}
                         href={href as Parameters<typeof Link>[0]['href']}
-                        className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-colors duration-[var(--transition-fast)] ${isActive
+                        className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-colors duration-[var(--transition-fast)] cursor-pointer ${isActive
                             ? 'text-accent'
                             : 'text-foreground-muted hover:text-foreground'
                         }`}
+                        style={{ minHeight: '44px' }}
                     >
-                        <div className={`p-1 rounded-full ${isActive ? 'bg-accent-muted' : 'bg-transparent'}`}>
+                        <div className={`p-1.5 rounded-full ${isActive ? 'bg-accent-muted' : 'bg-transparent'}`}>
                             <Icon className="h-5 w-5" />
                         </div>
                         <span className="text-[10px] font-medium tracking-wide">{label}</span>
