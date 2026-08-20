@@ -249,7 +249,7 @@ export default function SettingsPage() {
                             >
                                 <div>
                                     <p className="text-sm font-bold">{tCommon('traditionalChinese')}</p>
-                                    <p className="text-xs text-foreground-subtle mt-0.5">台灣繁體中文</p>
+                                    <p className="text-xs text-foreground-subtle mt-0.5">繁體中文</p>
                                 </div>
                                 {locale === 'zh-TW' && (
                                     <span className="h-2 w-2 rounded-full bg-accent" />

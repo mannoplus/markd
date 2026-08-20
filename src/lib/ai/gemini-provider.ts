@@ -4,9 +4,9 @@ export class GeminiProvider {
   private apiKey: string;
   private model: string;
 
-  constructor(apiKey?: string, model: string = 'gemini-2.5-flash') {
+  constructor(apiKey?: string, model?: string) {
     this.apiKey = apiKey || process.env.GEMINI_API_KEY || '';
-    this.model = model;
+    this.model = model || process.env.GEMINI_MODEL || 'gemini-3.6-flash';
   }
 
   public isAvailable(): boolean {

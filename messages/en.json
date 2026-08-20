@@ -25,9 +25,9 @@
         "seasonsSuffix": "seasons",
         "language": "Language",
         "english": "English",
-        "traditionalChinese": "Traditional Chinese (Taiwan)",
+        "traditionalChinese": "Chinese",
         "switchToEnglish": "Switch to English",
-        "switchToTraditionalChinese": "Switch to Traditional Chinese",
+        "switchToTraditionalChinese": "Switch to Chinese",
         "brandName": "MARKD",
         "all": "All",
         "movie": "Movie",
@@ -364,7 +364,10 @@
         "returningSeries": "Returning Series",
         "ended": "Ended",
         "canceled": "Canceled",
-        "inProduction": "In Production"
+        "inProduction": "In Production",
+        "trailer": "Trailer",
+        "askAi": "Ask AI",
+        "askAI": "Ask AI"
     },
     "Person": {
         "personalInfo": "Personal Info",

@@ -25,9 +25,9 @@
         "seasonsSuffix": "季",
         "language": "語言",
         "english": "English",
-        "traditionalChinese": "繁體中文（台灣）",
+        "traditionalChinese": "中文",
         "switchToEnglish": "切換為英文",
-        "switchToTraditionalChinese": "切換為繁體中文（台灣）",
+        "switchToTraditionalChinese": "切換為中文",
         "brandName": "MARKD",
         "all": "全部",
         "movie": "電影",
@@ -364,7 +364,10 @@
         "returningSeries": "續播中",
         "ended": "已完結",
         "canceled": "已取消",
-        "inProduction": "製作中"
+        "inProduction": "製作中",
+        "trailer": "預告片",
+        "askAi": "Ask AI",
+        "askAI": "Ask AI"
     },
     "Person": {
         "personalInfo": "個人檔案",
