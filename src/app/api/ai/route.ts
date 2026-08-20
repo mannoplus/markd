@@ -5,7 +5,10 @@ export async function POST(request: Request) {
         const body = await request.json();
         const { provider, apiKey, messages, model, isSuggestions, contextInfo, language } = body;
 
-        if (!apiKey) {
+        // Use server environment GEMINI_API_KEY as fallback if provider is gemini and no key passed
+        const effectiveApiKey = apiKey || (provider === 'gemini' ? process.env.GEMINI_API_KEY : null);
+
+        if (!effectiveApiKey && provider !== 'gemini') {
             return NextResponse.json({ error: 'API Key is required.' }, { status: 400 });
         }
 
@@ -31,20 +34,68 @@ CRITICAL INSTRUCTIONS:
                 { role: 'user', content: 'Generate 3 to 4 suggested follow-up questions based on the media details and conversation context.' }
             ];
         } else {
-            const systemPrompt = `You are a helpful and knowledgeable entertainment expert assistant for MARKD (a movie and TV show tracking dashboard).
-You are answering questions about the title: ${JSON.stringify(contextInfo)}.
+            const systemPrompt = `You are the MARKD AI Cinema Companion, a sophisticated, knowledgeable film curator and discovery assistant.
+You help users explore movies, directors, themes, and personalized recommendations.
+Current media context (if any): ${JSON.stringify(contextInfo || {})}.
+
 CRITICAL INSTRUCTIONS:
 1. You must respond 100% in ${langName}.
-2. Keep your answers concise, engaging, and directly helpful.
-3. Use markdown for structure if needed.`;
+2. When recommending specific movies or TV shows, provide concise, evocative reasons why each title matches the user's taste.
+3. Keep your answers well-formatted, engaging, and directly helpful.
+4. Use clean markdown formatting (bolding, bullet points, headers) for readability.`;
             
             finalMessages.unshift({ role: 'system', content: systemPrompt });
         }
 
         let responseText = '';
         
-        // Forwarding to respective endpoint
-        if (provider === 'openai' || provider === 'deepseek' || provider === 'mistral' || provider === 'kimi' || provider === 'qwen' || provider === 'meta' || provider === 'glm' || provider === 'grok') {
+        // 1. Google Gemini Provider
+        if (provider === 'gemini' || (!provider && process.env.GEMINI_API_KEY)) {
+            const geminiKey = effectiveApiKey || process.env.GEMINI_API_KEY;
+            if (!geminiKey) {
+                return NextResponse.json({ error: 'Gemini API key is not configured.' }, { status: 400 });
+            }
+
+            const targetModel = model || 'gemini-2.5-flash';
+            const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${geminiKey}`;
+
+            // Transform messages to Gemini format
+            const contents = finalMessages.map((m) => ({
+                role: m.role === 'assistant' ? 'model' : 'user',
+                parts: [{ text: m.content }],
+            }));
+
+            const response = await fetch(geminiEndpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents,
+                    generationConfig: {
+                        temperature: isSuggestions ? 0.2 : 0.7,
+                        maxOutputTokens: 1500,
+                    },
+                }),
+            });
+
+            if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(`Gemini API error (${response.status}): ${errText}`);
+            }
+
+            const json = await response.json();
+            responseText = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        }
+        // 2. OpenAI-Compatible Providers
+        else if (
+            provider === 'openai' ||
+            provider === 'deepseek' ||
+            provider === 'mistral' ||
+            provider === 'kimi' ||
+            provider === 'qwen' ||
+            provider === 'meta' ||
+            provider === 'glm' ||
+            provider === 'grok'
+        ) {
             let endpoint = 'https://api.openai.com/v1/chat/completions';
             let defaultModel = 'gpt-4o-mini';
 
@@ -75,7 +126,7 @@ CRITICAL INSTRUCTIONS:
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${apiKey}`
+                    'Authorization': `Bearer ${effectiveApiKey}`
                 },
                 body: JSON.stringify({
                     model: model || defaultModel,
@@ -102,7 +153,7 @@ CRITICAL INSTRUCTIONS:
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'x-api-key': apiKey,
+                    'x-api-key': effectiveApiKey!,
                     'anthropic-version': '2023-06-01'
                 },
                 body: JSON.stringify({
@@ -126,7 +177,7 @@ CRITICAL INSTRUCTIONS:
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${apiKey}`
+                    'Authorization': `Bearer ${effectiveApiKey}`
                 },
                 body: JSON.stringify({
                     model: model || 'abab6.5-chat',

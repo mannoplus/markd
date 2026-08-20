@@ -1,49 +1,78 @@
 @import "tailwindcss";
 
 /* ===========================================
-   MARKD — Dark Theme Design System
+   MARKD — Cinematic Dark Design System
+   "The Spotify for Movies"
    =========================================== */
 
 :root {
-  /* Core palette */
-  --background: #0a0a0f;
-  --background-secondary: #12121a;
-  --background-card: #16161f;
-  --background-elevated: #1c1c28;
-  --foreground: #e8e8ed;
-  --foreground-muted: #8b8b9e;
-  --foreground-subtle: #5a5a6e;
+  /* Core Background Hierarchy */
+  --background: #08080c;
+  --background-secondary: #0f0f16;
+  --background-card: #14141e;
+  --background-elevated: #1a1a26;
+  --background-highlight: #222232;
 
-  /* Accent — clean white to match the MARKD logo */
+  /* Surfaces & Glass */
+  --surface-primary: #101018;
+  --surface-secondary: #161622;
+  --surface-elevated: #1e1e2d;
+  --surface-glass: rgba(18, 18, 28, 0.78);
+  --surface-glass-heavy: rgba(14, 14, 22, 0.92);
+  --glass: rgba(20, 20, 30, 0.75);
+
+  /* Typography & Foreground */
+  --foreground: #f4f4f7;
+  --foreground-secondary: #c5c5d2;
+  --foreground-muted: #8b8b9f;
+  --foreground-subtle: #57576a;
+
+  /* Accent — Pure white identity with luminous silver highlights */
   --accent: #ffffff;
-  --accent-hover: #d4d4d8;
-  --accent-muted: rgba(255, 255, 255, 0.10);
+  --accent-hover: #e4e4e9;
+  --accent-muted: rgba(255, 255, 255, 0.12);
+  --accent-subtle: rgba(255, 255, 255, 0.05);
+  --accent-glow: rgba(255, 255, 255, 0.25);
+  --accent-secondary: #94a3b8;
 
-  /* Status colors */
-  --success: #4ade80;
-  --warning: #fbbf24;
-  --error: #f87171;
-  --info: #60a5fa;
+  /* Cinema & Status Tokens */
+  --gold-star: #eab308;
+  --gold-glow: rgba(234, 179, 8, 0.2);
+  --tomato-fresh: #22c55e;
+  --tomato-rotten: #ef4444;
+  --popcorn-fresh: #3b82f6;
+  --dna-chip-bg: rgba(255, 255, 255, 0.07);
 
-  /* Borders & surfaces */
-  --border: rgba(255, 255, 255, 0.06);
-  --border-hover: rgba(255, 255, 255, 0.12);
-  --glass: rgba(22, 22, 31, 0.8);
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --info: #38bdf8;
+
+  /* Borders */
+  --border: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-hover: rgba(255, 255, 255, 0.18);
+  --border-active: rgba(255, 255, 255, 0.35);
 
   /* Radius */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 26px;
+  --radius-full: 9999px;
 
-  /* Shadows */
-  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.4);
-  --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.6);
+  /* Multi-tier Shadows */
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.5);
+  --shadow-elevated: 0 12px 40px rgba(0, 0, 0, 0.7);
+  --shadow-poster: 0 16px 36px -10px rgba(0, 0, 0, 0.85);
+  --shadow-glow: 0 0 30px rgba(255, 255, 255, 0.1);
 
-  /* Transitions */
-  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+  /* Motion & Spring Transitions */
+  --transition-fast: 160ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-base: 280ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-smooth: 400ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-spring: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @theme inline {
@@ -51,21 +80,34 @@
   --color-background-secondary: var(--background-secondary);
   --color-background-card: var(--background-card);
   --color-background-elevated: var(--background-elevated);
+  --color-background-highlight: var(--background-highlight);
+  --color-surface-primary: var(--surface-primary);
+  --color-surface-secondary: var(--surface-secondary);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-surface-glass: var(--surface-glass);
   --color-foreground: var(--foreground);
+  --color-foreground-secondary: var(--foreground-secondary);
   --color-foreground-muted: var(--foreground-muted);
   --color-foreground-subtle: var(--foreground-subtle);
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-accent-muted: var(--accent-muted);
+  --color-accent-glow: var(--accent-glow);
+  --color-gold-star: var(--gold-star);
+  --color-tomato-fresh: var(--tomato-fresh);
+  --color-tomato-rotten: var(--tomato-rotten);
+  --color-popcorn-fresh: var(--popcorn-fresh);
+  --color-dna-chip-bg: var(--dna-chip-bg);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-error: var(--error);
   --color-info: var(--info);
   --color-border: var(--border);
+  --color-border-subtle: var(--border-subtle);
   --color-border-hover: var(--border-hover);
   --color-glass: var(--glass);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
 }
 
 /* ---- Base Styles ---- */
@@ -85,10 +127,11 @@ html, body {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   position: relative;
+  text-rendering: optimizeLegibility;
 }
 
 /* ---- Scrollbar (Webkit) ---- */
@@ -104,7 +147,7 @@ body {
 
 ::-webkit-scrollbar-thumb {
   background: var(--foreground-subtle);
-  border-radius: 3px;
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -129,12 +172,18 @@ body {
   padding-right: env(safe-area-inset-right);
 }
 
-/* ---- Utility classes ---- */
+/* ---- Modern Utility Classes ---- */
 
 .glass {
-  background: var(--glass);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: var(--surface-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.glass-heavy {
+  background: var(--surface-glass-heavy);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
 }
 
 .shimmer {
@@ -143,14 +192,13 @@ body {
       var(--background-elevated) 50%,
       var(--background-card) 100%);
   background-size: 200% 100%;
-  animation: shimmer 1.5s ease-in-out infinite;
+  animation: shimmer 1.6s ease-in-out infinite;
 }
 
 @keyframes shimmer {
   0% {
     background-position: 200% 0;
   }
-
   100% {
     background-position: -200% 0;
   }
@@ -165,37 +213,20 @@ body {
     opacity: 0;
     transform: translateY(8px);
   }
-
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
-/* ---- Box Office Animations ---- */
-
-@keyframes barGrow {
-  from {
-    width: 0%;
-  }
-  to {
-    width: var(--bar-width);
-  }
-}
-
-@keyframes rankPulse {
-  0%, 100% {
-    box-shadow: 0 0 20px rgba(255, 255, 255, 0.15);
-  }
-  50% {
-    box-shadow: 0 0 40px rgba(255, 255, 255, 0.3);
-  }
+.slide-up {
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(16px);
   }
   to {
     opacity: 1;
@@ -203,16 +234,19 @@ body {
   }
 }
 
-.bar-animate {
-  animation: barGrow 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+/* ---- Pulse & Glow Utilities ---- */
+
+@keyframes glowPulse {
+  0%, 100% {
+    box-shadow: 0 0 24px rgba(255, 255, 255, 0.08);
+  }
+  50% {
+    box-shadow: 0 0 44px rgba(255, 255, 255, 0.22);
+  }
 }
 
-.rank-glow {
-  animation: rankPulse 3s ease-in-out infinite;
-}
-
-.slide-up {
-  animation: slideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+.glow-pulse {
+  animation: glowPulse 4s ease-in-out infinite;
 }
 
 @utility scrollbar-hide {

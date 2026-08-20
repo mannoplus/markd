@@ -180,3 +180,310 @@ export async function revalidateHomeAction() {
     return { success: true };
 }
 
+// ============================================================================
+// TASTE FEEDBACK ACTIONS
+// ============================================================================
+
+export async function getTasteFeedbackAction() {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        return { data: [], error: null };
+    }
+
+    const { data, error } = await supabase
+        .from('taste_feedback')
+        .select('*')
+        .eq('user_id', user.id);
+
+    if (error) {
+        console.error('Error fetching taste feedback:', error);
+        return { data: [], error: error.message };
+    }
+
+    return { data: data || [], error: null };
+}
+
+export async function submitTasteFeedbackAction({
+    tmdb_id,
+    media_type,
+    signal_type,
+}: {
+    tmdb_id: number;
+    media_type: MediaType;
+    signal_type: 'not_interested' | 'already_watched' | 'not_my_type' | 'less_like_this';
+}) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        return { error: 'Not authenticated' };
+    }
+
+    const { error } = await supabase
+        .from('taste_feedback')
+        .upsert(
+            {
+                user_id: user.id,
+                tmdb_id,
+                media_type,
+                signal_type,
+            },
+            { onConflict: 'user_id,tmdb_id,media_type,signal_type' }
+        );
+
+    if (error) {
+        console.error('Error recording taste feedback:', error);
+        return { error: error.message };
+    }
+
+    revalidatePath('/', 'layout');
+    return { error: null };
+}
+
+// ============================================================================
+// CINEMA JOURNEYS ACTIONS
+// ============================================================================
+
+export async function getUserJourneysAction() {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        return { data: [], error: null };
+    }
+
+    const { data, error } = await supabase
+        .from('user_journeys')
+        .select('*')
+        .eq('user_id', user.id);
+
+    if (error) {
+        console.error('Error fetching journeys:', error);
+        return { data: [], error: error.message };
+    }
+
+    return { data: data || [], error: null };
+}
+
+export async function updateJourneyProgressAction(journey_id: string, tmdb_id: number, total_films: number) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        return { error: 'Not authenticated' };
+    }
+
+    // Get current journey state
+    const { data: existing } = await supabase
+        .from('user_journeys')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('journey_id', journey_id)
+        .single();
+
+    const completedIds: number[] = existing?.completed_tmdb_ids || [];
+    if (!completedIds.includes(tmdb_id)) {
+        completedIds.push(tmdb_id);
+    }
+
+    const progressPct = Math.min(100, Math.round((completedIds.length / total_films) * 100));
+    const isCompleted = progressPct === 100;
+
+    const { error } = await supabase
+        .from('user_journeys')
+        .upsert(
+            {
+                user_id: user.id,
+                journey_id,
+                completed_tmdb_ids: completedIds,
+                progress_pct: progressPct,
+                is_completed: isCompleted,
+                completed_at: isCompleted ? new Date().toISOString() : null,
+                updated_at: new Date().toISOString(),
+            },
+            { onConflict: 'user_id,journey_id' }
+        );
+
+    if (error) {
+        console.error('Error updating journey progress:', error);
+        return { error: error.message };
+    }
+
+    revalidatePath('/journeys');
+    return { error: null, progressPct, isCompleted };
+}
+
+// ============================================================================
+// CINEMA CHALLENGES ACTIONS
+// ============================================================================
+
+export async function getUserChallengesAction() {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        return { data: [], error: null };
+    }
+
+    const { data, error } = await supabase
+        .from('user_challenges')
+        .select('*')
+        .eq('user_id', user.id);
+
+    if (error) {
+        console.error('Error fetching challenges:', error);
+        return { data: [], error: error.message };
+    }
+
+    return { data: data || [], error: null };
+}
+
+export async function updateChallengeProgressAction(challenge_id: string, countDelta: number, target_count: number) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        return { error: 'Not authenticated' };
+    }
+
+    const { data: existing } = await supabase
+        .from('user_challenges')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('challenge_id', challenge_id)
+        .single();
+
+    const currentCount = (existing?.current_count || 0) + countDelta;
+    const isCompleted = currentCount >= target_count;
+
+    const { error } = await supabase
+        .from('user_challenges')
+        .upsert(
+            {
+                user_id: user.id,
+                challenge_id,
+                current_count: currentCount,
+                target_count,
+                is_completed: isCompleted,
+                completed_at: isCompleted ? new Date().toISOString() : null,
+                updated_at: new Date().toISOString(),
+            },
+            { onConflict: 'user_id,challenge_id' }
+        );
+
+    if (error) {
+        console.error('Error updating challenge progress:', error);
+        return { error: error.message };
+    }
+
+    revalidatePath('/challenges');
+    return { error: null, currentCount, isCompleted };
+}
+
+// ============================================================================
+// CUSTOM LISTS ACTIONS
+// ============================================================================
+
+export async function getUserCustomListsAction() {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        return { data: [], error: null };
+    }
+
+    const { data, error } = await supabase
+        .from('custom_lists')
+        .select(`
+            *,
+            items:custom_list_items(*)
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching custom lists:', error);
+        return { data: [], error: error.message };
+    }
+
+    return { data: data || [], error: null };
+}
+
+export async function createCustomListAction({
+    title,
+    description,
+    is_public = true,
+}: {
+    title: string;
+    description?: string;
+    is_public?: boolean;
+}) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        return { error: 'Not authenticated', data: null };
+    }
+
+    const { data, error } = await supabase
+        .from('custom_lists')
+        .insert({
+            user_id: user.id,
+            title,
+            description,
+            is_public,
+        })
+        .select()
+        .single();
+
+    if (error) {
+        console.error('Error creating custom list:', error);
+        return { error: error.message, data: null };
+    }
+
+    revalidatePath('/library');
+    return { error: null, data };
+}
+
+export async function addCustomListItemAction({
+    list_id,
+    tmdb_id,
+    media_type,
+    title,
+    poster_path,
+}: {
+    list_id: string;
+    tmdb_id: number;
+    media_type: MediaType;
+    title: string;
+    poster_path: string | null;
+}) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        return { error: 'Not authenticated' };
+    }
+
+    const { error } = await supabase
+        .from('custom_list_items')
+        .insert({
+            list_id,
+            tmdb_id,
+            media_type,
+            title,
+            poster_path,
+        });
+
+    if (error) {
+        console.error('Error adding item to custom list:', error);
+        return { error: error.message };
+    }
+
+    revalidatePath('/library');
+    return { error: null };
+}
+
+

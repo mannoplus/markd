@@ -1,10 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Play, RotateCw, Eye, HelpCircle, Film, MapPin, X, Loader2, ChevronDown } from 'lucide-react';
+import { Play, RotateCw, Eye, HelpCircle, Film, MapPin, X, Loader2, ChevronDown, Sparkles } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { MovieCard } from '@/components/movie-card';
 import { HeroCarousel } from '@/components/hero-carousel';
+import { PersonalizedHero } from '@/components/home/PersonalizedHero';
+import { RecommendedSection } from '@/components/home/RecommendedSection';
+import { PerfectForTonight } from '@/components/home/PerfectForTonight';
+import { JourneysSpotlight } from '@/components/home/JourneysSpotlight';
+import { ChallengesSpotlight } from '@/components/home/ChallengesSpotlight';
 import type { TMDBTrendingResult, TMDBWatchProvider, TMDBWatchProviderResult } from '@/types';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRegion } from '@/context/RegionContext';
@@ -563,22 +568,54 @@ export function HomeRedesign({
         freeTab === 'movies' ? freeMovies :
         freeShows;
 
+    const heroFeatured = trendingMedia[0] || initialTrending[0] || initialNowPlaying[0];
+
     return (
         <div className="pb-16 -mt-16 sm:-mt-20 relative">
             {/* ====================================================
-                SECTION 0: DYNAMIC CAROUSEL
+                SECTION 0: CINEMATIC PERSONALIZED HERO
                ==================================================== */}
-            <div className="relative min-h-[350px]">
-                {isLoadingTrending ? (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-30">
-                        <Loader2 className="h-10 w-10 text-accent animate-spin" />
-                    </div>
-                ) : null}
-                <HeroCarousel movies={trendingMedia} />
-            </div>
+            {heroFeatured ? (
+                <div className="relative">
+                    {isLoadingTrending ? (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-30">
+                            <Loader2 className="h-10 w-10 text-accent animate-spin" />
+                        </div>
+                    ) : null}
+                    <PersonalizedHero
+                        movie={heroFeatured}
+                        matchScore={98}
+                        onPlayTrailer={(item) => handleTrailerClick(item)}
+                    />
+                </div>
+            ) : (
+                <div className="relative min-h-[350px]">
+                    <HeroCarousel movies={trendingMedia} />
+                </div>
+            )}
 
-            {/* Main Content Area */}
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-12 relative z-20 space-y-20 pb-24">
+            {/* Main Editorial Content Area */}
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-6 relative z-20 space-y-20 pb-24">
+
+                {/* ====================================================
+                    PERSONALIZED RECOMMENDATIONS (TASTE ENGINE)
+                   ==================================================== */}
+                <RecommendedSection items={trendingMedia} />
+
+                {/* ====================================================
+                    PERFECT FOR TONIGHT (MOOD SWITCHER)
+                   ==================================================== */}
+                <PerfectForTonight items={[...nowPlayingMovies, ...upcomingMovies]} />
+
+                {/* ====================================================
+                    CINEMA JOURNEYS SPOTLIGHT
+                   ==================================================== */}
+                <JourneysSpotlight />
+
+                {/* ====================================================
+                    ACTIVE CHALLENGES SPOTLIGHT
+                   ==================================================== */}
+                <ChallengesSpotlight />
 
                 {/* ====================================================
                     SECTION 1: LATEST TRAILERS

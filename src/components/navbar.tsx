@@ -2,7 +2,7 @@
 
 import { Link } from '@/i18n/routing';
 import { usePathname } from 'next/navigation';
-import { Search, Library, LayoutDashboard, LogIn, X, Film, Tv, ChevronDown, Key, Settings } from 'lucide-react';
+import { Search, Library, LayoutDashboard, LogIn, X, Film, Tv, ChevronDown, Key, Settings, Compass, Award, Sparkles, User as UserIcon } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { useState, useEffect, useRef } from 'react';
@@ -56,7 +56,9 @@ export function Navbar() {
     const NAV_LINKS = [
         { href: '/movies', label: t('movies'), icon: Film },
         { href: '/tv-shows', label: t('tvShows'), icon: Tv },
-        { href: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
+        { href: '/journeys', label: t('journeys') || 'Journeys', icon: Compass },
+        { href: '/challenges', label: t('challenges') || 'Challenges', icon: Award },
+        { href: '/ai', label: t('aiCompanion') || 'Cinema AI', icon: Sparkles },
         { href: '/library', label: t('library'), icon: Library },
     ];
 
