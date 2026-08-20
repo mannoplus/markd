@@ -1,5 +1,5 @@
 # MARKD — Design System & Semantic Guidelines
-*Version 2.0 • The Cinematic Editorial Standard for Film & Television*
+*Version 3.0 • The Cinematic Editorial Standard for Film & Television*
 
 ---
 
@@ -8,11 +8,12 @@
 MARKD is an editorial, high-density cinematic entertainment companion designed for passionate cinephiles, casual moviegoers, and television enthusiasts. It unites the visual gravity of a high-end film archive with the effortless discovery and tracking of personal taste.
 
 ### Core Principles
-- **Cinematic Atmosphere**: Visuals are framed like movie film stills with deep obsidian slate backdrops, rich photography vignettes, and intentional negative space.
+- **Cinematic Atmosphere**: Visuals are framed like movie film stills with deep obsidian slate backdrops, rich photography vignettes, and intentional negative space. Subtle film grain and layered scrims keep imagery alive while preserving legibility.
 - **Editorial Typography**: Track-tight display headings, relaxed body text, and distinct metadata pills with high contrast and zero awkward line-wrapping.
-- **Restrained Motion**: Hardware-accelerated transitions (`transform`, `opacity`) using weighted spring physics (`stiffness: 100, damping: 20`). No distracting bouncy blobs or gratuitous animations.
-- **Human-Designed & Anti-AI**: Strict ban on generic AI purple gradients, floating neon halos, and repetitive card grids. Every section has an intentional editorial role.
-- **Bilingual First-Class**: Seamless layout scaling and font fallbacks across English (`en`) and Taiwan Traditional Chinese (`zh-TW`).
+- **Restrained Motion**: Hardware-accelerated transitions (`transform`, `opacity`) using an eased cubic-bezier curve (`cubic-bezier(0.22, 1, 0.36, 1)`). No distracting bouncy blobs or gratuitous animations. Fully respects `prefers-reduced-motion`.
+- **Human-Designed & Anti-AI**: Strict ban on generic AI purple gradients, floating neon halos, rainbow progress bars, and repetitive card-only layouts. Every section has an intentional editorial role.
+- **Bilingual First-Class**: Seamless layout scaling and font fallbacks across English (`en`) and Taiwan Traditional Chinese (`zh-TW`), the default locale. Chinese UI copy must be natural, Taiwan-standard Traditional Chinese — never machine-translation Englishisms.
+- **Accessibility**: Visible `:focus-visible` rings on every interactive element, `role="switch"`/`aria-pressed` state disclosure, keyboard-operable dropdowns, skip-to-content link, and a viewport that allows user scaling.
 
 ---
 
@@ -21,60 +22,95 @@ MARKD is an editorial, high-density cinematic entertainment companion designed f
 ### Base Canvas & Surfaces
 | Token | Hex / Value | Purpose |
 |---|---|---|
-| `--background` | `#0B0D12` | Deepest canvas background |
-| `--background-secondary` | `#11141D` | Secondary panel backgrounds |
-| `--background-card` | `#151822` | Card & collection containers |
-| `--background-elevated` | `#1B1E2B` | Hover states & elevated controls |
-| `--surface-glass` | `rgba(17, 20, 29, 0.82)` | Frosted glass headers & navigation |
+| `--background` | `#0A0C11` | Deepest canvas background |
+| `--background-secondary` | `#0F1219` | Secondary panel / page backgrounds |
+| `--background-card` | `#131722` | Card & collection containers |
+| `--background-elevated` | `#1A1F2D` | Elevated controls, menus, inputs |
+| `--background-highlight` | `#222838` | Hover fill on elevated surfaces |
 | `--border` | `rgba(255, 255, 255, 0.08)` | Standard structural hairpins |
 | `--border-hover` | `rgba(255, 255, 255, 0.18)` | Interactive hover borders |
+| `--border-active` | `rgba(255, 255, 255, 0.32)` | Focused / active borders |
 
 ### Typography & Status
 | Token | Hex / Value | Purpose |
 |---|---|---|
-| `--foreground` | `#F4F4F7` | Primary headlines & titles |
-| `--foreground-secondary` | `#C5C5D2` | Subheadings & active controls |
-| `--foreground-muted` | `#8B8B9F` | Overviews, body text & metadata |
-| `--foreground-subtle` | `#57576A` | Captions, dates & borders |
-| `--gold-star` | `#EAB308` | TMDB ratings & awards |
-| `--success` | `#22C55E` | Watched state & high match scores |
-| `--error` | `#EF4444` | Danger zone & destructive actions |
+| `--foreground` | `#F5F5F8` | Primary headlines & titles |
+| `--foreground-secondary` | `#C9C9D6` | Subheadings & active controls |
+| `--foreground-muted` | `#9090A4` | Overviews, body text & metadata |
+| `--foreground-subtle` | `#5C5C70` | Captions, dates & borders |
+| `--accent` | `#FFFFFF` | Brand action color — pure white |
+| `--accent-muted` | `rgba(255, 255, 255, 0.65)` | Muted brand accents |
+| `--gold-star` | `#F5B84B` | TMDB ratings & awards |
+| `--success` | `#34D399` | Watched state & high match scores |
+| `--warning` | `#FBBF24` | Fallback / caution states |
+| `--error` | `#F87171` | Danger zone & destructive actions |
+| `--info` | `#38BDF8` | Neutral informational states |
+
+### Elevation & Radius
+| Token | Value | Purpose |
+|---|---|---|
+| `--radius-md` | `0.5rem` | Buttons, inputs, pills |
+| `--radius-lg` | `0.75rem` | Cards, modals |
+| `--shadow-card` | `0 1px 2px rgba(0,0,0,.4)` | Resting cards |
+| `--shadow-elevated` | `0 12px 32px -8px rgba(0,0,0,.6)` | Hovered / modal surfaces |
+| `--shadow-poster` | `0 16px 48px -12px rgba(0,0,0,.7)` | Large poster / hero |
+| `--shadow-focus` | `0 0 0 3px rgba(255,255,255,.18)` | Focus rings |
 
 ---
 
 ## 3. Typography Architecture
 
-- **Display & Titles**: Font stack using modern sans-serif with `-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang TC", "Noto Sans TC", sans-serif`. Tight tracking (`letter-spacing: -0.02em`), bold/black weights (`700`–`900`), and `leading-[1.1]`.
-- **Body & Overview**: Generous line height (`1.6`), max width 65 characters (`max-w-2xl` to `max-w-3xl`) for effortless reading.
-- **Metadata & Labels**: Clean, non-colliding font sizing (`11px`–`13px`) with `whitespace-nowrap` on all interactive button labels and dropdown items.
+- **Display & Titles**: `Inter` (Latin) + `Noto Sans TC` (Traditional Chinese), loaded as `--font-sans` / `--font-tc`. Tight tracking (`letter-spacing: -0.02em`), bold/black weights, and tight leading. `.title-cinematic` is reserved for full-bleed hero displays.
+- **Editorial Hierarchy**: `.eyebrow` (10px, uppercase, wide tracking) → `.section-title` (24–32px bold) → `.lede` (subheading, muted) for consistent section rhythm across pages.
+- **Body & Overview**: Generous line height, constrained measure (`max-w-2xl`–`3xl`) for effortless reading.
+- **Metadata & Labels**: 11–13px with `whitespace-nowrap` on all interactive button labels and pills. `:lang(zh-TW)` overrides tune letter-spacing and line-height for CJK rendering.
 
 ---
 
-## 4. Component Standards
+## 4. Components & Conventions
+
+### Section Header (`.eyebrow` + title + optional action)
+Every home section uses the `SectionHeader` component: eyebrow label, editorial title, optional description, and an optional right-aligned action slot (tabs, toggle groups, or "See More" links). This replaces ad-hoc headers and gives the page a consistent editorial rhythm.
+
+### Media Rails
+Horizontal scrolling rows of `MovieCard` use the `.media-rail` utility: negative-margin edge bleed on mobile, edge fade masks on desktop, `scrollbar-hide`, and touch scroll snap. Prefer rails for discovery, grids for library/collection views.
 
 ### Hero Carousel
-- Full-bleed cinematic backdrop with layered horizontal and vertical dark gradients.
-- Horizontal metadata pill container: Release year, Star rating, Media type, and DNA tone tags.
-- Non-colliding action button row: `Watch Trailer` (Primary solid), `+ Add to Watchlist` / `In Watchlist` (Secondary glass toggle), and `View Details` (Tertiary link).
-- Frosted glass arrow navigation and active-expanding pagination dots.
+- Full-bleed cinematic backdrops with crossfade transitions, layered horizontal/vertical scrims, and the `.film-grain` texture.
+- Horizontal metadata pill rail: year, rating, media type, and DNA tone tags.
+- Action row: `Watch Trailer` (primary), Watchlist toggle, and `View Details` — all localized.
+- Auto-advance pauses on hover and under `prefers-reduced-motion`; pagination dots + slide counter; chevrons revealed on group hover/focus.
 
-### Movie Cards & Poster Grids
-- 2:3 aspect ratio posters with subtle `border border-white/[0.08]` and soft shadow.
-- Hover elevation: `translate-y-[-4px]` with slight brightness lift (`brightness-105`).
-- Quick actions on hover: Watchlist toggle, Watched toggle, and rating indicator.
+### Movie Cards
+- 2:3 posters with hairline border, resting `shadow-card`, and hover lift + `shadow-elevated`.
+- Top-left media-type chip; top-right rating / RT / match-score badges; status badge bottom-anchored.
+- Hover reveals a play affordance and cinematic scrim. `MovieCardSkeleton` covers loading states.
+- `StatusBadge` labels are localized (`plan_to_watch`, `watching`, `completed`, `dropped`).
+
+### Search Overlay
+- ⌘K / `/` keyboard shortcut opens a full-screen overlay.
+- Skeleton loading, grouped results (Movies / TV / People), keyboard navigation (↑/↓/Enter), Escape to close.
+
+### Navbar / Bottom Nav / Footer
+- Desktop navbar: click-based accessible menus (never hover-only), user menu, active-route underline.
+- Mobile: bottom nav with `aria-current`, safe-area padding, hidden on `md+`.
+- Consistent token-based surfaces (`glass` where appropriate).
 
 ### Personal Library
-- Multi-tab organization: **Watched (觀影紀錄)**, **Watchlist (想看清單)**, **Favorites (特別珍藏)**, **Ratings (評分清單)**, and **Custom Collections (自訂片單)**.
-- Multi-view presentation: Editorial Poster Grid, Compact Grid, and Detailed List view.
+- Tabs: Watching, Plan to Watch, Completed, Dropped, Rated, and Custom Collections.
+- Toolbar: search, sort, and three view modes (editorial grid / compact grid / list table).
+- Localized empty states via the shared `EmptyState` / `ErrorState` components.
 
 ### Settings & Data
-- **General Preferences**: Cinematic dark theme badge, default region selector (US, TW, GB, JP, KR, FR, DE, CA, AU), trending timeframe toggle, autoplay trailers toggle.
-- **Account & Data Sync**: Authenticated profile details, JSON offline library backup export, JSON library restore with progress indicator.
+- **General Preferences**: theme badge, default region selector, trending timeframe toggle, autoplay trailers + sound toggles (`role="switch"`).
+- **Account & Data Sync**: authenticated profile card, JSON export, JSON restore with progress, and a danger zone (delete account).
 
 ---
 
 ## 5. Anti-Patterns (Strictly Banned)
-- ❌ **No AI Purple / Neon Glows**: Do not apply saturated violet gradients or glowing halo borders.
-- ❌ **No Text Wrapping in Navigation**: Never allow `"TV"` and `"Shows"` or button labels to wrap onto multiple lines.
-- ❌ **No Gamification Bloat**: Journeys and Challenges are removed to keep the product focused on cinematic discovery, personal collections, and taste tracking.
-- ❌ **No Generic Empty Spinners**: Always use skeleton placeholders or styled feedback indicators.
+- ❌ **No AI Purple / Neon Glows**: Do not apply saturated violet gradients, rainbow DNA bars, or glowing halo borders. Taste/affinity visuals use neutral white fills.
+- ❌ **No Text Wrapping in Navigation**: Never allow `"TV"` / `"Shows"` or button labels to wrap onto multiple lines.
+- ❌ **No Gamification Bloat**: Journeys and Challenges are removed — no references, routes, actions, or marketing copy remain.
+- ❌ **No Generic Empty Spinners**: Always use skeleton placeholders, `EmptyState`, or styled feedback indicators.
+- ❌ **No Hardcoded UI Strings**: All user-facing copy lives in `messages/en.json` / `messages/zh-TW.json` (next-intl). Bilingual parity is required for every surface.
+- ❌ **No Raw Hex in Components**: Use the tokenized utilities (`bg-background-card`, `border-border`, `text-foreground-muted`, `shadow-elevated`, …) mapped via `@theme inline` in `globals.css`.

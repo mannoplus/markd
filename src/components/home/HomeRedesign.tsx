@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Play, RotateCw, Eye, HelpCircle, Film, MapPin, X, Loader2, ChevronDown, Sparkles } from 'lucide-react';
+import { Play, RotateCw, HelpCircle, Film, MapPin, X, Loader2, ChevronDown } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { MovieCard } from '@/components/movie-card';
 import { HeroCarousel } from '@/components/hero-carousel';
-import { PersonalizedHero } from '@/components/home/PersonalizedHero';
 import { RecommendedSection } from '@/components/home/RecommendedSection';
 import { PerfectForTonight } from '@/components/home/PerfectForTonight';
 import { CuratedCollections } from '@/components/home/CuratedCollections';
+import { SectionHeader } from '@/components/section-header';
 import type { TMDBTrendingResult, TMDBWatchProvider, TMDBWatchProviderResult } from '@/types';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRegion } from '@/context/RegionContext';
@@ -568,14 +568,14 @@ export function HomeRedesign({
         freeShows;
 
     return (
-        <div className="pb-16 -mt-16 sm:-mt-20 relative">
+        <div className="relative -mt-16 sm:-mt-20">
             {/* ====================================================
                 SECTION 0: DYNAMIC MULTI-ITEM HERO CAROUSEL
                ==================================================== */}
-            <div className="relative min-h-[500px]">
+            <div className="relative min-h-[540px]">
                 {isLoadingTrending ? (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-30">
-                        <Loader2 className="h-10 w-10 text-accent animate-spin" />
+                    <div className="absolute inset-0 z-30 flex items-center justify-center bg-background/60 backdrop-blur-sm">
+                        <Loader2 className="h-8 w-8 animate-spin text-foreground-muted" />
                     </div>
                 ) : null}
                 <HeroCarousel
@@ -585,7 +585,7 @@ export function HomeRedesign({
             </div>
 
             {/* Main Editorial Content Area */}
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-6 relative z-20 space-y-20 pb-24">
+            <div className="relative z-20 mx-auto max-w-7xl space-y-16 px-4 pb-24 pt-14 sm:px-6 sm:space-y-20 lg:px-8">
 
                 {/* ====================================================
                     PERSONALIZED RECOMMENDATIONS (TASTE ENGINE)
@@ -605,16 +605,14 @@ export function HomeRedesign({
                 {/* ====================================================
                     SECTION 1: LATEST TRAILERS
                    ==================================================== */}
-                <section className="space-y-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/40 pb-4">
-                        <div className="flex items-center gap-3">
-                            <h2 className="text-2xl font-bold tracking-tight">
-                                {t('latestTrailers') || 'Latest Trailers'}
-                            </h2>
-                            <span className="rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-semibold text-accent font-sans">Hot</span>
-                        </div>
-
-                        <div className="flex flex-nowrap md:flex-wrap items-center gap-2 overflow-x-auto md:overflow-visible scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 scroll-smooth">
+                <section className="space-y-5">
+                    <SectionHeader
+                        eyebrow="Trailers"
+                        title={t('latestTrailers') || 'Latest Trailers'}
+                        actionHref="/movies?category=popular"
+                        actionLabel={t('seeMore') || 'See More'}
+                    >
+                        <div className="flex flex-nowrap items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-hide md:overflow-visible">
                             {(['upcoming', 'popular', 'streaming', 'rent', 'theaters'] as const).map((tab) => {
                                 const getTabLabel = () => {
                                     switch (tab) {
@@ -630,10 +628,10 @@ export function HomeRedesign({
                                     <button
                                         key={tab}
                                         onClick={() => setTrailerTab(tab)}
-                                        className={`rounded-full px-3 py-1.5 md:px-4 text-xs font-bold uppercase tracking-wider transition-all duration-300 whitespace-nowrap shrink-0 ${
+                                        className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-bold transition-colors ${
                                             trailerTab === tab
-                                                ? 'bg-accent text-background shadow-lg shadow-accent/20'
-                                                : 'bg-background-elevated text-foreground-muted hover:bg-background-elevated-hover hover:text-foreground'
+                                                ? 'bg-foreground text-background'
+                                                : 'bg-background-elevated/70 text-foreground-muted hover:bg-background-elevated hover:text-foreground'
                                         }`}
                                     >
                                         {getTabLabel()}
@@ -641,36 +639,29 @@ export function HomeRedesign({
                                 );
                             })}
                         </div>
+                    </SectionHeader>
 
-                        <Link
-                            href="/movies?category=popular"
-                            className="text-sm font-semibold text-accent hover:text-accent-hover transition-colors"
-                        >
-                            {t('seeMore') || 'See More'} →
-                        </Link>
-                    </div>
-
-                    <div className="relative min-h-[160px]">
-                        {isLoadingTrailers ? (
-                            <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-[2px] rounded-2xl z-10">
-                                <Loader2 className="h-8 w-8 text-accent animate-spin" />
+                    <div className="relative">
+                        {isLoadingTrailers && (
+                            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-background/50 backdrop-blur-sm">
+                                <Loader2 className="h-7 w-7 animate-spin text-foreground-muted" />
                             </div>
-                        ) : null}
-                        <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 snap-x">
+                        )}
+                        <div className="media-rail -mx-4 px-4 sm:mx-0 sm:px-0">
                             {currentTrailers.slice(0, 10).map((item: TMDBTrendingResult) => (
                                 <div
                                     key={item.id}
                                     onClick={() => handleTrailerClick(item)}
                                     onMouseEnter={() => handleTrailerMouseEnter(item)}
                                     onMouseLeave={handleTrailerMouseLeave}
-                                    className="w-64 md:w-80 shrink-0 snap-start group relative rounded-2xl overflow-hidden bg-background-elevated/40 border border-border/40 hover:border-accent/40 transition-all duration-300 cursor-pointer shadow-lg hover:shadow-2xl"
+                                    className="group relative w-64 shrink-0 cursor-pointer overflow-hidden rounded-lg border border-border bg-background-card transition-all duration-[var(--transition-base)] hover:border-border-hover hover:shadow-elevated md:w-80"
                                 >
-                                    <div className="w-full bg-background-elevated relative overflow-hidden" style={{ aspectRatio: '16/9' }}>
+                                    <div className="relative w-full overflow-hidden bg-background-elevated" style={{ aspectRatio: '16/9' }}>
                                         {hoveredTrailerId === item.id && hoveredTrailerKey ? (
                                             <iframe
                                                 src={`https://www.youtube.com/embed/${hoveredTrailerKey}?autoplay=1&mute=1&controls=0&loop=1&playlist=${hoveredTrailerKey}&rel=0&playsinline=1`}
                                                 title={item.title || item.name || ''}
-                                                className="absolute inset-0 h-full w-full object-cover pointer-events-none transition-opacity duration-300"
+                                                className="pointer-events-none absolute inset-0 h-full w-full object-cover"
                                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                             />
                                         ) : (
@@ -680,27 +671,27 @@ export function HomeRedesign({
                                                     <img
                                                         src={`https://image.tmdb.org/t/p/w780${item.backdrop_path}`}
                                                         alt={item.title || item.name || ''}
-                                                        className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                                                     />
                                                 ) : (
                                                     <div className="flex h-full w-full items-center justify-center text-foreground-subtle">
                                                         <Film className="h-8 w-8" />
                                                     </div>
                                                 )}
-                                                <div className="absolute inset-0 bg-black/45 flex items-center justify-center opacity-70 group-hover:opacity-100 transition-opacity">
-                                                    <div className="rounded-full bg-accent p-3.5 text-background shadow-xl scale-95 group-hover:scale-110 transition-transform duration-300">
-                                                        <Play className="h-5 w-5 fill-current" />
-                                                    </div>
+                                                <div className="absolute inset-0 flex items-center justify-center bg-black/40 transition-opacity group-hover:bg-black/50">
+                                                    <span className="flex h-11 w-11 scale-90 items-center justify-center rounded-full bg-foreground text-background shadow-lg transition-transform duration-[var(--transition-base)] group-hover:scale-100">
+                                                        <Play className="h-4 w-4 fill-current" />
+                                                    </span>
                                                 </div>
                                             </>
                                         )}
                                     </div>
-                                    <div className="p-4 space-y-1 bg-[#12121a]">
-                                        <h3 className="font-bold text-sm truncate group-hover:text-accent transition-colors">
+                                    <div className="space-y-0.5 p-3.5">
+                                        <h3 className="truncate text-sm font-semibold transition-colors group-hover:text-accent">
                                             {item.title || item.name}
                                         </h3>
-                                        <p className="text-[11px] text-foreground-muted font-sans">
-                                            {item.release_date || item.first_air_date || 'Coming Soon'}
+                                        <p className="text-[11px] text-foreground-muted">
+                                            {item.release_date || item.first_air_date || t('upcomingMovies') || 'Coming Soon'}
                                         </p>
                                     </div>
                                 </div>
@@ -712,50 +703,40 @@ export function HomeRedesign({
                 {/* ====================================================
                     SECTION 2: IN CINEMAS
                    ==================================================== */}
-                <section className="space-y-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/40 pb-4">
-                        <div className="flex items-center gap-3">
-                            <h2 className="text-2xl font-bold tracking-tight">
-                                {t('inCinemas') || 'In Cinemas'}
-                            </h2>
-                            <span className="flex items-center gap-1 text-xs text-foreground-muted">
-                                <MapPin className="h-3 w-3 text-accent" />
-                                {tNowShowing('inTheaters') || 'Showing in Theaters'}
-                            </span>
-                        </div>
+                <section className="space-y-5">
+                    <SectionHeader
+                        eyebrow="Theatrical"
+                        title={t('inCinemas') || 'In Cinemas'}
+                        actionHref={`/movies?category=now_playing&region=${globalRegion}`}
+                        actionLabel={t('seeMore') || 'See More'}
+                    >
+                        <span className="inline-flex items-center gap-1.5 text-xs text-foreground-muted">
+                            <MapPin className="h-3.5 w-3.5" />
+                            {tNowShowing('inTheaters') || 'Showing in Theaters'}
+                        </span>
+                        <button
+                            onClick={triggerCinemasUpdate}
+                            disabled={isLoadingCinemas}
+                            className="inline-flex items-center gap-2 rounded-lg border border-border bg-background-elevated px-3.5 py-2 text-xs font-semibold text-foreground transition-colors hover:border-border-hover hover:bg-background-highlight disabled:opacity-50"
+                        >
+                            {isLoadingCinemas ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                                <RotateCw className="h-3.5 w-3.5" />
+                            )}
+                            {t('updateBtn') || 'Update'}
+                        </button>
+                    </SectionHeader>
 
-                        <div className="flex items-center gap-4">
-                            <button
-                                onClick={triggerCinemasUpdate}
-                                disabled={isLoadingCinemas}
-                                className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-xs font-semibold text-foreground hover:bg-background-elevated transition-all active:scale-95 disabled:opacity-50"
-                            >
-                                {isLoadingCinemas ? (
-                                    <Loader2 className="h-3 w-3 animate-spin" />
-                                ) : (
-                                    <RotateCw className="h-3 w-3" />
-                                )}
-                                {t('updateBtn') || 'Update'}
-                            </button>
-
-                            <Link
-                                href={`/movies?category=now_playing&region=${globalRegion}`}
-                                className="text-sm font-semibold text-accent hover:text-accent-hover transition-colors"
-                            >
-                                {t('seeMore') || 'See More'} →
-                            </Link>
-                        </div>
-                    </div>
-
-                    <div className="relative min-h-[300px]">
-                        {isLoadingCinemas ? (
-                            <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-[2px] rounded-2xl z-10">
-                                <Loader2 className="h-8 w-8 text-accent animate-spin" />
+                    <div className="relative">
+                        {isLoadingCinemas && (
+                            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-background/50 backdrop-blur-sm">
+                                <Loader2 className="h-7 w-7 animate-spin text-foreground-muted" />
                             </div>
-                        ) : null}
-                        <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 snap-x">
+                        )}
+                        <div className="media-rail -mx-4 px-4 sm:mx-0 sm:px-0">
                             {nowPlayingMovies.map((movie: TMDBTrendingResult) => (
-                                <div key={movie.id} className="w-40 md:w-48 shrink-0 snap-start fade-in">
+                                <div key={movie.id} className="w-36 md:w-44 fade-in">
                                     <MovieCard
                                         id={movie.id}
                                         title={movie.title || movie.name || ''}
@@ -775,57 +756,45 @@ export function HomeRedesign({
                 {/* ====================================================
                     SECTION 3: UPCOMING MOVIES
                    ==================================================== */}
-                <section className="space-y-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/40 pb-4">
-                        <div className="space-y-1">
-                            <h2 className="text-2xl font-bold tracking-tight">
-                                {t('upcomingMovies') || 'Upcoming Movies'}
-                            </h2>
-                            <div className="flex items-center gap-2 text-[10px] font-bold text-foreground-muted tracking-wider">
-                                <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-                                <span className="uppercase">
-                                    {tNowShowing('lastUpdated') || 'Last updated'}:
-                                </span>
-                                <span className="font-sans font-medium text-foreground-muted">
-                                    {upcomingMoviesTime > 0
-                                        ? new Date(upcomingMoviesTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                                        : 'Updating...'}
-                                </span>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-4">
-                            <button
-                                onClick={triggerMoviesUpdate}
-                                disabled={isUpdatingMovies}
-                                className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-xs font-semibold text-foreground hover:bg-background-elevated transition-all active:scale-95 disabled:opacity-50"
-                            >
-                                {isUpdatingMovies ? (
-                                    <Loader2 className="h-3 w-3 animate-spin" />
-                                ) : (
-                                    <RotateCw className="h-3 w-3" />
-                                )}
-                                {t('updateBtn') || 'Update'}
-                            </button>
-
-                            <Link
-                                href="/movies?category=upcoming"
-                                className="text-sm font-semibold text-accent hover:text-accent-hover transition-colors"
-                            >
-                                {t('seeMore') || 'See More'} →
-                            </Link>
-                        </div>
-                    </div>
+                <section className="space-y-5">
+                    <SectionHeader
+                        eyebrow="Coming Soon"
+                        title={t('upcomingMovies') || 'Upcoming Movies'}
+                        actionHref="/movies?category=upcoming"
+                        actionLabel={t('seeMore') || 'See More'}
+                    >
+                        <span className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-foreground-subtle">
+                            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" />
+                            {tNowShowing('lastUpdated') || 'Last updated'}:
+                            <span className="font-medium normal-case">
+                                {upcomingMoviesTime > 0
+                                    ? new Date(upcomingMoviesTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                    : 'Updating...'}
+                            </span>
+                        </span>
+                        <button
+                            onClick={triggerMoviesUpdate}
+                            disabled={isUpdatingMovies}
+                            className="inline-flex items-center gap-2 rounded-lg border border-border bg-background-elevated px-3.5 py-2 text-xs font-semibold text-foreground transition-colors hover:border-border-hover hover:bg-background-highlight disabled:opacity-50"
+                        >
+                            {isUpdatingMovies ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                                <RotateCw className="h-3.5 w-3.5" />
+                            )}
+                            {t('updateBtn') || 'Update'}
+                        </button>
+                    </SectionHeader>
 
                     <div className="relative">
-                        {isLoadingUpcomingMovies ? (
-                            <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-[2px] rounded-2xl z-10">
-                                <Loader2 className="h-8 w-8 text-accent animate-spin" />
+                        {isLoadingUpcomingMovies && (
+                            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-background/50 backdrop-blur-sm">
+                                <Loader2 className="h-7 w-7 animate-spin text-foreground-muted" />
                             </div>
-                        ) : null}
-                        <div className="flex overflow-x-auto gap-6 pb-4 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 snap-x">
+                        )}
+                        <div className="media-rail -mx-4 px-4 sm:mx-0 sm:px-0">
                             {upcomingMovies.map((movie: TMDBTrendingResult) => (
-                                <div key={movie.id} className="w-40 md:w-48 shrink-0 snap-start">
+                                <div key={movie.id} className="w-36 md:w-44">
                                     <MovieCard
                                         id={movie.id}
                                         title={movie.title || movie.name || ''}
@@ -845,57 +814,45 @@ export function HomeRedesign({
                 {/* ====================================================
                     SECTION 4: UPCOMING TV SHOWS
                    ==================================================== */}
-                <section className="space-y-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/40 pb-4">
-                        <div className="space-y-1">
-                            <h2 className="text-2xl font-bold tracking-tight">
-                                {t('upcomingTvShows') || 'Upcoming TV Shows'}
-                            </h2>
-                            <div className="flex items-center gap-2 text-[10px] font-bold text-foreground-muted tracking-wider">
-                                <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-                                <span className="uppercase">
-                                    {tNowShowing('lastUpdated') || 'Last updated'}:
-                                </span>
-                                <span className="font-sans font-medium text-foreground-muted">
-                                    {upcomingShowsTime > 0
-                                        ? new Date(upcomingShowsTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                                        : 'Updating...'}
-                                </span>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-4">
-                            <button
-                                onClick={triggerShowsUpdate}
-                                disabled={isUpdatingShows}
-                                className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-xs font-semibold text-foreground hover:bg-background-elevated transition-all active:scale-95 disabled:opacity-50"
-                            >
-                                {isUpdatingShows ? (
-                                    <Loader2 className="h-3 w-3 animate-spin" />
-                                ) : (
-                                    <RotateCw className="h-3 w-3" />
-                                )}
-                                {t('updateBtn') || 'Update'}
-                            </button>
-
-                            <Link
-                                href="/tv-shows?category=upcoming"
-                                className="text-sm font-semibold text-accent hover:text-accent-hover transition-colors"
-                            >
-                                {t('seeMore') || 'See More'} →
-                            </Link>
-                        </div>
-                    </div>
+                <section className="space-y-5">
+                    <SectionHeader
+                        eyebrow="Coming Soon"
+                        title={t('upcomingTvShows') || 'Upcoming TV Shows'}
+                        actionHref="/tv-shows?category=upcoming"
+                        actionLabel={t('seeMore') || 'See More'}
+                    >
+                        <span className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-foreground-subtle">
+                            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-info" />
+                            {tNowShowing('lastUpdated') || 'Last updated'}:
+                            <span className="font-medium normal-case">
+                                {upcomingShowsTime > 0
+                                    ? new Date(upcomingShowsTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                    : 'Updating...'}
+                            </span>
+                        </span>
+                        <button
+                            onClick={triggerShowsUpdate}
+                            disabled={isUpdatingShows}
+                            className="inline-flex items-center gap-2 rounded-lg border border-border bg-background-elevated px-3.5 py-2 text-xs font-semibold text-foreground transition-colors hover:border-border-hover hover:bg-background-highlight disabled:opacity-50"
+                        >
+                            {isUpdatingShows ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                                <RotateCw className="h-3.5 w-3.5" />
+                            )}
+                            {t('updateBtn') || 'Update'}
+                        </button>
+                    </SectionHeader>
 
                     <div className="relative">
-                        {isLoadingUpcomingShows ? (
-                            <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-[2px] rounded-2xl z-10">
-                                <Loader2 className="h-8 w-8 text-accent animate-spin" />
+                        {isLoadingUpcomingShows && (
+                            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-background/50 backdrop-blur-sm">
+                                <Loader2 className="h-7 w-7 animate-spin text-foreground-muted" />
                             </div>
-                        ) : null}
-                        <div className="flex overflow-x-auto gap-6 pb-4 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 snap-x">
+                        )}
+                        <div className="media-rail -mx-4 px-4 sm:mx-0 sm:px-0">
                             {upcomingShows.map((show: TMDBTrendingResult) => (
-                                <div key={show.id} className="w-40 md:w-48 shrink-0 snap-start">
+                                <div key={show.id} className="w-36 md:w-44">
                                     <MovieCard
                                         id={show.id}
                                         title={show.title || show.name || ''}
@@ -915,98 +872,82 @@ export function HomeRedesign({
                 {/* ====================================================
                     SECTION 5: FREE TO WATCH (100% FREE ONLY)
                    ==================================================== */}
-                <section className="space-y-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/40 pb-4">
-                        <div className="flex flex-wrap items-center gap-3">
-                            <h2 className="text-2xl font-bold tracking-tight">
-                                {t('freeToWatch') || 'Free to Watch'}
-                            </h2>
-                            <div className="flex rounded-full bg-background-elevated p-1">
-                                <button
-                                    onClick={() => setFreeTab('movies')}
-                                    className={`rounded-full px-4 py-1 text-xs font-bold transition-all ${
-                                        freeTab === 'movies'
-                                            ? 'bg-accent text-background shadow-md'
-                                            : 'text-foreground-muted hover:text-foreground'
-                                    }`}
-                                >
-                                    {tNav('movies')}
-                                </button>
-                                <button
-                                    onClick={() => setFreeTab('tv')}
-                                    className={`rounded-full px-4 py-1 text-xs font-bold transition-all ${
-                                        freeTab === 'tv'
-                                            ? 'bg-accent text-background shadow-md'
-                                            : 'text-foreground-muted hover:text-foreground'
-                                    }`}
-                                >
-                                    {tNav('tvShows')}
-                                </button>
-                            </div>
-
-                            {/* Rotation Update Trigger next to toggle */}
+                <section className="space-y-5">
+                    <SectionHeader
+                        eyebrow="Free"
+                        title={t('freeToWatch') || 'Free to Watch'}
+                        actionHref={(freeTab === 'movies' ? `/movies?availability=free` : `/tv-shows?availability=free`) as string}
+                        actionLabel={t('seeMore') || 'See More'}
+                    >
+                        <div className="flex rounded-lg border border-border bg-background-elevated p-0.5">
                             <button
-                                onClick={triggerFreeUpdate}
-                                disabled={isLoadingFree}
-                                className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3.5 py-1 text-[11px] font-semibold text-foreground hover:bg-background-elevated transition-all active:scale-95 disabled:opacity-50"
+                                onClick={() => setFreeTab('movies')}
+                                className={`rounded-md px-3.5 py-1.5 text-xs font-bold transition-colors ${
+                                    freeTab === 'movies'
+                                        ? 'bg-foreground text-background'
+                                        : 'text-foreground-muted hover:text-foreground'
+                                }`}
                             >
-                                {isLoadingFree ? (
-                                    <Loader2 className="h-3 w-3 animate-spin" />
-                                ) : (
-                                    <RotateCw className="h-3 w-3" />
-                                )}
-                                {t('updateBtn') || 'Update'}
+                                {tNav('movies')}
+                            </button>
+                            <button
+                                onClick={() => setFreeTab('tv')}
+                                className={`rounded-md px-3.5 py-1.5 text-xs font-bold transition-colors ${
+                                    freeTab === 'tv'
+                                        ? 'bg-foreground text-background'
+                                        : 'text-foreground-muted hover:text-foreground'
+                                }`}
+                            >
+                                {tNav('tvShows')}
                             </button>
                         </div>
-
-                        <Link
-                            href={(freeTab === 'movies' ? `/movies?availability=free` : `/tv-shows?availability=free`) as string}
-                            className="text-sm font-semibold text-accent hover:text-accent-hover transition-colors"
+                        <button
+                            onClick={triggerFreeUpdate}
+                            disabled={isLoadingFree}
+                            className="inline-flex items-center gap-2 rounded-lg border border-border bg-background-elevated px-3.5 py-2 text-xs font-semibold text-foreground transition-colors hover:border-border-hover hover:bg-background-highlight disabled:opacity-50"
                         >
-                            {t('seeMore') || 'See More'} →
-                        </Link>
-                    </div>
+                            {isLoadingFree ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                                <RotateCw className="h-3.5 w-3.5" />
+                            )}
+                            {t('updateBtn') || 'Update'}
+                        </button>
+                    </SectionHeader>
 
-                    <div className="relative min-h-[250px]">
-                        {isLoadingFree ? (
-                            <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-[2px] rounded-2xl z-10">
-                                <Loader2 className="h-8 w-8 text-accent animate-spin" />
+                    <div className="relative">
+                        {isLoadingFree && (
+                            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-background/50 backdrop-blur-sm">
+                                <Loader2 className="h-7 w-7 animate-spin text-foreground-muted" />
                             </div>
-                        ) : null}
-                        <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 snap-x">
+                        )}
+                        <div className="media-rail -mx-4 px-4 sm:mx-0 sm:px-0">
                             {currentFreeItems.map((item: TMDBTrendingResult) => (
                                 <div
                                     key={item.id}
                                     onClick={() => handleFreeItemClick(item)}
-                                    className="w-40 md:w-48 shrink-0 snap-start bg-[#12121a] border border-border/40 hover:border-accent/40 rounded-2xl p-4 space-y-3 cursor-pointer group transition-all hover:scale-[1.02] shadow-lg flex flex-col justify-between"
+                                    className="group w-36 shrink-0 cursor-pointer space-y-2.5 md:w-44"
                                 >
-                                    <div className="space-y-2">
-                                        <div className="w-full rounded-xl overflow-hidden bg-background-elevated relative border border-border/20" style={{ aspectRatio: '2/3' }}>
-                                            {item.poster_path ? (
-                                                // eslint-disable-next-line @next/next/no-img-element
-                                                <img
-                                                    src={`https://image.tmdb.org/t/p/w342${item.poster_path}`}
-                                                    alt={item.title || item.name || ''}
-                                                    className="h-full w-full object-cover"
-                                                />
-                                            ) : (
-                                                <div className="flex h-full w-full items-center justify-center text-foreground-subtle">
-                                                    <HelpCircle className="h-8 w-8" />
-                                                </div>
-                                            )}
-                                            <div className="absolute top-2 left-2 rounded-md bg-emerald-500/95 px-2 py-0.5 text-[9px] font-bold text-background uppercase tracking-wider font-sans">
-                                                {t('freeToWatch') || 'Free'}
+                                    <div className="relative overflow-hidden rounded-lg border border-border bg-background-card transition-all duration-[var(--transition-base)] group-hover:-translate-y-1 group-hover:border-border-hover group-hover:shadow-elevated" style={{ aspectRatio: '2/3' }}>
+                                        {item.poster_path ? (
+                                            // eslint-disable-next-line @next/next/no-img-element
+                                            <img
+                                                src={`https://image.tmdb.org/t/p/w342${item.poster_path}`}
+                                                alt={item.title || item.name || ''}
+                                                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                                            />
+                                        ) : (
+                                            <div className="flex h-full w-full items-center justify-center text-foreground-subtle">
+                                                <HelpCircle className="h-8 w-8" />
                                             </div>
-                                        </div>
-                                        <h3 className="font-bold text-xs truncate group-hover:text-accent transition-colors">
-                                            {item.title || item.name}
-                                        </h3>
+                                        )}
+                                        <span className="absolute left-1.5 top-1.5 rounded-md bg-success/90 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-background backdrop-blur-sm">
+                                            {t('freeBadge') || 'Free'}
+                                        </span>
                                     </div>
-
-                                    <div className="bg-background-elevated rounded-xl p-2.5 text-[10px] text-foreground-muted text-center flex items-center justify-center gap-1.5 hover:bg-background-elevated-hover transition-colors">
-                                        <Eye className="h-3 w-3 text-accent" />
-                                        <span>Free Streaming Info</span>
-                                    </div>
+                                    <h3 className="truncate text-xs font-semibold transition-colors group-hover:text-accent">
+                                        {item.title || item.name}
+                                    </h3>
                                 </div>
                             ))}
                         </div>
@@ -1016,12 +957,12 @@ export function HomeRedesign({
                 {/* ====================================================
                     SECTION 6: FOOTER REGION FILTER
                    ==================================================== */}
-                <section className="border-t border-border/40 pt-8 mt-12 flex flex-col items-center justify-center space-y-4">
-                    <div className="flex flex-col items-center space-y-1">
-                        <span className="text-[10px] font-bold text-foreground-muted uppercase tracking-widest">
+                <section className="flex flex-col items-center justify-center gap-4 border-t border-border/40 pt-10">
+                    <div className="flex flex-col items-center gap-1 text-center">
+                        <span className="eyebrow">
                             {t('globalRegionFilter') || 'Global Region Filter'}
                         </span>
-                        <h3 className="text-xs text-foreground-muted text-center">
+                        <h3 className="lede">
                             {t('regionSelectSub') || 'Select region to localize theatrical, trending, trailers, and streaming options'}
                         </h3>
                     </div>
@@ -1030,15 +971,16 @@ export function HomeRedesign({
                         <select
                             value={globalRegion}
                             onChange={(e) => handleGlobalRegionChange(e.target.value)}
-                            className="appearance-none bg-background-elevated border border-border/40 rounded-xl pl-4 pr-10 py-2.5 text-xs font-bold text-foreground focus:outline-none focus:border-accent cursor-pointer min-w-[200px] transition-all text-center shadow-lg hover:border-accent/40"
+                            aria-label={t('globalRegionFilter') || 'Global Region Filter'}
+                            className="min-w-[220px] cursor-pointer appearance-none rounded-lg border border-border bg-background-elevated py-2.5 pl-4 pr-10 text-center text-xs font-bold text-foreground transition-colors hover:border-border-hover focus:border-border-active focus:outline-none"
                         >
                             {CINEMA_COUNTRIES.map((c) => (
-                                <option key={c.code} value={c.code} className="bg-[#1c1c28] text-left">
+                                <option key={c.code} value={c.code} className="bg-background-elevated text-left">
                                     {t(`region${c.code}`) || c.name} ({c.code})
                                 </option>
                             ))}
                         </select>
-                        <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-foreground-muted pointer-events-none" />
+                        <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-foreground-muted" />
                     </div>
                 </section>
 
@@ -1052,34 +994,34 @@ export function HomeRedesign({
                             onClick={() => setActiveTrailer(null)}
                         />
                         
-                        <div className="relative w-full max-w-4xl aspect-video rounded-2xl overflow-hidden bg-[#12121a] border border-border shadow-2xl z-10 flex items-center justify-center">
+                        <div className="relative z-10 flex aspect-video w-full max-w-4xl items-center justify-center overflow-hidden rounded-xl border border-border bg-background-card shadow-elevated">
                             <button
                                 onClick={() => setActiveTrailer(null)}
-                                className="absolute top-4 right-4 z-20 rounded-full bg-black/60 p-2 text-foreground hover:bg-black/80 hover:text-accent transition-all"
-                                aria-label="Close Trailer"
+                                className="absolute right-4 top-4 z-20 rounded-full bg-black/60 p-2 text-foreground transition-colors hover:bg-black/80 hover:text-accent"
+                                aria-label={t('closeTrailer') || 'Close Trailer'}
                             >
                                 <X className="h-5 w-5" />
                             </button>
 
                             {isLoadingTrailer ? (
                                 <div className="flex flex-col items-center gap-3 text-foreground-muted">
-                                    <Loader2 className="h-8 w-8 text-accent animate-spin" />
-                                    <span className="text-xs font-semibold font-sans">Loading Trailer...</span>
+                                    <Loader2 className="h-8 w-8 animate-spin text-foreground-muted" />
+                                    <span className="text-xs font-semibold">{t('loadingTrailer') || 'Loading Trailer…'}</span>
                                 </div>
                             ) : youtubeKey ? (
                                 <iframe
                                     src={`https://www.youtube.com/embed/${youtubeKey}?autoplay=1&rel=0`}
                                     title={activeTrailer.title}
-                                    className="w-full h-full border-0"
+                                    className="h-full w-full border-0"
                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                     allowFullScreen
                                 />
                             ) : (
-                                <div className="text-center p-6 space-y-2">
-                                    <Film className="h-12 w-12 text-foreground-subtle mx-auto mb-2" />
-                                    <h3 className="font-bold text-sm text-foreground">No Trailer Found</h3>
-                                    <p className="text-xs text-foreground-muted max-w-xs">
-                                        We couldn&apos;t find an official YouTube trailer for &ldquo;{activeTrailer.title}&rdquo;.
+                                <div className="space-y-2 p-6 text-center">
+                                    <Film className="mx-auto mb-2 h-12 w-12 text-foreground-subtle" />
+                                    <h3 className="text-sm font-bold text-foreground">{t('noTrailerFound') || 'No Trailer Found'}</h3>
+                                    <p className="max-w-xs text-xs text-foreground-muted">
+                                        {t('noTrailerDesc') || 'We could not find an official YouTube trailer for this title.'}
                                     </p>
                                 </div>
                             )}
@@ -1097,11 +1039,11 @@ export function HomeRedesign({
                             onClick={() => setActiveFreeItem(null)}
                         />
 
-                        <div className="relative w-full max-w-md rounded-2xl bg-[#1c1c28] border border-border p-6 shadow-2xl z-10 space-y-6">
+                        <div className="relative z-10 w-full max-w-md space-y-6 rounded-xl bg-surface-secondary p-6 shadow-elevated">
                             <button
                                 onClick={() => setActiveFreeItem(null)}
-                                className="absolute top-4 right-4 rounded-full bg-background-elevated p-2 text-foreground-muted hover:text-foreground transition-all"
-                                aria-label="Close Watch Details"
+                                className="absolute right-4 top-4 rounded-full bg-background-elevated p-2 text-foreground-muted transition-colors hover:text-foreground"
+                                aria-label={t('closeWatchDetails') || 'Close Watch Details'}
                             >
                                 <X className="h-4 w-4" />
                             </button>
@@ -1125,18 +1067,18 @@ export function HomeRedesign({
                                     <h3 className="font-bold text-base text-foreground truncate pr-6">
                                         {activeFreeItem.title || activeFreeItem.name}
                                     </h3>
-                                    <p className="text-xs text-foreground-muted font-sans">
-                                        {activeFreeItem.release_date || activeFreeItem.first_air_date || 'Upcoming'}
+                                    <p className="font-sans text-xs text-foreground-muted">
+                                        {activeFreeItem.release_date || activeFreeItem.first_air_date || t('upcomingShort') || 'Upcoming'}
                                     </p>
-                                    <div className="inline-flex items-center rounded-md bg-emerald-500/10 px-2 py-0.5 text-[9px] font-bold text-emerald-400 border border-emerald-500/20 uppercase tracking-wider font-sans">
-                                        Free Stream Options
+                                    <div className="inline-flex items-center rounded-md border border-success/20 bg-success/10 px-2 py-0.5 font-sans text-[9px] font-bold uppercase tracking-wider text-success">
+                                        {t('freeStreamOptions') || 'Free Stream Options'}
                                     </div>
                                 </div>
                             </div>
 
                             <div className="border-t border-border/40 pt-4 space-y-4">
-                                <h4 className="text-xs font-bold text-foreground-muted uppercase tracking-wider">
-                                    Streaming Free In US
+                                <h4 className="text-xs font-bold uppercase tracking-wider text-foreground-muted">
+                                    {t('streamingFreeIn', { region: globalRegion }) || `Streaming Free In ${globalRegion}`}
                                 </h4>
 
                                 {isLoadingProviders ? (
@@ -1190,22 +1132,22 @@ export function HomeRedesign({
                                                 </a>
                                             ))}
                                         </div>
-                                        <div className="rounded-lg bg-yellow-500/10 p-2.5 border border-yellow-500/20 text-[10px] text-yellow-400 font-sans">
-                                            No 100% free streams found. Displaying standard subscription flatrate providers as a backup.
+                                        <div className="rounded-lg border border-warning/20 bg-warning/10 p-2.5 font-sans text-[10px] text-warning">
+                                            {t('noFreeStreams') || 'No 100% free streams found. Showing subscription options as a fallback.'}
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="rounded-lg bg-background-elevated p-4 text-center text-xs text-foreground-muted border border-border/20 font-sans">
-                                        No streaming details found for this title in your region.
+                                    <div className="rounded-lg border border-border/20 bg-background-elevated p-4 text-center font-sans text-xs text-foreground-muted">
+                                        {t('noStreamingDetails') || 'No streaming details found for this title in your region.'}
                                     </div>
                                 )}
 
                                 <Link
                                     href={freeTab === 'movies' ? `/movie/${activeFreeItem.id}` : `/tv/${activeFreeItem.id}`}
                                     onClick={() => setActiveFreeItem(null)}
-                                    className="w-full inline-flex items-center justify-center rounded-xl bg-accent py-3 text-xs font-bold text-background hover:bg-accent-hover transition-colors shadow-md font-sans"
+                                    className="inline-flex w-full items-center justify-center rounded-lg bg-foreground py-3 font-sans text-xs font-bold text-background transition-colors hover:bg-foreground/90"
                                 >
-                                    View Movie Details
+                                    {t('viewDetails') || 'View Details'}
                                 </Link>
                             </div>
                         </div>

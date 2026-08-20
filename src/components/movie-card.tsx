@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Star, Tv, Film } from 'lucide-react';
+import { Star, Tv, Film, Play } from 'lucide-react';
 import { IMAGE_SIZES } from '@/lib/tmdb';
 import { useLocale, useTranslations } from 'next-intl';
 
@@ -43,6 +43,13 @@ interface MovieCardProps {
     /** Optional: RT formatting for global UI */
     rtScore?: string;
     rtStatus?: 'fresh' | 'rotten';
+    /** Optional: personalized match score shown on recommendation cards */
+    matchPercent?: number;
+    /** Optional: contextual caption shown under the title */
+    meta?: string;
+    /** Optional: suppress the media-type chip */
+    showTypeChip?: boolean;
+    className?: string;
 }
 
 export function MovieCard({
@@ -55,6 +62,10 @@ export function MovieCard({
     status,
     rtScore,
     rtStatus,
+    matchPercent,
+    meta,
+    showTypeChip = true,
+    className = '',
 }: MovieCardProps) {
     const locale = useLocale();
     const t = useTranslations('nowShowing');
@@ -67,8 +78,12 @@ export function MovieCard({
     const sanitizedTitle = sanitizeTitle(title, locale);
 
     return (
-        <Link href={href} className="group block" id={`card-${mediaType}-${id}`}>
-            <div className="relative overflow-hidden rounded-[var(--radius-lg)] bg-background-card border border-border transition-all duration-[var(--transition-base)] hover:border-border-hover hover:shadow-[var(--shadow-elevated)] hover:-translate-y-1">
+        <Link
+            href={href}
+            className={`group block outline-offset-4 ${className}`}
+            aria-label={`${sanitizedTitle}${year ? ` (${year})` : ''}`}
+        >
+            <div className="relative overflow-hidden rounded-lg border border-border bg-surface-primary transition-all duration-[var(--transition-base)] hover:-translate-y-1 hover:border-border-hover hover:shadow-elevated">
                 {/* Poster */}
                 <div className="relative w-full overflow-hidden" style={{ aspectRatio: '2/3' }}>
                     {posterPath && !imgError ? (
@@ -76,71 +91,83 @@ export function MovieCard({
                             src={`${IMAGE_SIZES.poster.medium}${posterPath}`}
                             alt={sanitizedTitle}
                             fill
-                            sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 200px"
-                            className="object-cover transition-transform duration-[var(--transition-slow)] group-hover:scale-105"
+                            sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 220px"
+                            className="object-cover transition-transform duration-[var(--transition-smooth)] group-hover:scale-[1.04]"
                             onError={() => setImgError(true)}
                         />
                     ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-gray-900 to-black border border-border/20">
-                            <div className="text-center p-4">
-                                <Film className="h-10 w-10 text-accent/60 mx-auto mb-2 animate-pulse" />
-                                <div className="text-[11px] font-bold text-foreground/80 tracking-wide uppercase font-sans">
-                                    {t('posterUnavailable') || 'Poster Unavailable'}
-                                </div>
-                                <div className="text-[9px] text-foreground-muted font-sans mt-0.5">
-                                    MARKD
-                                </div>
-                            </div>
+                        <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-background-highlight to-background gap-2">
+                            <Film className="h-9 w-9 text-foreground-subtle" strokeWidth={1.5} />
+                            <span className="px-3 text-center text-[10px] font-semibold tracking-wider text-foreground-muted">
+                                {t('posterUnavailable') || 'Poster Unavailable'}
+                            </span>
                         </div>
                     )}
 
-                    {/* Rating badge(s) */}
-                    {(rating || rtScore) && (
-                        <div className="absolute top-2 right-2 flex flex-col items-end gap-1 max-w-[45%]">
-                            {rating && (
-                                <div className="flex items-center gap-1 rounded-full bg-black/70 px-2 py-0.5 text-xs font-semibold backdrop-blur-sm max-w-full">
-                                    <Star className="h-3 w-3 fill-accent text-accent shrink-0" />
-                                    <span className="truncate">{rating}</span>
-                                </div>
-                            )}
-                            {rtScore && (
-                                <div className={`flex items-center gap-1 rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-bold backdrop-blur-sm max-w-full ${rtStatus === 'fresh' ? 'text-green-500' : 'text-red-500'}`}>
-                                    <span role="img" aria-label="Rotten Tomatoes" className="shrink-0">🍅</span>
-                                    <span className="truncate">{rtScore}</span>
-                                </div>
-                            )}
-                        </div>
-                    )}
+                    {/* Cinematic scrim on hover */}
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent opacity-0 transition-opacity duration-[var(--transition-base)] group-hover:opacity-100" />
 
-                    {/* Media type badge */}
-                    <div className="absolute top-2 left-2 flex items-center gap-1 rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider backdrop-blur-sm max-w-[45%]">
-                        {mediaType === 'tv' ? (
-                            <Tv className="h-3 w-3 text-info shrink-0" />
-                        ) : (
-                            <Film className="h-3 w-3 text-accent shrink-0" />
-                        )}
-                        <span className="truncate">{mediaType === 'tv' ? 'TV' : 'Film'}</span>
+                    {/* Hover play affordance */}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-[var(--transition-base)] group-hover:opacity-100">
+                        <span className="flex h-11 w-11 scale-90 items-center justify-center rounded-full border border-white/25 bg-black/55 text-foreground backdrop-blur-sm transition-transform duration-[var(--transition-base)] group-hover:scale-100">
+                            <Play className="h-4 w-4 fill-current" />
+                        </span>
                     </div>
+
+                    {/* Rating badges */}
+                    <div className="absolute right-1.5 top-1.5 flex flex-col items-end gap-1">
+                        {matchPercent !== undefined && (
+                            <span className="rounded-md bg-success/15 px-1.5 py-0.5 text-[10px] font-bold text-success backdrop-blur-md">
+                                {matchPercent}%
+                            </span>
+                        )}
+                        {rating && (
+                            <span className="flex items-center gap-1 rounded-md bg-black/65 px-1.5 py-0.5 text-[11px] font-semibold text-foreground backdrop-blur-sm">
+                                <Star className="h-3 w-3 shrink-0 fill-accent text-accent" />
+                                <span className="leading-none">{rating}</span>
+                            </span>
+                        )}
+                        {rtScore && (
+                            <span
+                                className={`flex items-center gap-1 rounded-md bg-black/65 px-1.5 py-0.5 text-[10px] font-bold backdrop-blur-sm ${
+                                    rtStatus === 'fresh' ? 'text-tomato-fresh' : 'text-tomato-rotten'
+                                }`}
+                            >
+                                <span aria-hidden="true">🍅</span>
+                                <span className="leading-none">{rtScore}</span>
+                            </span>
+                        )}
+                    </div>
+
+                    {/* Media type chip */}
+                    {showTypeChip && (
+                        <span className="absolute left-1.5 top-1.5 flex items-center gap-1 rounded-md bg-black/65 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-foreground-secondary backdrop-blur-sm">
+                            {mediaType === 'tv' ? (
+                                <Tv className="h-2.5 w-2.5" />
+                            ) : (
+                                <Film className="h-2.5 w-2.5" />
+                            )}
+                            <span className="leading-none">{mediaType === 'tv' ? 'TV' : 'Film'}</span>
+                        </span>
+                    )}
 
                     {/* Status badge */}
                     {status && (
-                        <div className="absolute bottom-2 left-2 right-2">
+                        <div className="absolute bottom-1.5 left-1.5 right-1.5">
                             <StatusBadge status={status} />
                         </div>
                     )}
-
-                    {/* Hover overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity duration-[var(--transition-base)] group-hover:opacity-100" />
                 </div>
 
                 {/* Info */}
-                <div className="p-3">
-                    <h3 className="truncate text-sm font-semibold leading-tight transition-colors group-hover:text-accent">
+                <div className="space-y-0.5 p-2.5">
+                    <h3 className="line-clamp-2 text-[13px] font-semibold leading-snug text-foreground transition-colors group-hover:text-accent">
                         {sanitizedTitle}
                     </h3>
-                    {year && (
-                        <p className="mt-1 text-xs text-foreground-muted">{year}</p>
-                    )}
+                    <div className="flex items-center justify-between gap-2">
+                        {year && <p className="text-[11px] font-medium text-foreground-muted">{year}</p>}
+                        {meta && <p className="truncate text-[11px] text-foreground-subtle">{meta}</p>}
+                    </div>
                 </div>
             </div>
         </Link>
@@ -151,11 +178,11 @@ export function MovieCard({
 
 export function MovieCardSkeleton() {
     return (
-        <div className="overflow-hidden rounded-[var(--radius-lg)] bg-background-card border border-border">
+        <div className="overflow-hidden rounded-lg border border-border bg-surface-primary">
             <div className="aspect-[2/3] w-full shimmer" />
-            <div className="space-y-2 p-3">
-                <div className="h-4 w-3/4 rounded shimmer" />
-                <div className="h-3 w-1/3 rounded shimmer" />
+            <div className="space-y-2 p-2.5">
+                <div className="h-3.5 w-4/5 rounded shimmer" />
+                <div className="h-2.5 w-1/3 rounded shimmer" />
             </div>
         </div>
     );
@@ -164,23 +191,23 @@ export function MovieCardSkeleton() {
 /* ---- Small Status Badge ---- */
 
 function StatusBadge({ status }: { status: string }) {
-    const config: Record<string, { label: string; color: string }> = {
-        plan_to_watch: { label: 'Plan to Watch', color: 'bg-info/20 text-info' },
-        watching: { label: 'Watching', color: 'bg-success/20 text-success' },
-        completed: { label: 'Completed', color: 'bg-accent-muted text-accent' },
-        dropped: { label: 'Dropped', color: 'bg-error/20 text-error' },
+    const t = useTranslations('StatusSelector');
+    const config: Record<string, { labelKey: string; color: string }> = {
+        plan_to_watch: { labelKey: 'statusPlan', color: 'bg-info/20 text-info' },
+        watching: { labelKey: 'statusWatching', color: 'bg-success/15 text-success' },
+        completed: { labelKey: 'statusCompleted', color: 'bg-accent-muted text-accent' },
+        dropped: { labelKey: 'statusDropped', color: 'bg-error/20 text-error' },
     };
 
-    const { label, color } = config[status] ?? {
-        label: status,
-        color: 'bg-foreground-subtle/20 text-foreground-muted',
-    };
+    const known = config[status];
 
     return (
         <span
-            className={`inline-block rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider max-w-full truncate ${color}`}
+            className={`block truncate rounded-md px-2 py-0.5 text-center text-[10px] font-bold uppercase tracking-wider backdrop-blur-sm ${
+                known?.color ?? 'bg-foreground-subtle/20 text-foreground-muted'
+            }`}
         >
-            {label}
+            {known ? t(known.labelKey) : status}
         </span>
     );
 }

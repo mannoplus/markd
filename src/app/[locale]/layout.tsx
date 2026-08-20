@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Noto_Sans_TC } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/navbar";
 import { BottomNav } from "@/components/bottom-nav";
@@ -11,8 +11,18 @@ import { routing } from '@/i18n/routing';
 import { RegionProvider } from '@/context/RegionContext';
 
 const inter = Inter({
-  variable: "--font-geist-sans",
+  variable: "--font-sans",
   subsets: ["latin"],
+  display: "swap",
+});
+
+// Traditional Chinese gets a first-class typeface, not a fallback afterthought.
+// Loaded with subsetting so only the characters actually used are shipped.
+const notoSansTC = Noto_Sans_TC({
+  variable: "--font-tc",
+  subsets: ["latin"],
+  weight: ["400", "500", "700", "900"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -23,12 +33,12 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#000000",
+  themeColor: "#0a0c11",
   viewportFit: "cover",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  maximumScale: 5,
+  userScalable: true,
 };
 
 export default async function RootLayout({
@@ -41,7 +51,7 @@ export default async function RootLayout({
   const { locale } = await params;
 
   // Ensure that the incoming `locale` is valid
-  if (!routing.locales.includes(locale as any)) {
+  if (!routing.locales.includes(locale as (typeof routing.locales)[number])) {
     notFound();
   }
 
@@ -51,11 +61,19 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} className="dark" suppressHydrationWarning>
-      <body className={`${inter.variable} antialiased`} suppressHydrationWarning>
+      <body className={`${inter.variable} ${notoSansTC.variable} antialiased`} suppressHydrationWarning>
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[1200] focus:rounded-lg focus:bg-accent focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-background focus:shadow-elevated"
+        >
+          Skip to content
+        </a>
         <NextIntlClientProvider messages={messages}>
           <RegionProvider>
             <Navbar />
-            <main className="min-h-screen pb-32 md:pb-0">{children}</main>
+            <main id="main-content" className="min-h-screen pb-24 md:pb-0">
+              {children}
+            </main>
             <Footer />
             <BottomNav />
           </RegionProvider>

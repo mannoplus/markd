@@ -1,6 +1,7 @@
 import { getUserMediaItems } from '@/app/actions';
 import { redirect } from 'next/navigation';
 import { LibraryTabs } from './library-tabs';
+import { ErrorState } from '@/components/empty-state';
 import { getTranslations } from 'next-intl/server';
 
 export default async function LibraryPage() {
@@ -12,16 +13,17 @@ export default async function LibraryPage() {
     }
 
     return (
-        <div className="min-h-screen pt-24 pb-16 px-4 max-w-7xl mx-auto space-y-8 fade-in">
-            <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl text-foreground">
-                {t('title')}
-            </h1>
+        <div className="mx-auto max-w-7xl space-y-8 px-4 pb-24 pt-16 fade-in sm:px-6 lg:px-8">
+            <header className="space-y-2">
+                <span className="eyebrow">{t('eyebrow')}</span>
+                <h1 className="section-title">{t('title')}</h1>
+            </header>
 
             {items ? (
                 <LibraryTabs items={items} />
             ) : (
-                <div className="py-24 text-center glass border border-border rounded-xl">
-                    <p className="text-foreground-muted">{t('unableToLoad')}</p>
+                <div className="card">
+                    <ErrorState title={t('unableToLoad')} />
                 </div>
             )}
         </div>

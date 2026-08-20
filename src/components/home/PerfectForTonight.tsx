@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Sparkles, Compass, Zap, Flame, Smile, Film } from 'lucide-react';
+import { Compass, Sparkles, Smile, Flame, Zap, Film } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { MovieCard } from '@/components/movie-card';
+import { SectionHeader } from '@/components/section-header';
 import type { TMDBTrendingResult } from '@/types';
 import { useTranslations } from 'next-intl';
 import { classifyMovieDna } from '@/lib/taste-engine';
@@ -17,7 +19,7 @@ export function PerfectForTonight({ items }: PerfectForTonightProps) {
   const t = useTranslations('Home');
   const [activeMood, setActiveMood] = useState<MoodType>('all');
 
-  const MOOD_TABS: { id: MoodType; labelKey: string; icon: any }[] = [
+  const MOOD_TABS: { id: MoodType; labelKey: string; icon: LucideIcon }[] = [
     { id: 'all', labelKey: 'moodAll', icon: Compass },
     { id: 'mindBending', labelKey: 'moodMindBending', icon: Sparkles },
     { id: 'feelGood', labelKey: 'moodFeelGood', icon: Smile },
@@ -39,7 +41,7 @@ export function PerfectForTonight({ items }: PerfectForTonightProps) {
         case 'thriller':
           return dna.traits.includes('dark') || dna.traits.includes('suspenseful') || dna.traits.includes('violent');
         case 'quickWatch':
-          return dna.traits.includes('fastPaced') || ((item as any).runtime ? (item as any).runtime <= 95 : true);
+          return dna.traits.includes('fastPaced');
         case 'visualSplendor':
           return dna.traits.includes('cinematography') || dna.traits.includes('fantasy') || (item.vote_average || 0) >= 7.8;
         default:
@@ -51,20 +53,13 @@ export function PerfectForTonight({ items }: PerfectForTonightProps) {
   const displayList = filteredItems.length > 0 ? filteredItems : items;
 
   return (
-    <section className="space-y-6">
-      {/* Section Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/30 pb-4">
-        <div className="space-y-1">
-          <h2 className="text-2xl font-bold tracking-tight text-foreground">
-            {t('perfectForTonight')}
-          </h2>
-          <p className="text-xs text-foreground-muted">
-            {t('perfectForTonightSub')}
-          </p>
-        </div>
-
-        {/* Mood Filter Pill Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
+    <section className="space-y-5" aria-label={t('perfectForTonight')}>
+      <SectionHeader
+        eyebrow="Tonight"
+        title={t('perfectForTonight')}
+        description={t('perfectForTonightSub')}
+      >
+        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
           {MOOD_TABS.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeMood === tab.id;
@@ -72,10 +67,11 @@ export function PerfectForTonight({ items }: PerfectForTonightProps) {
               <button
                 key={tab.id}
                 onClick={() => setActiveMood(tab.id)}
-                className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                aria-pressed={isActive}
+                className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-bold transition-colors ${
                   isActive
-                    ? 'bg-accent text-background shadow-lg shadow-white/10 scale-105'
-                    : 'bg-background-elevated/70 text-foreground-muted hover:bg-background-elevated hover:text-foreground border border-border/20'
+                    ? 'bg-foreground text-background'
+                    : 'bg-background-elevated/70 text-foreground-muted hover:bg-background-elevated hover:text-foreground'
                 }`}
               >
                 <Icon className="h-3.5 w-3.5" />
@@ -84,12 +80,11 @@ export function PerfectForTonight({ items }: PerfectForTonightProps) {
             );
           })}
         </div>
-      </div>
+      </SectionHeader>
 
-      {/* Media Horizontal Grid */}
-      <div className="flex gap-5 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 snap-x">
+      <div className="media-rail -mx-4 px-4 sm:mx-0 sm:px-0">
         {displayList.slice(0, 10).map((movie) => (
-          <div key={movie.id} className="w-40 md:w-48 shrink-0 snap-start fade-in">
+          <div key={movie.id} className="w-36 md:w-44 fade-in">
             <MovieCard
               id={movie.id}
               title={movie.title || movie.name || ''}

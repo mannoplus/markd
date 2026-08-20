@@ -3,10 +3,11 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { Link } from '@/i18n/routing';
-import { Clapperboard, ChevronRight, Film, Star, Calendar, Bookmark, Check } from 'lucide-react';
+import { Star, Calendar, Bookmark, Check } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
 import { upsertMediaItem } from '@/app/actions';
 import { createClient } from '@/lib/supabase/client';
+import { SectionHeader } from '@/components/section-header';
 
 interface CuratedFilm {
   id: number;
@@ -98,6 +99,7 @@ const CURATED_COLLECTIONS: Collection[] = [
 export function CuratedCollections() {
   const locale = useLocale();
   const isZh = locale === 'zh-TW';
+  const t = useTranslations('Home');
   const [activeCollectionId, setActiveCollectionId] = useState<string>('nolan');
   const [savedMap, setSavedMap] = useState<Record<number, boolean>>({});
 
@@ -107,7 +109,7 @@ export function CuratedCollections() {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      window.location.href = `/${locale}/login`;
+      window.location.assign(`/${locale}/login`);
       return;
     }
 
@@ -132,96 +134,81 @@ export function CuratedCollections() {
   };
 
   return (
-    <section className="space-y-6 pt-4">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2.5">
-            <div className="p-1.5 rounded-lg bg-white/[0.08] border border-white/[0.1]">
-              <Clapperboard className="h-4 w-4 text-foreground" />
-            </div>
-            <h2 className="text-2xl font-bold tracking-tight text-foreground">
-              {isZh ? 'MARKD 編輯特選片單' : 'Editorial Cinema Collections'}
-            </h2>
-          </div>
-          <p className="text-xs text-foreground-muted">
-            {isZh ? '深度策劃的主題專題、影史大師與當代必看經典' : 'Curated cinematic trilogies, auteur spotlights, and iconic movements.'}
-          </p>
-        </div>
-
-        {/* Collection Selector Tabs */}
-        <div className="flex flex-nowrap items-center gap-2 overflow-x-auto scrollbar-hide py-1">
+    <section className="space-y-5">
+      <SectionHeader
+        eyebrow="Curated"
+        title={t('editorialCollections')}
+        description={t('editorialCollectionsSub')}
+      >
+        <div className="flex flex-nowrap items-center gap-1.5 overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
           {CURATED_COLLECTIONS.map((col) => (
             <button
               key={col.id}
               onClick={() => setActiveCollectionId(col.id)}
-              className={`rounded-xl px-3.5 py-2 text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer border ${
+              aria-pressed={activeCollectionId === col.id}
+              className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors border ${
                 activeCollectionId === col.id
-                  ? 'bg-white text-black border-white shadow-lg shadow-white/10'
-                  : 'bg-white/[0.03] text-foreground-muted border-white/[0.06] hover:text-foreground hover:border-white/15'
+                  ? 'bg-foreground text-background border-foreground'
+                  : 'bg-background-elevated/70 text-foreground-muted border-border hover:text-foreground hover:border-border-hover'
               }`}
             >
               {isZh ? col.curatorTagZh : col.curatorTagEn}
             </button>
           ))}
         </div>
-      </div>
+      </SectionHeader>
 
       {/* Active Collection Container */}
-      <div className="rounded-2xl border border-white/[0.08] bg-[#0E1017] p-6 sm:p-8 space-y-6 shadow-2xl">
+      <div className="rounded-xl border border-border bg-surface-secondary p-5 shadow-card sm:p-7">
         {/* Collection Meta */}
         <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <span className="rounded-md bg-white/[0.06] px-2.5 py-0.5 text-[10px] font-bold uppercase text-zinc-300 border border-white/[0.08] tracking-wider">
-              {isZh ? activeCollection.curatorTagZh : activeCollection.curatorTagEn}
-            </span>
-          </div>
-
-          <h3 className="text-2xl font-extrabold text-foreground">
+          <span className="eyebrow inline-flex">
+            {isZh ? activeCollection.curatorTagZh : activeCollection.curatorTagEn}
+          </span>
+          <h3 className="section-title">
             {isZh ? activeCollection.titleZh : activeCollection.titleEn}
           </h3>
-
-          <p className="text-xs sm:text-sm text-foreground-muted max-w-3xl leading-relaxed">
+          <p className="lede">
             {isZh ? activeCollection.taglineZh : activeCollection.taglineEn}
           </p>
         </div>
 
-        {/* Films Horizontal Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-4">
+        {/* Films Grid */}
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 sm:gap-4">
           {activeCollection.films.map((film) => {
             const isSaved = savedMap[film.id];
             return (
               <div
                 key={film.id}
-                className="group relative flex flex-col justify-between rounded-xl overflow-hidden border border-white/[0.06] bg-[#12141F] transition-all hover:border-white/20 hover:-translate-y-1"
+                className="group relative flex flex-col overflow-hidden rounded-lg border border-border bg-surface-primary transition-all duration-[var(--transition-base)] hover:-translate-y-1 hover:border-border-hover hover:shadow-elevated"
               >
                 {/* Poster */}
-                <Link href={`/movie/${film.id}`} className="relative aspect-[2/3] w-full block overflow-hidden">
+                <Link href={`/movie/${film.id}`} className="relative block w-full overflow-hidden" style={{ aspectRatio: '2/3' }}>
                   <Image
                     src={`https://image.tmdb.org/t/p/w500${film.posterPath}`}
                     alt={film.title}
                     fill
-                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                    className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 transition-opacity duration-[var(--transition-base)] group-hover:opacity-100" />
 
                   {/* Rating Badge */}
-                  <div className="absolute top-2 left-2 flex items-center gap-1 rounded-md bg-black/70 px-2 py-0.5 text-[10px] font-bold text-yellow-400 backdrop-blur-md border border-white/10">
-                    <Star className="h-3 w-3 fill-yellow-400" />
+                  <div className="absolute left-1.5 top-1.5 flex items-center gap-1 rounded-md bg-black/70 px-1.5 py-0.5 text-[10px] font-bold text-gold-star backdrop-blur-md">
+                    <Star className="h-3 w-3 fill-gold-star" />
                     <span>{film.rating}</span>
                   </div>
                 </Link>
 
                 {/* Info & Action */}
-                <div className="p-3 space-y-2 flex flex-col justify-between flex-1">
+                <div className="flex flex-1 flex-col justify-between gap-2 p-2.5">
                   <div className="space-y-1">
                     <Link
                       href={`/movie/${film.id}`}
-                      className="font-bold text-xs text-foreground hover:text-zinc-300 transition-colors line-clamp-1 block"
+                      className="block text-xs font-semibold text-foreground transition-colors line-clamp-1 group-hover:text-accent"
                     >
                       {film.title}
                     </Link>
-                    <div className="flex items-center gap-1.5 text-[10px] text-foreground-subtle font-mono">
+                    <div className="flex items-center gap-1.5 text-[10px] text-foreground-subtle">
                       <Calendar className="h-3 w-3" />
                       <span>{film.year}</span>
                     </div>
@@ -229,14 +216,16 @@ export function CuratedCollections() {
 
                   <button
                     onClick={() => handleQuickSave(film)}
-                    className={`w-full py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1 transition-all cursor-pointer border ${
+                    className={`flex w-full items-center justify-center gap-1 rounded-md border py-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors ${
                       isSaved
-                        ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
-                        : 'bg-white/[0.04] border-white/[0.08] text-foreground-muted hover:text-foreground hover:bg-white/[0.08]'
+                        ? 'border-success/30 bg-success/10 text-success'
+                        : 'border-border bg-background-elevated text-foreground-muted hover:bg-background-highlight hover:text-foreground'
                     }`}
                   >
                     {isSaved ? <Check className="h-3 w-3" /> : <Bookmark className="h-3 w-3" />}
-                    <span>{isSaved ? (isZh ? '已在片單' : 'In Watchlist') : (isZh ? '+ 想看' : '+ Watchlist')}</span>
+                    <span>
+                      {isSaved ? t('inWatchlist') : t('quickAddToWatchlist')}
+                    </span>
                   </button>
                 </div>
               </div>

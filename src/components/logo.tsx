@@ -1,41 +1,40 @@
 import Image from 'next/image';
 
 /**
- * MARKD Logo — uses the actual brand PNG image.
+ * MARKD Logo — the brand wordmark.
  *
- * The source image has dark text on a white background.
- * We use CSS `filter: invert(1)` to flip it (white text on black bg),
- * then `mix-blend-mode: screen` to make the now-black background
- * disappear against any dark surface, leaving just the white logo.
+ * Renders the pre-rendered white-on-transparent asset directly, so the
+ * identity stays crisp on every dark surface without CSS filter tricks.
  */
 
 interface LogoProps {
     className?: string;
     size?: 'sm' | 'md' | 'lg';
+    priority?: boolean;
 }
 
 const SIZES = {
-    sm: { width: 90, height: 36 },
-    md: { width: 140, height: 56 },
-    lg: { width: 200, height: 80 },
+    sm: { width: 96, height: 46 },
+    md: { width: 132, height: 64 },
+    lg: { width: 184, height: 89 },
 } as const;
 
-export function Logo({ className = '', size = 'md' }: LogoProps) {
+export function Logo({ className = '', size = 'md', priority = false }: LogoProps) {
     const { width, height } = SIZES[size];
 
     return (
         <Image
-            src="/logo-transparent.png"
+            src="/logo-white.png"
             alt="MARKD"
             width={width}
             height={height}
             className={className}
             style={{
-                filter: 'brightness(0) invert(1)',
                 height: 'auto',
-                maxWidth: width,
+                maxWidth: '100%',
             }}
-            priority
+            priority={priority}
+            draggable={false}
         />
     );
 }
