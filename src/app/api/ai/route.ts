@@ -13,7 +13,16 @@ export async function POST(request: Request) {
         }
 
         const isZh = language === 'zh-TW' || language === 'zh';
-        const langName = isZh ? 'Traditional Chinese (zh-TW)' : 'English (en-US)';
+        const langName = isZh ? 'Taiwan Traditional Chinese (正體中文 / 臺灣繁體)' : 'English (en-US)';
+
+        const zhTaiwanCinemaInstructions = isZh ? `
+CRITICAL TAIWAN TRADITIONAL CHINESE CINEMA RULES:
+- You must strictly use natural, authentic Taiwan Traditional Chinese (繁體中文 / 臺灣用語). NEVER use Simplified Chinese (簡體中文) or Mainland China terminology.
+- Always use authoritative Taiwan theatrical release titles for films and series (e.g. use 《全面啟動》 instead of 《盜夢空間》, 《星際效應》 instead of 《星際穿越》, 《駭客任務》 instead of 《黑客帝國》, 《捍衛戰士：獨行俠》 instead of 《壯志凌雲2》, 《神鬼奇航》 instead of 《加勒比海盜》, 《天外奇蹟》 instead of 《飛屋環遊記》).
+- If the official Taiwan title differs or might be ambiguous, format as: 《台灣片名》 (Original English Title).
+- Use Taiwan cinema vocabulary: 片單 (watchlist), 片庫 (library), 影集 (TV series), 演員/主演 (actors/cast), 導演 (director), 票房 (box office), 預告片 (trailer), 紀錄片 (documentary).
+- The brand name MARKD must always remain MARKD.
+` : '';
 
         let finalMessages = [...(messages || [])];
 
@@ -27,7 +36,8 @@ CRITICAL INSTRUCTIONS:
 1. Return ONLY a valid JSON array of strings (e.g. ["question 1", "question 2", "question 3"]).
 2. Do not include markdown code block syntax (like \`\`\`json) or any additional explanatory text.
 3. Every suggestion must be in ${langName}.
-4. Keep the questions short, natural, and extremely relevant to the current conversation and media title.`;
+4. Keep the questions short, natural, engaging, and extremely relevant to the current conversation and media title.
+${zhTaiwanCinemaInstructions}`;
             
             finalMessages = [
                 { role: 'system', content: systemPrompt },
@@ -42,7 +52,8 @@ CRITICAL INSTRUCTIONS:
 1. You must respond 100% in ${langName}.
 2. When recommending specific movies or TV shows, provide concise, evocative reasons why each title matches the user's taste.
 3. Keep your answers well-formatted, engaging, and directly helpful.
-4. Use clean markdown formatting (bolding, bullet points, headers) for readability.`;
+4. Use clean markdown formatting (bolding, bullet points, headers) for readability.
+${zhTaiwanCinemaInstructions}`;
             
             finalMessages.unshift({ role: 'system', content: systemPrompt });
         }

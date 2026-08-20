@@ -78,20 +78,20 @@ interface Provider {
     label: string;
     logo: React.ComponentType;
     model: string;
-    desc: string;
+    descKey: string;
 }
 
 const PROVIDERS: Provider[] = [
-    { id: 'openai', label: 'OpenAI', logo: OpenAiLogo, model: 'gpt-4o-mini', desc: 'Fast reasoning & general answers' },
-    { id: 'anthropic', label: 'Anthropic', logo: AnthropicLogo, model: 'claude-3-haiku-20240307', desc: 'Creative & detailed analysis' },
-    { id: 'mistral', label: 'Mistral', logo: MistralLogo, model: 'open-mistral-7b', desc: 'Open-source speed & logic' },
-    { id: 'kimi', label: 'Kimi (Moonshot)', logo: KimiLogo, model: 'moonshot-v1-8k', desc: 'Exceptional long-context tasking' },
-    { id: 'qwen', label: 'Qwen (Alibaba)', logo: QwenLogo, model: 'qwen-turbo', desc: 'Strong bilingual & math tasking' },
-    { id: 'meta', label: 'Meta AI (Groq)', logo: MetaLogo, model: 'llama3-8b-8192', desc: 'High-speed instruction compliance' },
-    { id: 'glm', label: 'GLM (Zhipu)', logo: GlmLogo, model: 'glm-4-flash', desc: 'Fast Chinese reasoning & synthesis' },
-    { id: 'deepseek', label: 'DeepSeek', logo: DeepseekLogo, model: 'deepseek-chat', desc: 'Coding tasks & advanced logic' },
-    { id: 'grok', label: 'Grok (xAI)', logo: GrokLogo, model: 'grok-beta', desc: 'High wit & real-time lookup' },
-    { id: 'minimax', label: 'MiniMax', logo: MinimaxLogo, model: 'abab6.5-chat', desc: 'Natural conversations & roleplay' }
+    { id: 'openai', label: 'OpenAI', logo: OpenAiLogo, model: 'gpt-4o-mini', descKey: 'providerOpenAi' },
+    { id: 'anthropic', label: 'Anthropic', logo: AnthropicLogo, model: 'claude-3-haiku-20240307', descKey: 'providerAnthropic' },
+    { id: 'mistral', label: 'Mistral', logo: MistralLogo, model: 'open-mistral-7b', descKey: 'providerMistral' },
+    { id: 'kimi', label: 'Kimi (Moonshot)', logo: KimiLogo, model: 'moonshot-v1-8k', descKey: 'providerOllama' },
+    { id: 'qwen', label: 'Qwen (Alibaba)', logo: QwenLogo, model: 'qwen-turbo', descKey: 'providerOpenAi' },
+    { id: 'meta', label: 'Meta AI (Groq)', logo: MetaLogo, model: 'llama3-8b-8192', descKey: 'providerGroq' },
+    { id: 'glm', label: 'GLM (Zhipu)', logo: GlmLogo, model: 'glm-4-flash', descKey: 'providerGemini' },
+    { id: 'deepseek', label: 'DeepSeek', logo: DeepseekLogo, model: 'deepseek-chat', descKey: 'providerDeepseek' },
+    { id: 'grok', label: 'Grok (xAI)', logo: GrokLogo, model: 'grok-beta', descKey: 'providerXai' },
+    { id: 'minimax', label: 'MiniMax', logo: MinimaxLogo, model: 'abab6.5-chat', descKey: 'providerGemini' }
 ];
 
 interface AiChatBoxProps {
@@ -108,6 +108,7 @@ export function AiChatBox({
     mediaId, mediaType, title, overview, locale, isOpen, setIsOpen 
 }: AiChatBoxProps) {
     const t = useTranslations('AiChat');
+    const tCommon = useTranslations('Common');
     
     const [isMinimized, setIsMinimized] = useState(false);
     const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
@@ -149,7 +150,6 @@ export function AiChatBox({
         setSelectedModel(prov);
         localStorage.setItem('markd_active_model', prov.id);
         setIsModelDropdownOpen(false);
-        // Clear errors
         setErrorMsg(null);
     };
 
@@ -290,17 +290,16 @@ export function AiChatBox({
 
             if (!res.ok) {
                 const errData = await res.json();
-                throw new Error(errData.error || 'Failed to complete assistant request.');
+                throw new Error(errData.error || t('failedRequest'));
             }
 
             const data = await res.json();
             const assistantMsg = { role: 'assistant' as const, content: data.text || '' };
             const nextMessages = [...updatedMessages, assistantMsg];
             setMessages(nextMessages);
-            
             fetchSuggestions(nextMessages);
         } catch (e: any) {
-            setErrorMsg(e.message || 'An error occurred during communication.');
+            setErrorMsg(e.message || t('failedRequest'));
         } finally {
             setIsLoading(false);
             setTimeout(() => {
@@ -325,6 +324,7 @@ export function AiChatBox({
                 onClick={() => setIsMinimized(false)}
                 className="fixed bottom-6 right-6 z-50 p-4 rounded-full bg-accent text-background hover:bg-accent-hover shadow-2xl hover:shadow-accent/40 active:scale-95 transition-all flex items-center justify-center cursor-pointer border border-accent/30 shadow-[0_0_15px_rgba(20,240,240,0.35)] animate-bounce-slow"
                 title={t('restore')}
+                aria-label={t('restore')}
             >
                 <Sparkles className="h-6 w-6 animate-pulse" />
                 {messages.length > 0 && (
@@ -356,6 +356,7 @@ export function AiChatBox({
                             onClick={handleClear}
                             className="p-1.5 rounded-lg text-foreground-muted hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
                             title={t('clear')}
+                            aria-label={t('clear')}
                         >
                             <Trash2 className="h-4 w-4" />
                         </button>
@@ -363,11 +364,13 @@ export function AiChatBox({
                             onClick={() => setIsMinimized(true)}
                             className="p-1.5 rounded-lg text-foreground-muted hover:text-foreground hover:bg-background-elevated transition-colors cursor-pointer"
                             title={t('minimize')}
+                            aria-label={t('minimize')}
                         >
                             <Minimize2 className="h-4 w-4" />
                         </button>
                         <button
                             onClick={() => setIsOpen(false)}
+                            aria-label={tCommon('close')}
                             className="p-1.5 rounded-lg text-foreground-muted hover:text-foreground hover:bg-background-elevated transition-colors cursor-pointer"
                         >
                             <X className="h-4 w-4" />
@@ -375,18 +378,19 @@ export function AiChatBox({
                     </div>
                 </div>
 
-                {/* Model Selector Dropdown & Capabilities Sync Header */}
+                {/* Model Selector Dropdown */}
                 <div className="flex items-center justify-between gap-2 pt-1 border-t border-border/10">
                     {selectedModel ? (
                         <div className="relative flex-1" ref={dropdownRef}>
                             <button
                                 onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)}
+                                aria-label={t('modelSelectLabel')}
                                 className="flex items-center gap-1.5 bg-[#12121a]/80 border border-border/20 rounded-lg px-2 py-1 text-[10px] text-foreground hover:border-accent/40 hover:bg-background-elevated transition-all cursor-pointer w-full text-left justify-between"
                             >
                                 <div className="flex items-center gap-1.5 min-w-0">
                                     <CurrentLogo />
                                     <span className="font-extrabold text-foreground truncate">{selectedModel.label}</span>
-                                    <span className="text-foreground-muted truncate font-normal">({selectedModel.desc})</span>
+                                    <span className="text-foreground-muted truncate font-normal">({t(selectedModel.descKey as any)})</span>
                                 </div>
                                 <ChevronDown className="h-3.5 w-3.5 text-foreground-muted shrink-0 ml-1" />
                             </button>
@@ -414,7 +418,7 @@ export function AiChatBox({
                                                     <div className="flex items-center gap-1.5 min-w-0">
                                                         <ItemLogo />
                                                         <span className="font-black text-foreground truncate">{p.label}</span>
-                                                        <span className="text-[9px] text-foreground-muted truncate font-normal">({p.desc})</span>
+                                                        <span className="text-[9px] text-foreground-muted truncate font-normal">({t(p.descKey as any)})</span>
                                                     </div>
                                                     {selectedModel.id === p.id && <Check className="h-3 w-3 text-accent shrink-0" />}
                                                 </button>
@@ -426,9 +430,9 @@ export function AiChatBox({
                         </div>
                     ) : (
                         <div className="text-[10px] text-yellow-400/80 bg-yellow-500/5 border border-yellow-500/10 px-2 py-1 rounded-lg w-full font-bold flex items-center justify-between">
-                            <span>No active LLMs configured.</span>
+                            <span>{t('noActiveLlm')}</span>
                             <Link href="/settings" onClick={() => setIsOpen(false)} className="text-accent hover:underline font-black">
-                                Configure Keys →
+                                {t('configureKeys')}
                             </Link>
                         </div>
                     )}
@@ -443,10 +447,7 @@ export function AiChatBox({
                 {messages.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3">
                         <Sparkles className="h-10 w-10 text-accent/40" />
-                        <h3 className="text-sm font-bold text-foreground">Ask anything about &ldquo;{title}&rdquo;</h3>
-                        <p className="text-xs text-foreground-muted leading-relaxed max-w-[240px]">
-                            Get cast trivia, plot insights, watch guides, or review summaries immediately.
-                        </p>
+                        <h3 className="text-sm font-bold text-foreground">{t('emptyChatPrompt', { title })}</h3>
                     </div>
                 ) : (
                     messages.map((m, idx) => (
@@ -455,7 +456,7 @@ export function AiChatBox({
                             className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}
                         >
                             <span className="text-[9px] font-bold text-foreground-muted uppercase tracking-wider mb-1">
-                                {m.role === 'user' ? 'You' : 'AI Assistant'}
+                                {m.role === 'user' ? 'You' : t('assistantName')}
                             </span>
                             <div 
                                 className={`rounded-2xl px-4 py-2.5 text-xs leading-relaxed max-w-[85%] whitespace-pre-wrap border ${
@@ -472,7 +473,7 @@ export function AiChatBox({
                 {isLoading && (
                     <div className="flex items-center gap-2 text-xs text-foreground-muted">
                         <Loader2 className="h-3.5 w-3.5 animate-spin text-accent" />
-                        <span>AI is typing...</span>
+                        <span>{tCommon('loading')}</span>
                     </div>
                 )}
                 {errorMsg && (
@@ -484,7 +485,7 @@ export function AiChatBox({
                                 onClick={() => setIsOpen(false)}
                                 className="block mt-1 text-accent hover:underline font-bold"
                             >
-                                Go to Settings →
+                                {t('configureKeys')}
                             </Link>
                         )}
                     </div>
@@ -537,6 +538,8 @@ export function AiChatBox({
                         type="submit"
                         disabled={isLoading || !inputValue.trim() || !selectedModel}
                         className="p-2.5 rounded-xl bg-accent text-background hover:bg-accent-hover disabled:opacity-40 disabled:hover:bg-accent transition-colors flex items-center justify-center cursor-pointer active:scale-95"
+                        title={t('sendButton')}
+                        aria-label={t('sendButton')}
                     >
                         <Send className="h-4 w-4" />
                     </button>

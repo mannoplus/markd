@@ -9,10 +9,12 @@ import Image from 'next/image';
 import { IMAGE_SIZES } from '@/lib/tmdb';
 import type { TMDBSearchResult } from '@/types';
 import { Link } from '@/i18n/routing';
+import { useTranslations } from 'next-intl';
 
 function SearchBarInner() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const t = useTranslations('Search');
 
     // Input state
     const [query, setQuery] = useState(searchParams.get('q') || '');
@@ -75,7 +77,6 @@ function SearchBarInner() {
         function handleKeyDown(event: KeyboardEvent) {
             if (event.key === 'Escape') {
                 setIsFocused(false);
-                // Optionally unfocus the input element
                 if (document.activeElement instanceof HTMLElement) {
                     document.activeElement.blur();
                 }
@@ -105,7 +106,8 @@ function SearchBarInner() {
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     onFocus={() => setIsFocused(true)}
-                    placeholder="Search movies & TV shows..."
+                    placeholder={t('searchPlaceholder')}
+                    aria-label={t('searchPlaceholder')}
                     autoComplete="off"
                     aria-autocomplete="list"
                     className="w-full rounded-full border-2 border-border bg-background-elevated py-4 pl-14 pr-24 text-lg text-foreground placeholder:text-foreground-muted focus:border-foreground focus:outline-none focus:ring-1 focus:ring-foreground transition-all shadow-sm"
@@ -122,7 +124,7 @@ function SearchBarInner() {
                     type="submit"
                     className="absolute right-2 rounded-full bg-foreground px-6 py-2.5 text-sm font-bold text-background hover:bg-foreground-muted transition-colors"
                 >
-                    Search
+                    {t('searchButton')}
                 </button>
             </div>
 
@@ -132,7 +134,7 @@ function SearchBarInner() {
                     {/* Empty State / Loading State */}
                     {results.length === 0 && !isLoading ? (
                         <div className="p-4 text-center text-sm text-foreground-muted">
-                            No immediate recommendations found. Press Enter to full search.
+                            {t('noImmediateRecs')}
                         </div>
                     ) : (
                         <ul role="listbox" className="max-h-[60vh] overflow-y-auto divide-y divide-border">
@@ -145,7 +147,7 @@ function SearchBarInner() {
                                     <li key={`${item.media_type}-${item.id}`} role="option" aria-selected="false">
                                         <Link
                                             href={`/${item.media_type}/${item.id}`}
-                                            onClick={() => setIsFocused(false)} // Close dropdown on click
+                                            onClick={() => setIsFocused(false)}
                                             className="flex items-center gap-4 p-3 hover:bg-background-card transition-colors focus:bg-background-card focus:outline-none"
                                         >
                                             <div className="relative h-16 w-11 flex-shrink-0 bg-background rounded overflow-hidden">
@@ -176,12 +178,12 @@ function SearchBarInner() {
                                                     {isMovie ? (
                                                         <>
                                                             <Clapperboard className="h-3.5 w-3.5 text-blue-400" />
-                                                            <span className="uppercase">Movie</span>
+                                                            <span className="uppercase">{t('movie')}</span>
                                                         </>
                                                     ) : (
                                                         <>
                                                             <Tv className="h-3.5 w-3.5 text-purple-400" />
-                                                            <span className="uppercase">TV Show</span>
+                                                            <span className="uppercase">{t('tvShow')}</span>
                                                         </>
                                                     )}
                                                 </div>
@@ -196,7 +198,7 @@ function SearchBarInner() {
                                     onClick={handleSearch}
                                     className="w-full flex items-center justify-center gap-2 text-sm font-medium text-accent hover:text-accent-muted p-2 rounded transition-colors group"
                                 >
-                                    <span>See all results for &quot;{query}&quot;</span>
+                                    <span>{t('seeAllResults', { query })}</span>
                                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                                 </button>
                             </li>

@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 
 export function BottomNav() {
     const t = useTranslations('Navigation');
+    const tAccessibility = useTranslations('Accessibility');
     const pathname = usePathname();
 
     const NAV_LINKS = [
@@ -19,7 +20,7 @@ export function BottomNav() {
 
     return (
         <nav
-            aria-label="Bottom navigation"
+            aria-label={tAccessibility('bottomNav')}
             className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-surface-secondary/90 backdrop-blur-xl md:hidden"
             style={{
                 paddingBottom: 'env(safe-area-inset-bottom)',

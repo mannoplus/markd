@@ -19,6 +19,7 @@ type ResultGroup = 'movies' | 'tv' | 'people';
 
 export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
     const t = useTranslations('Navigation');
+    const tAccessibility = useTranslations('Accessibility');
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<TMDBSearchResult[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -142,7 +143,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                         {isLoading && <Loader2 className="h-4 w-4 animate-spin text-foreground-subtle" />}
                         <button
                             onClick={onClose}
-                            aria-label="Close search"
+                            aria-label={tAccessibility('close')}
                             className="rounded-md border border-border p-1.5 text-foreground-muted transition-colors hover:bg-background-elevated hover:text-foreground"
                         >
                             <X className="h-4 w-4" />
@@ -252,9 +253,6 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                                     </div>
                                 );
                             })}
-                            <p className="px-1 pt-1 text-[11px] text-foreground-subtle">
-                                ↑↓ to navigate · Enter to open · Esc to close
-                            </p>
                         </div>
                     )}
                 </div>

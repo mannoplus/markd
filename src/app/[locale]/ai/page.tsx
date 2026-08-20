@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Sparkles, Send, Bot, User, Film, Plus, Check, Play, ExternalLink, Loader2, ArrowRight } from 'lucide-react';
+import { Sparkles, Send, Bot, User, Loader2, ArrowRight } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
-import { Link } from '@/i18n/routing';
 import { upsertMediaItem } from '@/app/actions';
 import { createClient } from '@/lib/supabase/client';
 
@@ -25,21 +24,20 @@ interface ChatMessage {
 
 export default function AiCompanionPage() {
   const t = useTranslations('AiCompanion');
+  const tCommon = useTranslations('Common');
+  const tChat = useTranslations('AiChat');
   const locale = useLocale();
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome',
       role: 'assistant',
-      content:
-        locale === 'zh-TW'
-          ? '您好！我是您的 MARKD 影劇 AI 專屬助手。您可以告訴我您今晚的心情、喜歡的特定情節元素，或是想找類似某部電影的作品，我會為您推薦最契合品味的好片。'
-          : "Hello! I am your MARKD Cinema AI Companion. Tell me your mood, favorite tropes, time constraints, or films you loved, and I'll find the perfect match for you tonight.",
+      content: t('welcomeMessage'),
     },
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [savedIds, setSavedIds] = useState<Set<number>>(new Set());
+  const [, setSavedIds] = useState<Set<number>>(new Set());
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -85,7 +83,7 @@ export default function AiCompanionPage() {
       }
 
       const data = await res.json();
-      const aiResponse = data.text || (locale === 'zh-TW' ? '暫時無法取得推薦，請重試。' : 'Unable to generate recommendation at this moment.');
+      const aiResponse = data.text || t('unableToGenerate');
 
       const assistantMessage: ChatMessage = {
         id: `a-${Date.now()}`,
@@ -94,13 +92,13 @@ export default function AiCompanionPage() {
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
-    } catch (e: any) {
+    } catch {
       setMessages((prev) => [
         ...prev,
         {
           id: `err-${Date.now()}`,
           role: 'assistant',
-          content: locale === 'zh-TW' ? 'AI 助手連線忙碌中，請稍候重試。' : 'Cinema AI is momentarily busy. Please try again shortly.',
+          content: t('aiServiceBusy'),
         },
       ]);
     } finally {
@@ -147,7 +145,7 @@ export default function AiCompanionPage() {
         <div className="text-center space-y-2 border-b border-border/30 pb-6">
           <div className="inline-flex items-center gap-2 rounded-full bg-accent/15 px-3.5 py-1 text-xs font-black uppercase text-accent border border-accent/25 tracking-wider">
             <Sparkles className="h-3.5 w-3.5 animate-pulse" />
-            <span>MARKD Cinema AI</span>
+            <span>{tCommon('brandName')} {tChat('assistantName')}</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
             {t('title')}
@@ -161,7 +159,7 @@ export default function AiCompanionPage() {
         {messages.length <= 2 && (
           <div className="space-y-2.5">
             <span className="text-[11px] font-bold text-foreground-subtle uppercase tracking-wider">
-              {locale === 'zh-TW' ? '✨ 熱門推薦探索靈感' : '✨ Recommended Prompts'}
+              {t('recommendedPromptsHeading')}
             </span>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               {PROMPT_SUGGESTIONS.map((prompt, idx) => (
@@ -216,7 +214,7 @@ export default function AiCompanionPage() {
               </div>
               <div className="rounded-2xl bg-background-elevated/90 px-4 py-3 border border-border/30 flex items-center gap-2 text-xs text-foreground-muted">
                 <Loader2 className="h-3.5 w-3.5 text-accent animate-spin" />
-                <span>{locale === 'zh-TW' ? 'AI 正在為您搜尋最佳光影匹配...' : 'Cinema AI is crafting your recommendations...'}</span>
+                <span>{t('aiThinking')}</span>
               </div>
             </div>
           )}
@@ -244,7 +242,8 @@ export default function AiCompanionPage() {
             type="submit"
             disabled={!input.trim() || isLoading}
             className="absolute right-2.5 rounded-xl bg-accent p-2 text-background hover:bg-accent-hover transition-all disabled:opacity-30 cursor-pointer shadow-md"
-            title="Send"
+            title={tChat('sendButton')}
+            aria-label={tChat('sendButton')}
           >
             <Send className="h-4 w-4" />
           </button>

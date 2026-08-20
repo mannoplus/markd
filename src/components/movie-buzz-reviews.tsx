@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 import { 
     TrendingUp, 
     MessageSquare, 
@@ -13,6 +13,8 @@ import {
     Loader2
 } from 'lucide-react';
 import { IMAGE_SIZES } from '@/lib/tmdb';
+import { useTranslations, useLocale } from 'next-intl';
+import { formatNumber } from '@/lib/formatters';
 
 type TabType = 'trending' | 'reviews' | 'anticipated';
 
@@ -20,6 +22,10 @@ export function MovieBuzzReviews() {
     const [activeTab, setActiveTab] = useState<TabType>('trending');
     const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const t = useTranslations('MovieBuzz');
+    const tHome = useTranslations('Home');
+    const tNav = useTranslations('Navigation');
+    const locale = useLocale();
 
     useEffect(() => {
         fetchData(activeTab);
@@ -41,9 +47,9 @@ export function MovieBuzzReviews() {
     };
 
     const tabs = [
-        { id: 'trending', label: 'Trending Now', icon: TrendingUp },
-        { id: 'reviews', label: 'Fresh Reviews', icon: MessageSquare },
-        { id: 'anticipated', label: 'Coming Soon', icon: Calendar },
+        { id: 'trending', label: tNav('popular'), icon: TrendingUp },
+        { id: 'reviews', label: t('tabLetterboxd'), icon: MessageSquare },
+        { id: 'anticipated', label: tHome('upcomingShort'), icon: Calendar },
     ];
 
     return (
@@ -63,7 +69,7 @@ export function MovieBuzzReviews() {
                             }`}
                         >
                             <Icon className="h-4 w-4" />
-                            {tab.label}
+                            <span>{tab.label}</span>
                         </button>
                     );
                 })}
@@ -74,17 +80,18 @@ export function MovieBuzzReviews() {
                 {loading ? (
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-foreground-muted">
                         <Loader2 className="h-8 w-8 animate-spin text-accent" />
-                        <p className="text-sm font-medium animate-pulse">Scanning the multiverse...</p>
+                        <p className="text-sm font-medium animate-pulse">{t('scanningMultiverse')}</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
                         {data.length > 0 ? (
                             data.map((item, index) => (
-                                <BuzzCard key={index} type={activeTab} item={item} />
+                                <BuzzCard key={index} type={activeTab} item={item} locale={locale} />
                             ))
                         ) : (
                             <div className="col-span-full py-20 text-center border-2 border-dashed border-border rounded-3xl bg-background-card/30">
-                                <p className="text-foreground-muted">No buzz detected yet. Check back shortly!</p>
+                                <p className="text-foreground-muted">{t('noBuzzTitle')}</p>
+                                <p className="text-xs text-foreground-subtle mt-1">{t('noBuzzDesc')}</p>
                             </div>
                         )}
                     </div>
@@ -94,16 +101,14 @@ export function MovieBuzzReviews() {
     );
 }
 
-function BuzzCard({ type, item }: { type: TabType; item: any }) {
+function BuzzCard({ type, item, locale }: { type: TabType; item: any; locale: string }) {
     const movie = item.movie || item;
     const tmdbId = movie.ids?.tmdb;
-    const posterPath = movie.poster_path || null; // This might be missing if Trakt doesn't provide it
+    const posterPath = movie.poster_path || null;
+    const t = useTranslations('MovieBuzz');
     
-    // Trakt Trending item has 'watchers'
     const watchers = item.watchers;
-    // Trakt Anticipated item has 'list_count'
     const anticipated = item.list_count;
-    // Trakt Comment item has 'comment'
     const comment = item.comment?.comment;
     const user = item.comment?.user;
 
@@ -130,12 +135,12 @@ function BuzzCard({ type, item }: { type: TabType; item: any }) {
                 {/* Overlay with details */}
                 <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent opacity-60" />
                 
-                {/* Floating Badge (Only for Anticipated now, Trending moved to content) */}
+                {/* Floating Badge */}
                 <div className="absolute top-4 right-4">
                     {type === 'anticipated' && anticipated && (
                         <div className="px-3 py-1.5 rounded-full bg-purple-500/90 text-white text-[10px] font-bold backdrop-blur-md flex items-center gap-1.5 shadow-xl">
                             <Star className="h-3 w-3" />
-                            {anticipated.toLocaleString()} LIKES
+                            <span>{formatNumber(anticipated, locale)} {t('likes')}</span>
                         </div>
                     )}
                 </div>
@@ -148,11 +153,11 @@ function BuzzCard({ type, item }: { type: TabType; item: any }) {
                         {movie.title}
                     </h3>
                     
-                    {/* Watcher Count (New Position/Style for Issue #3) */}
+                    {/* Watcher Count */}
                     {type === 'trending' && watchers && (
                         <div className="flex items-center gap-2 mt-2 text-[15px] font-extrabold text-foreground border-l-2 border-accent pl-2">
                             <Users className="h-4 w-4 text-accent" />
-                            <span>{watchers.toLocaleString()} watching now</span>
+                            <span>{formatNumber(watchers, locale)} {t('watchingNow')}</span>
                         </div>
                     )}
 
@@ -170,7 +175,7 @@ function BuzzCard({ type, item }: { type: TabType; item: any }) {
                 {type === 'reviews' && comment && (
                     <div className="mt-4 space-y-4">
                         <div className="relative">
-                            <div className="absolute -top-2 -left-2 text-accent/20 text-3xl font-serif">"</div>
+                            <div className="absolute -top-2 -left-2 text-accent/20 text-3xl font-serif">&ldquo;</div>
                             <p className="text-xs text-foreground-subtle line-clamp-3 italic leading-relaxed pl-2 relative z-10">
                                 {comment}
                             </p>
@@ -192,7 +197,7 @@ function BuzzCard({ type, item }: { type: TabType; item: any }) {
 
                 <div className="flex items-center justify-between pt-4 group/btn">
                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground-subtle opacity-0 group-hover:opacity-100 transition-all duration-500 translate-x-1 group-hover:translate-x-0">
-                        View Details
+                        {t('viewDetails')}
                     </span>
                     <div className="h-8 w-8 rounded-full bg-background-elevated border border-border flex items-center justify-center transition-all duration-500 group-hover:bg-accent group-hover:border-accent">
                         <ChevronRight className="h-4 w-4 text-foreground transition-colors group-hover:text-background" />

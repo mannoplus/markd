@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Sparkles, Trophy, Film, Clock, Heart, Award, Share2, Download, Check, ChevronLeft, ChevronRight, X } from 'lucide-react';
-import { useTranslations, useLocale } from 'next-intl';
-import { Link } from '@/i18n/routing';
+import { Sparkles, Check, ChevronLeft, ChevronRight, X, Share2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface WrappedStats {
   totalMovies: number;
@@ -22,7 +21,6 @@ interface WrappedStats {
 
 export default function WrappedPage() {
   const t = useTranslations('Wrapped');
-  const locale = useLocale();
 
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPlayingStory, setIsPlayingStory] = useState(false);
@@ -110,7 +108,7 @@ export default function WrappedPage() {
               </div>
               <div className="col-span-2 sm:col-span-1 rounded-2xl border border-border/30 bg-background-elevated/60 p-4">
                 <span className="text-3xl font-black text-yellow-400">{stats.archetype.badge}</span>
-                <p className="text-[11px] font-bold text-foreground-muted uppercase mt-1">{locale === 'zh-TW' ? '觀影原型' : 'Archetype'}</p>
+                <p className="text-[11px] font-bold text-foreground-muted uppercase mt-1">{t('archetype')}</p>
               </div>
             </div>
 
@@ -146,7 +144,8 @@ export default function WrappedPage() {
             {/* Close Button */}
             <button
               onClick={() => setIsPlayingStory(false)}
-              className="absolute top-6 right-6 p-2.5 rounded-full bg-white/10 text-white/70 hover:text-white hover:bg-white/20 transition-colors"
+              aria-label={t('close')}
+              className="absolute top-6 right-6 p-2.5 rounded-full bg-white/10 text-white/70 hover:text-white hover:bg-white/20 transition-colors cursor-pointer"
             >
               <X className="h-5 w-5" />
             </button>
@@ -166,9 +165,7 @@ export default function WrappedPage() {
                     {stats.totalMovies}
                   </h2>
                   <p className="text-sm text-foreground-muted max-w-xs mx-auto">
-                    {locale === 'zh-TW'
-                      ? '在過去的一年裡，您一共標記並觀賞了 124 部扣人心弦的電影作品。'
-                      : 'You explored and tracked 124 captivating cinematic stories this year.'}
+                    {t('storySlide0Desc', { count: stats.totalMovies })}
                   </p>
                 </div>
               )}
@@ -204,9 +201,7 @@ export default function WrappedPage() {
                     {stats.topGenre}
                   </h2>
                   <p className="text-sm text-foreground-muted max-w-xs mx-auto">
-                    {locale === 'zh-TW'
-                      ? '前瞻科幻、時空哲理與高概念世界觀是您最常沉浸的電影領域。'
-                      : 'High-concept sci-fi and philosophical storytelling dominated your screen time.'}
+                    {t('storySlide2Desc')}
                   </p>
                 </div>
               )}
@@ -243,7 +238,7 @@ export default function WrappedPage() {
                     {stats.highestRatedTitle}
                   </h2>
                   <div className="inline-flex items-center gap-1.5 rounded-full bg-yellow-500/20 px-3 py-1 text-sm font-black text-yellow-400">
-                    ★ {stats.highestRatedScore} / 10 Masterpiece
+                    {t('masterpieceRating', { score: stats.highestRatedScore })}
                   </div>
                 </div>
               )}
@@ -284,6 +279,7 @@ export default function WrappedPage() {
               <button
                 onClick={prevSlide}
                 disabled={currentSlide === 0}
+                aria-label={t('prev')}
                 className="rounded-full bg-white/10 p-3 text-white hover:bg-white/20 transition-all disabled:opacity-20 cursor-pointer"
               >
                 <ChevronLeft className="h-5 w-5" />
@@ -296,6 +292,7 @@ export default function WrappedPage() {
               <button
                 onClick={nextSlide}
                 disabled={currentSlide === totalSlides - 1}
+                aria-label={t('next')}
                 className="rounded-full bg-white/10 p-3 text-white hover:bg-white/20 transition-all disabled:opacity-20 cursor-pointer"
               >
                 <ChevronRight className="h-5 w-5" />

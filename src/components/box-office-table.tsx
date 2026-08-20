@@ -5,15 +5,8 @@ import Image from 'next/image';
 import { Star, TrendingUp, TrendingDown, Minus, ChevronUp, ChevronDown } from 'lucide-react';
 import { IMAGE_SIZES } from '@/lib/tmdb';
 import type { BoxOfficeMovie } from '@/types';
-import { useTranslations } from 'next-intl';
-
-function formatCurrency(value: number): string {
-    if (value >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(1)}B`;
-    if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
-    if (value >= 1_000) return `$${(value / 1_000).toFixed(0)}K`;
-    if (value > 0) return `$${value.toLocaleString()}`;
-    return '—';
-}
+import { useTranslations, useLocale } from 'next-intl';
+import { formatCurrency as formatCurrencyUtil } from '@/lib/formatters';
 
 function formatWeekChange(change?: number): { icon: any; color: string; text: string } {
     if (!change || change === 0) return { icon: Minus, color: 'text-foreground-muted', text: '—' };
@@ -55,7 +48,13 @@ type SortKey = 'rank' | 'revenue' | 'budget' | 'vote_average' | 'omdbRtScore';
 
 export function BoxOfficeTable({ movies, onMovieSelect }: BoxOfficeTableProps) {
     const t = useTranslations('BoxOffice');
+    const locale = useLocale();
     const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'asc' | 'desc' } | null>(null);
+
+    const formatCurrency = (val?: number) => {
+        if (!val || val <= 0) return '—';
+        return formatCurrencyUtil(val, locale, 'USD');
+    };
 
     const sortedMovies = [...movies].sort((a, b) => {
         if (!sortConfig) return 0;
@@ -111,7 +110,7 @@ export function BoxOfficeTable({ movies, onMovieSelect }: BoxOfficeTableProps) {
                 <button
                     key={movie.id}
                     {...rowHandlers}
-                    className="slide-up block w-full text-left group"
+                    className="slide-up block w-full text-left group cursor-pointer"
                     style={{ animationDelay: `${index * 60}ms`, animationFillMode: 'both' }}
                     id={`box-office-row-${movie.id}`}
                 >
@@ -130,7 +129,7 @@ export function BoxOfficeTable({ movies, onMovieSelect }: BoxOfficeTableProps) {
                                 </div>
                                 <div className="min-w-0 flex-1">
                                     <h3 className="font-bold truncate">{movie.title}</h3>
-                                    <p className="text-xs text-foreground-muted truncate">{movie.director || 'Unknown'}</p>
+                                    <p className="text-xs text-foreground-muted truncate">{movie.director || '—'}</p>
                                 </div>
                             </div>
 
@@ -140,7 +139,7 @@ export function BoxOfficeTable({ movies, onMovieSelect }: BoxOfficeTableProps) {
                                     {formatCurrency(movie.weeklyRevenue || movie.revenue)}
                                 </div>
                                 <div className="text-[10px] text-foreground-muted uppercase tracking-wider">
-                                    This Week
+                                    {t('thisWeek')}
                                 </div>
                             </div>
 
@@ -216,7 +215,7 @@ export function BoxOfficeTable({ movies, onMovieSelect }: BoxOfficeTableProps) {
                                                 {formatCurrency(movie.weeklyRevenue || movie.revenue)}
                                             </span>
                                             <span className="text-[9px] text-foreground-muted uppercase tracking-wider">
-                                                This Week
+                                                {t('thisWeek')}
                                             </span>
                                         </div>
                                     )}

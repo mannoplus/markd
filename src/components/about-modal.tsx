@@ -7,6 +7,7 @@ import { Logo } from '@/components/logo';
 
 export function AboutModal() {
     const t = useTranslations('About');
+    const tAccessibility = useTranslations('Accessibility');
     const [isOpen, setIsOpen] = useState(false);
 
     // Prevent body scroll when modal is open
@@ -25,7 +26,7 @@ export function AboutModal() {
         <>
             <button
                 onClick={() => setIsOpen(true)}
-                className="text-foreground-subtle transition-colors hover:text-foreground-muted"
+                className="text-foreground-subtle transition-colors hover:text-foreground-muted cursor-pointer"
             >
                 {t('trigger')}
             </button>
@@ -65,8 +66,8 @@ export function AboutModal() {
                         {/* Close button */}
                         <button
                             onClick={() => setIsOpen(false)}
-                            className="absolute right-4 top-4 z-20 rounded-md p-1 opacity-70 ring-offset-zinc-950 transition-opacity hover:opacity-100 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-zinc-300 focus:ring-offset-2 focus:ring-offset-zinc-950 text-zinc-400 hover:text-white"
-                            aria-label="Close"
+                            className="absolute right-4 top-4 z-20 rounded-md p-1 opacity-70 ring-offset-zinc-950 transition-opacity hover:opacity-100 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-zinc-300 focus:ring-offset-2 focus:ring-offset-zinc-950 text-zinc-400 hover:text-white cursor-pointer"
+                            aria-label={tAccessibility('close')}
                         >
                             <X className="h-5 w-5" />
                         </button>

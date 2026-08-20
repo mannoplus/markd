@@ -50,6 +50,7 @@ export function StatusSelector({
     onRemove,
 }: StatusSelectorProps) {
     const t = useTranslations('StatusSelector');
+    const tValidation = useTranslations('Validation');
     const [status, setStatus] = useState<WatchStatus>(currentStatus ?? 'plan_to_watch');
     const [rating, setRating] = useState<number | null>(currentRating);
     const [season, setSeason] = useState<number | null>(currentSeason);
@@ -74,7 +75,7 @@ export function StatusSelector({
                 episode_progress: mediaType === 'tv' ? episode : null,
             });
             if (res && res.error) {
-                alert(`Error saving tracking data: ${res.error}\n\nPlease check if your database schema is properly configured.`);
+                alert(tValidation('genericError'));
             }
         });
     };
@@ -84,7 +85,7 @@ export function StatusSelector({
         startTransition(async () => {
             const res = await onRemove();
             if (res && res.error) {
-                alert(`Error removing item: ${res.error}`);
+                alert(tValidation('genericError'));
             }
         });
     };

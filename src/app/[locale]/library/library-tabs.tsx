@@ -407,7 +407,7 @@ export function LibraryTabs({ items }: { items: LibraryItem[] }) {
                                     required
                                     value={newListTitle}
                                     onChange={(e) => setNewListTitle(e.target.value)}
-                                    placeholder={locale === 'zh-TW' ? '例如：科幻神作選' : 'e.g. Masterpiece Sci-Fi'}
+                                    placeholder={tViews('listNamePlaceholder')}
                                     className="w-full rounded-lg border border-border bg-background-elevated px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground-subtle focus:border-border-active focus:outline-none"
                                 />
                             </div>
@@ -421,7 +421,7 @@ export function LibraryTabs({ items }: { items: LibraryItem[] }) {
                                     value={newListDesc}
                                     onChange={(e) => setNewListDesc(e.target.value)}
                                     rows={3}
-                                    placeholder={locale === 'zh-TW' ? '描述您的片單…' : 'Describe your collection…'}
+                                    placeholder={tViews('listDescPlaceholder')}
                                     className="w-full rounded-lg border border-border bg-background-elevated px-3.5 py-2.5 text-sm text-foreground placeholder:text-foreground-subtle focus:border-border-active focus:outline-none"
                                 />
                             </div>
@@ -430,13 +430,13 @@ export function LibraryTabs({ items }: { items: LibraryItem[] }) {
                                 <button
                                     type="button"
                                     onClick={() => setIsCreateListOpen(false)}
-                                    className="rounded-lg px-4 py-2 text-xs font-bold text-foreground-muted transition-colors hover:text-foreground"
+                                    className="rounded-lg px-4 py-2 text-xs font-bold text-foreground-muted transition-colors hover:text-foreground cursor-pointer"
                                 >
                                     {t('listCancel')}
                                 </button>
                                 <button
                                     type="submit"
-                                    className="rounded-lg bg-foreground px-5 py-2 text-xs font-bold uppercase tracking-wider text-background transition-colors hover:bg-foreground/90"
+                                    className="rounded-lg bg-foreground px-5 py-2 text-xs font-bold uppercase tracking-wider text-background transition-colors hover:bg-foreground/90 cursor-pointer"
                                 >
                                     {t('listCreate')}
                                 </button>
@@ -460,7 +460,7 @@ function StatusPill({ status }: { status: WatchStatus }) {
     const { labelKey, color } = config[status];
     return (
         <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-semibold capitalize ${color}`}>
-            {t(labelKey)}
+            {t(labelKey as any)}
         </span>
     );
 }

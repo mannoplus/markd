@@ -2,18 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { X, PlayCircle, Star, TrendingUp, TrendingDown, ExternalLink } from 'lucide-react';
+import { X, Star, TrendingUp, ExternalLink } from 'lucide-react';
 import { IMAGE_SIZES } from '@/lib/tmdb';
 import type { BoxOfficeModalData } from '@/types';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { getBoxOfficeModalAction } from '@/app/actions';
-
-function formatCurrency(value: number): string {
-    if (!value || value <= 0) return '—';
-    if (value >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(2)}B`;
-    if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}M`;
-    return `$${value.toLocaleString()}`;
-}
+import { formatCurrency as formatCurrencyUtil, formatNumber } from '@/lib/formatters';
 
 export function BoxOfficeModal({ 
     movieId, 
@@ -23,6 +17,8 @@ export function BoxOfficeModal({
     onClose: () => void 
 }) {
     const t = useTranslations('BoxOffice');
+    const tAccessibility = useTranslations('Accessibility');
+    const locale = useLocale();
     const [data, setData] = useState<BoxOfficeModalData | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -51,8 +47,18 @@ export function BoxOfficeModal({
         };
     }, [movieId]);
 
+    const formatCurrency = (val: number) => {
+        if (!val || val <= 0) return '—';
+        return formatCurrencyUtil(val, locale, 'USD');
+    };
+
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
+        <div 
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200"
+            role="dialog"
+            aria-modal="true"
+            aria-label={data?.title || t('title')}
+        >
             {/* Modal Overlay to close */}
             <div className="absolute inset-0" onClick={onClose} />
             
@@ -62,7 +68,8 @@ export function BoxOfficeModal({
                 {/* Close Button */}
                 <button 
                     onClick={onClose}
-                    className="absolute top-4 right-4 z-20 p-2 rounded-full bg-black/50 hover:bg-black/80 text-white transition-colors backdrop-blur-md"
+                    aria-label={tAccessibility('close')}
+                    className="absolute top-4 right-4 z-20 p-2 rounded-full bg-black/50 hover:bg-black/80 text-white transition-colors backdrop-blur-md cursor-pointer"
                 >
                     <X className="h-5 w-5" />
                 </button>
@@ -131,23 +138,23 @@ export function BoxOfficeModal({
                             <section>
                                 <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
                                     <TrendingUp className="h-5 w-5 text-emerald-400" />
-                                    Financial Performance
+                                    {t('financialPerformance')}
                                 </h2>
                                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                                     <div className="bg-background-card/50 border border-border rounded-[var(--radius-lg)] p-4 flex flex-col justify-center">
-                                        <span className="text-xs text-foreground-muted mb-1 uppercase tracking-wider font-semibold">Worldwide Gross</span>
+                                        <span className="text-xs text-foreground-muted mb-1 uppercase tracking-wider font-semibold">{t('worldwideGross')}</span>
                                         <span className="text-2xl font-black font-mono text-emerald-400">
                                             {formatCurrency(data.revenue)}
                                         </span>
                                     </div>
                                     <div className="bg-background-card/50 border border-border rounded-[var(--radius-lg)] p-4 flex flex-col justify-center">
-                                        <span className="text-xs text-foreground-muted mb-1 uppercase tracking-wider font-semibold">Production Budget</span>
+                                        <span className="text-xs text-foreground-muted mb-1 uppercase tracking-wider font-semibold">{t('productionBudget')}</span>
                                         <span className="text-2xl font-black font-mono text-blue-400">
                                             {formatCurrency(data.budget)}
                                         </span>
                                     </div>
                                     <div className="bg-background-card/50 border border-border rounded-[var(--radius-lg)] p-4 flex flex-col justify-center col-span-2 lg:col-span-2">
-                                        <span className="text-xs text-foreground-muted mb-1 uppercase tracking-wider font-semibold">Estimated ROI</span>
+                                        <span className="text-xs text-foreground-muted mb-1 uppercase tracking-wider font-semibold">{t('estimatedRoi')}</span>
                                         <div className="flex items-center gap-3">
                                             {(() => {
                                                 if (data.budget > 0 && data.revenue > 0) {
@@ -160,7 +167,7 @@ export function BoxOfficeModal({
                                                                 {isProfit ? '+' : ''}{formatCurrency(profit)}
                                                             </span>
                                                             <span className={`text-sm px-2 py-1 rounded bg-[#10b981]/10 ${isProfit ? 'text-emerald-400' : 'text-red-400 bg-red-500/10'}`}>
-                                                                {roiPct}% Recoup
+                                                                {roiPct}% {t('recoup')}
                                                             </span>
                                                         </>
                                                     );
@@ -175,7 +182,7 @@ export function BoxOfficeModal({
                             {/* Cast Row */}
                             {data.cast.length > 0 && (
                                 <section>
-                                    <h2 className="text-xl font-bold mb-4">Top Cast</h2>
+                                    <h2 className="text-xl font-bold mb-4">{t('topCast')}</h2>
                                     <div className="flex overflow-x-auto gap-4 pb-4 scrollbar-hide -mx-6 px-6 sm:mx-0 sm:px-0">
                                         {data.cast.map(actor => (
                                             <div key={actor.id} className="w-24 flex-shrink-0 flex flex-col items-center text-center">
@@ -204,14 +211,14 @@ export function BoxOfficeModal({
                             {/* Technical details grid */}
                             <section className="grid sm:grid-cols-2 gap-8">
                                 <div>
-                                    <h2 className="text-lg font-bold mb-4 border-b border-border pb-2">Production</h2>
+                                    <h2 className="text-lg font-bold mb-4 border-b border-border pb-2">{t('production')}</h2>
                                     <ul className="space-y-3 text-sm">
                                         <li className="flex justify-between">
-                                            <span className="text-foreground-muted">Director</span>
+                                            <span className="text-foreground-muted">{t('director')}</span>
                                             <span className="font-semibold text-right">{data.director || '—'}</span>
                                         </li>
                                         <li className="flex justify-between">
-                                            <span className="text-foreground-muted">Distributor / Studios</span>
+                                            <span className="text-foreground-muted">{t('distributorStudios')}</span>
                                             <span className="font-semibold text-right max-w-[60%] truncate" title={data.production_companies.map(c => c.name).join(', ')}>
                                                 {data.production_companies[0]?.name || '—'}
                                             </span>
@@ -219,16 +226,16 @@ export function BoxOfficeModal({
                                     </ul>
                                 </div>
                                 <div>
-                                    <h2 className="text-lg font-bold mb-4 border-b border-border pb-2">Critical Reception</h2>
+                                    <h2 className="text-lg font-bold mb-4 border-b border-border pb-2">{t('criticalReception')}</h2>
                                     <ul className="space-y-3 text-sm">
                                         <li className="flex items-center justify-between">
                                             <span className="text-foreground-muted flex items-center gap-1">
                                                 <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                                                 {t('tmdbUserScore')}
                                             </span>
-                                            <span className="font-bold">{data.vote_average.toFixed(1)} <span className="text-xs font-normal text-foreground-subtle">({data.vote_count.toLocaleString()})</span></span>
+                                            <span className="font-bold">{data.vote_average.toFixed(1)} <span className="text-xs font-normal text-foreground-subtle">({formatNumber(data.vote_count, locale)})</span></span>
                                         </li>
-                                        {/* Rotten Tomatoes - Enhanced Display */}
+                                        {/* Rotten Tomatoes */}
                                         {data.omdb?.rottenTomatoes && (
                                             <li className="flex items-center justify-between bg-red-500/10 border border-red-500/20 rounded-lg p-3 -mx-1">
                                                 <span className="text-foreground flex items-center gap-2 font-semibold">
@@ -269,7 +276,7 @@ export function BoxOfficeModal({
                                     href={`/movie/${data.id}`}
                                     className="px-6 py-3 bg-foreground text-background rounded-full font-bold flex items-center gap-2 hover:bg-white/90 transition-colors"
                                 >
-                                    View Full Movie Page
+                                    {t('viewFullMoviePage')}
                                     <ExternalLink className="w-4 h-4" />
                                 </a>
                             </div>
@@ -277,7 +284,7 @@ export function BoxOfficeModal({
                         </div>
                     </div>
                 ) : (
-                    <div className="p-8 text-center text-foreground-muted">Failed to load data.</div>
+                    <div className="p-8 text-center text-foreground-muted">{t('failedToLoad')}</div>
                 )}
             </div>
         </div>

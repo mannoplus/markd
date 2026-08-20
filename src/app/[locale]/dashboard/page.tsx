@@ -25,7 +25,7 @@ export default async function DashboardPage() {
                         {t('title')}
                     </h1>
                     <p className="text-foreground-muted text-sm md:text-base max-w-xl">
-                        Manage your active shows and track your future movie nights.
+                        {t('subtitle')}
                     </p>
                 </div>
                 <Link

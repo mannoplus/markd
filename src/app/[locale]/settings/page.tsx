@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
+import { usePathname, useRouter } from '@/i18n/routing';
 import {
     Sliders, User as UserIcon, Save, Globe, Play, Moon, Download, Upload,
-    Trash2, ShieldCheck, CheckCircle2, AlertTriangle, Loader2,
+    Trash2, ShieldCheck, CheckCircle2, AlertTriangle, Loader2, Languages,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
@@ -24,7 +25,10 @@ const REGIONS = [
 
 export default function SettingsPage() {
     const t = useTranslations('Settings');
+    const tCommon = useTranslations('Common');
     const locale = useLocale();
+    const router = useRouter();
+    const pathname = usePathname();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [activeTab, setActiveTab] = useState<'general' | 'account'>('general');
@@ -61,6 +65,31 @@ export default function SettingsPage() {
             setIsUserLoading(false);
         });
     }, []);
+
+    const handleSwitchLanguage = async (newLocale: string) => {
+        if (newLocale === locale) return;
+
+        document.cookie = `NEXT_LOCALE=${newLocale}; path=/; max-age=31536000; SameSite=Lax`;
+        try {
+            localStorage.setItem('preferredLocale', newLocale);
+        } catch {
+            // Ignore storage errors
+        }
+
+        try {
+            const supabase = createClient();
+            const { data: { user: currentUser } } = await supabase.auth.getUser();
+            if (currentUser) {
+                await supabase.auth.updateUser({
+                    data: { preferred_locale: newLocale }
+                });
+            }
+        } catch (e) {
+            console.error('Failed to sync locale to user profile:', e);
+        }
+
+        router.replace(pathname, { locale: newLocale });
+    };
 
     const handleSavePreferences = () => {
         localStorage.setItem('markd_region', defaultRegion);
@@ -183,6 +212,52 @@ export default function SettingsPage() {
                ==================================================== */}
             {activeTab === 'general' && (
                 <div className="space-y-8 fade-in">
+                    {/* Language & Localization Section */}
+                    <section className="space-y-4">
+                        <div className="flex items-center gap-2.5">
+                            <Languages className="h-4 w-4 text-foreground-muted" />
+                            <h2 className="text-lg font-bold text-foreground">{t('languageHeading')}</h2>
+                        </div>
+                        <p className="text-xs leading-relaxed text-foreground-muted">{t('languageDesc')}</p>
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            <button
+                                type="button"
+                                onClick={() => handleSwitchLanguage('en')}
+                                className={`flex items-center justify-between rounded-xl border p-4 text-left transition-all ${
+                                    locale === 'en'
+                                        ? 'border-foreground bg-background-elevated text-foreground ring-1 ring-foreground'
+                                        : 'border-border bg-background-elevated/40 text-foreground-muted hover:border-border-hover hover:text-foreground'
+                                }`}
+                            >
+                                <div>
+                                    <p className="text-sm font-bold">{tCommon('english')}</p>
+                                    <p className="text-xs text-foreground-subtle mt-0.5">English (US)</p>
+                                </div>
+                                {locale === 'en' && (
+                                    <span className="h-2 w-2 rounded-full bg-accent" />
+                                )}
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => handleSwitchLanguage('zh-TW')}
+                                className={`flex items-center justify-between rounded-xl border p-4 text-left transition-all ${
+                                    locale === 'zh-TW'
+                                        ? 'border-foreground bg-background-elevated text-foreground ring-1 ring-foreground'
+                                        : 'border-border bg-background-elevated/40 text-foreground-muted hover:border-border-hover hover:text-foreground'
+                                }`}
+                            >
+                                <div>
+                                    <p className="text-sm font-bold">{tCommon('traditionalChinese')}</p>
+                                    <p className="text-xs text-foreground-subtle mt-0.5">台灣繁體中文</p>
+                                </div>
+                                {locale === 'zh-TW' && (
+                                    <span className="h-2 w-2 rounded-full bg-accent" />
+                                )}
+                            </button>
+                        </div>
+                    </section>
+
                     {/* Theme Section */}
                     <section className="space-y-4">
                         <div className="flex items-center gap-2.5">

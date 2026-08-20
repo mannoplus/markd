@@ -18,6 +18,7 @@ import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 import type { TMDBCastMember, TMDBCrewMember, TMDBVideo, TMDBWatchProviderResult } from '@/types';
 import { MovieCard } from '@/components/movie-card';
+import { formatDuration } from '@/lib/formatters';
 
 interface MovieDetailsClientProps {
     initialMovie: any;
@@ -667,7 +668,7 @@ export function MovieDetailsClient({ initialMovie, initialUserItem }: MovieDetai
                                             className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-accent/15 border border-accent/30 font-extrabold text-xs tracking-wider h-8 hover:bg-accent/25 hover:border-accent hover:shadow-[0_0_12px_rgba(20,240,240,0.35)] transition-all cursor-pointer text-accent"
                                         >
                                             <Play className="h-3.5 w-3.5 fill-current" />
-                                            <span>Trailer</span>
+                                            <span>{t('trailer')}</span>
                                         </button>
                                     )}
 
@@ -678,7 +679,7 @@ export function MovieDetailsClient({ initialMovie, initialUserItem }: MovieDetai
                                         className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-accent/15 border border-accent/30 font-extrabold text-xs tracking-wider h-8 hover:bg-accent/25 hover:border-accent hover:shadow-[0_0_12px_rgba(20,240,240,0.35)] transition-all cursor-pointer text-accent"
                                     >
                                         <Sparkles className="h-3.5 w-3.5 animate-pulse" />
-                                        <span>Ask AI</span>
+                                        <span>{t('askAi')}</span>
                                     </button>
                                 </div>
                                 {isCertFallback && cert && (
@@ -696,7 +697,7 @@ export function MovieDetailsClient({ initialMovie, initialUserItem }: MovieDetai
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                     <Clock className="h-4 w-4" />
-                                    <span>{details.runtime > 0 ? `${Math.floor(details.runtime / 60)}h ${details.runtime % 60}m` : 'N/A'}</span>
+                                    <span>{formatDuration(details.runtime, locale)}</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                     <Globe className="h-4 w-4" />

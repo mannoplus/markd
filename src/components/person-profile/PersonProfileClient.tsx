@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import type { TMDBPersonDetails } from '@/types';
+import { formatDate } from '@/lib/formatters';
 
 interface PersonProfileClientProps {
     person: TMDBPersonDetails;
@@ -17,6 +18,7 @@ interface PersonProfileClientProps {
 
 export function PersonProfileClient({ person, locale }: PersonProfileClientProps) {
     const t = useTranslations('Person');
+    const tViews = useTranslations('LibraryViews');
     const [isBioExpanded, setIsBioExpanded] = useState(false);
     const [activeRoleTab, setActiveRoleTab] = useState<'all' | 'acting' | 'directing' | 'producing'>('all');
 
@@ -78,7 +80,7 @@ export function PersonProfileClient({ person, locale }: PersonProfileClientProps
             case 1: return t('female');
             case 2: return t('male');
             case 3: return t('nonBinary');
-            default: return t('noBio').includes('我們') ? '暫無資訊' : 'Not specified';
+            default: return t('notSpecified');
         }
     };
 
@@ -181,7 +183,7 @@ export function PersonProfileClient({ person, locale }: PersonProfileClientProps
                                 </span>
                                 <span className="text-sm font-semibold text-foreground flex items-center gap-1 mt-0.5">
                                     <Calendar className="h-3 w-3 text-accent" />
-                                    {person.birthday ? new Date(person.birthday).toLocaleDateString() : '-'}
+                                    {person.birthday ? formatDate(person.birthday, locale) : '—'}
                                 </span>
                             </div>
 
@@ -192,7 +194,7 @@ export function PersonProfileClient({ person, locale }: PersonProfileClientProps
                                     </span>
                                     <span className="text-sm font-semibold text-foreground flex items-center gap-1 mt-0.5">
                                         <Calendar className="h-3 w-3 text-red-400" />
-                                        {new Date(person.deathday).toLocaleDateString()}
+                                        {formatDate(person.deathday, locale)}
                                     </span>
                                 </div>
                             )}
@@ -203,7 +205,7 @@ export function PersonProfileClient({ person, locale }: PersonProfileClientProps
                                 </span>
                                 <span className="text-sm font-semibold text-foreground flex items-start gap-1 mt-0.5">
                                     <MapPin className="h-3.5 w-3.5 text-accent mt-0.5 shrink-0" />
-                                    <span>{person.place_of_birth || '-'}</span>
+                                    <span>{person.place_of_birth || '—'}</span>
                                 </span>
                             </div>
 
@@ -245,12 +247,12 @@ export function PersonProfileClient({ person, locale }: PersonProfileClientProps
                                         >
                                             {isBioExpanded ? (
                                                 <>
-                                                    <span>Read Less</span>
+                                                    <span>{t('readLess')}</span>
                                                     <ChevronUp className="h-3 w-3" />
                                                 </>
                                             ) : (
                                                 <>
-                                                    <span>Read More</span>
+                                                    <span>{t('readMore')}</span>
                                                     <ChevronDown className="h-3 w-3" />
                                                 </>
                                             )}
@@ -285,7 +287,7 @@ export function PersonProfileClient({ person, locale }: PersonProfileClientProps
                                                 />
                                             ) : (
                                                 <div className="flex h-full w-full items-center justify-center text-foreground-subtle text-[10px] uppercase font-bold">
-                                                    No Poster
+                                                    —
                                                 </div>
                                             )}
                                         </div>
@@ -294,7 +296,7 @@ export function PersonProfileClient({ person, locale }: PersonProfileClientProps
                                                 {item.title || item.name}
                                             </p>
                                             <p className="text-[10px] text-foreground-muted truncate" title={item.character}>
-                                                {item.character || 'Self'}
+                                                {item.character || '—'}
                                             </p>
                                         </div>
                                     </Link>
@@ -307,7 +309,7 @@ export function PersonProfileClient({ person, locale }: PersonProfileClientProps
                     {timelineCredits.length > 0 && (
                         <div className="space-y-4 bg-[#0c0c12]/20 border border-border/10 p-5 rounded-2xl">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border/20 pb-3 gap-3">
-                                <h2 className="text-lg font-bold">Career & Credits</h2>
+                                <h2 className="text-lg font-bold">{t('careerTimeline')}</h2>
                                 
                                 {/* Dynamic Multi-Role Tabs */}
                                 <div className="flex items-center gap-1 bg-[#12121a] p-1 rounded-xl border border-border/20 overflow-x-auto max-w-full">
@@ -319,7 +321,7 @@ export function PersonProfileClient({ person, locale }: PersonProfileClientProps
                                                 : 'text-foreground-muted hover:text-foreground'
                                         }`}
                                     >
-                                        All ({timelineCredits.length})
+                                        {t('allCredits', { count: timelineCredits.length })}
                                     </button>
                                     {hasActing && (
                                         <button
@@ -363,7 +365,7 @@ export function PersonProfileClient({ person, locale }: PersonProfileClientProps
                             <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 scrollbar-thin">
                                 {filteredCredits.length === 0 ? (
                                     <div className="text-center py-8 text-xs text-foreground-muted italic">
-                                        No credits found for this category.
+                                        {t('noCreditsFound')}
                                     </div>
                                 ) : (
                                     filteredCredits.map((credit, idx) => (
@@ -383,7 +385,7 @@ export function PersonProfileClient({ person, locale }: PersonProfileClientProps
                                                     {credit.roleType === 'cast' 
                                                         ? (credit.character ? `as ${credit.character}` : t('acting'))
                                                         : (credit.job ? `${credit.job}` : 'Crew')
-                                                    } • <span className="capitalize">{credit.media_type === 'movie' ? 'Movie' : 'TV Show'}</span>
+                                                    } • <span className="capitalize">{credit.media_type === 'movie' ? tViews('movies') : tViews('tv')}</span>
                                                 </p>
                                             </div>
                                         </div>

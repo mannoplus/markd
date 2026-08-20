@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, X, Calendar } from 'lucide-react';
+import { useTranslations, useLocale } from 'next-intl';
+import { formatDate } from '@/lib/formatters';
 
 interface MobileDatePickerModalProps {
     isOpen: boolean;
@@ -11,11 +13,6 @@ interface MobileDatePickerModalProps {
     title: string;
 }
 
-const MONTHS_EN = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-];
-
 export function MobileDatePickerModal({
     isOpen,
     onClose,
@@ -23,6 +20,11 @@ export function MobileDatePickerModal({
     onSelect,
     title
 }: MobileDatePickerModalProps) {
+    const t = useTranslations('DatePicker');
+    const tCommon = useTranslations('Common');
+    const tAccessibility = useTranslations('Accessibility');
+    const locale = useLocale();
+
     // Current date being viewed
     const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
     const [currentMonth, setCurrentMonth] = useState(new Date().getMonth()); // 0-indexed
@@ -93,19 +95,36 @@ export function MobileDatePickerModal({
 
     // Helper to format text shown on header
     const getFormattedHeaderDate = () => {
-        if (!tempSelectedDate) return 'No Date Selected';
-        const parts = tempSelectedDate.split('-');
-        if (parts.length === 3) {
-            const y = parts[0];
-            const m = MONTHS_EN[parseInt(parts[1], 10) - 1];
-            const d = parseInt(parts[2], 10);
-            return `${m} ${d}, ${y}`;
+        if (!tempSelectedDate) return t('noDateSelected');
+        try {
+            return formatDate(tempSelectedDate, locale, { dateStyle: 'medium' });
+        } catch {
+            return tempSelectedDate;
         }
-        return tempSelectedDate;
     };
 
+    const monthDisplay = new Intl.DateTimeFormat(locale, {
+        year: 'numeric',
+        month: 'long',
+    }).format(new Date(currentYear, currentMonth, 1));
+
+    const weekdays = [
+        t('weekdaySun'),
+        t('weekdayMon'),
+        t('weekdayTue'),
+        t('weekdayWed'),
+        t('weekdayThu'),
+        t('weekdayFri'),
+        t('weekdaySat'),
+    ];
+
     return (
-        <div className="md:hidden fixed inset-0 z-[2000] flex items-center justify-center p-4">
+        <div 
+            className="md:hidden fixed inset-0 z-[2000] flex items-center justify-center p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-label={title}
+        >
             {/* Backdrop blur */}
             <div 
                 className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity duration-300"
@@ -123,7 +142,8 @@ export function MobileDatePickerModal({
                     </div>
                     <button 
                         onClick={onClose}
-                        className="text-foreground-muted hover:text-foreground p-1 rounded-lg hover:bg-background-elevated transition-all"
+                        aria-label={tAccessibility('closeModal')}
+                        className="text-foreground-muted hover:text-foreground p-1 rounded-lg hover:bg-background-elevated transition-all cursor-pointer"
                     >
                         <X className="h-4 w-4" />
                     </button>
@@ -132,15 +152,15 @@ export function MobileDatePickerModal({
                 {/* Sub-Header Showing Currently Selected Value */}
                 <div className="bg-[#12121a] border border-border/15 p-3 rounded-xl flex items-center justify-between">
                     <div>
-                        <span className="text-[10px] text-foreground-muted font-bold block uppercase tracking-wider">Selected Date</span>
+                        <span className="text-[10px] text-foreground-muted font-bold block uppercase tracking-wider">{t('selectedDate')}</span>
                         <span className="text-xs font-extrabold text-foreground">{getFormattedHeaderDate()}</span>
                     </div>
                     {tempSelectedDate && (
                         <button 
                             onClick={handleClear}
-                            className="text-[10px] text-red-400 hover:text-red-300 font-bold uppercase tracking-wider px-2 py-1 rounded bg-red-500/10 border border-red-500/20"
+                            className="text-[10px] text-red-400 hover:text-red-300 font-bold uppercase tracking-wider px-2 py-1 rounded bg-red-500/10 border border-red-500/20 cursor-pointer"
                         >
-                            Clear
+                            {t('clear')}
                         </button>
                     )}
                 </div>
@@ -149,15 +169,17 @@ export function MobileDatePickerModal({
                 <div className="flex items-center justify-between">
                     <button 
                         onClick={handlePrevMonth}
+                        aria-label="Previous month"
                         className="p-1.5 rounded-lg border border-border/25 bg-background-elevated hover:bg-background-elevated-hover text-foreground cursor-pointer"
                     >
                         <ChevronLeft className="h-4 w-4" />
                     </button>
                     <span className="text-xs font-black uppercase tracking-wider text-foreground">
-                        {MONTHS_EN[currentMonth]} {currentYear}
+                        {monthDisplay}
                     </span>
                     <button 
                         onClick={handleNextMonth}
+                        aria-label="Next month"
                         className="p-1.5 rounded-lg border border-border/25 bg-background-elevated hover:bg-background-elevated-hover text-foreground cursor-pointer"
                     >
                         <ChevronRight className="h-4 w-4" />
@@ -166,13 +188,9 @@ export function MobileDatePickerModal({
 
                 {/* Day Columns Header */}
                 <div className="grid grid-cols-7 text-center gap-1.5 text-[9px] font-black uppercase text-foreground-muted tracking-wider">
-                    <span>Su</span>
-                    <span>Mo</span>
-                    <span>Tu</span>
-                    <span>We</span>
-                    <span>Th</span>
-                    <span>Fr</span>
-                    <span>Sa</span>
+                    {weekdays.map((w, i) => (
+                        <span key={i}>{w}</span>
+                    ))}
                 </div>
 
                 {/* Grid Calendar body */}
@@ -214,14 +232,14 @@ export function MobileDatePickerModal({
                         onClick={onClose}
                         className="px-4 py-2.5 rounded-xl border border-border text-xs font-bold uppercase tracking-wider text-foreground-muted hover:text-foreground hover:bg-background-elevated transition-all cursor-pointer text-center"
                     >
-                        Cancel
+                        {tCommon('cancel')}
                     </button>
                     <button
                         type="button"
                         onClick={handleApply}
                         className="px-4 py-2.5 rounded-xl bg-accent text-background text-xs font-black uppercase tracking-wider hover:bg-accent-hover transition-all cursor-pointer text-center"
                     >
-                        Apply
+                        {t('apply')}
                     </button>
                 </div>
             </div>

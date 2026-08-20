@@ -486,6 +486,7 @@ export function DualRangeSlider({
     onChange,
     labelSuffix = '',
 }: DualRangeSliderProps) {
+    const tAccessibility = useTranslations('Accessibility');
     const [minVal, maxVal] = value;
 
     const handleMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -521,7 +522,7 @@ export function DualRangeSlider({
                     step={step}
                     value={minVal}
                     onChange={handleMinChange}
-                    aria-label="Minimum limit"
+                    aria-label={tAccessibility('minLimit')}
                     aria-valuenow={minVal}
                     className="absolute inset-0 w-full pointer-events-none appearance-none bg-transparent cursor-pointer [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-foreground [&::-webkit-slider-thumb]:border [&::-webkit-slider-thumb]:border-border [&::-webkit-slider-thumb]:hover:scale-110 [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:shadow-lg"
                 />
@@ -533,7 +534,7 @@ export function DualRangeSlider({
                     step={step}
                     value={maxVal}
                     onChange={handleMaxChange}
-                    aria-label="Maximum limit"
+                    aria-label={tAccessibility('maxLimit')}
                     aria-valuenow={maxVal}
                     className="absolute inset-0 w-full pointer-events-none appearance-none bg-transparent cursor-pointer [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-foreground [&::-webkit-slider-thumb]:border [&::-webkit-slider-thumb]:border-border [&::-webkit-slider-thumb]:hover:scale-110 [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:shadow-lg"
                 />
