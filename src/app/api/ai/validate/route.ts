@@ -22,7 +22,7 @@ export async function POST(request: Request) {
             temperature?: number;
         } = {};
 
-        if (provider === 'openai' || provider === 'deepseek' || provider === 'mistral' || provider === 'kimi' || provider === 'qwen' || provider === 'meta' || provider === 'glm' || provider === 'grok') {
+        if (provider === 'openai' || provider === 'deepseek' || provider === 'kimi' || provider === 'qwen' || provider === 'meta' || provider === 'glm' || provider === 'grok') {
             endpoint = 'https://api.openai.com/v1/chat/completions';
             defaultModel = 'gpt-4o-mini';
             headers['Authorization'] = `Bearer ${apiKey}`;
@@ -30,9 +30,6 @@ export async function POST(request: Request) {
             if (provider === 'deepseek') {
                 endpoint = 'https://api.deepseek.com/chat/completions';
                 defaultModel = 'deepseek-chat';
-            } else if (provider === 'mistral') {
-                endpoint = 'https://api.mistral.ai/v1/chat/completions';
-                defaultModel = 'open-mistral-7b';
             } else if (provider === 'kimi') {
                 endpoint = 'https://api.moonshot.cn/v1/chat/completions';
                 defaultModel = 'moonshot-v1-8k';

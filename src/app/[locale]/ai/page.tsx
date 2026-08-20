@@ -1,26 +1,14 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Sparkles, Send, Bot, User, Loader2, ArrowRight } from 'lucide-react';
+import { Sparkles, Send, Bot, User, Loader2, ArrowRight, Clock, Eye, ExternalLink, Check, CheckCircle2 } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
+import Image from 'next/image';
+import { Link } from '@/i18n/routing';
 import { upsertMediaItem } from '@/app/actions';
 import { createClient } from '@/lib/supabase/client';
-
-interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  recommendations?: Array<{
-    id: number;
-    title: string;
-    year?: string;
-    matchScore: number;
-    matchReason: string;
-    posterPath?: string;
-    overview?: string;
-    mediaType?: 'movie' | 'tv';
-  }>;
-}
+import { IMAGE_SIZES } from '@/lib/tmdb';
+import type { AiChatMessage, AiRecommendationItem } from '@/lib/ai/types';
 
 export default function AiCompanionPage() {
   const t = useTranslations('AiCompanion');
@@ -28,7 +16,7 @@ export default function AiCompanionPage() {
   const tChat = useTranslations('AiChat');
   const locale = useLocale();
 
-  const [messages, setMessages] = useState<ChatMessage[]>([
+  const [messages, setMessages] = useState<AiChatMessage[]>([
     {
       id: 'welcome',
       role: 'assistant',
@@ -37,7 +25,7 @@ export default function AiCompanionPage() {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [, setSavedIds] = useState<Set<number>>(new Set());
+  const [addedIds, setAddedIds] = useState<Record<number, 'watchlist' | 'watched'>>({});
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -53,13 +41,14 @@ export default function AiCompanionPage() {
     const textToSend = userPrompt || input;
     if (!textToSend.trim() || isLoading) return;
 
-    const userMessage: ChatMessage = {
+    const userMessage: AiChatMessage = {
       id: `u-${Date.now()}`,
       role: 'user',
       content: textToSend,
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    const nextMessages = [...messages, userMessage];
+    setMessages(nextMessages);
     if (!userPrompt) setInput('');
     setIsLoading(true);
 
@@ -68,13 +57,8 @@ export default function AiCompanionPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          provider: 'gemini',
-          model: 'gemini-2.5-flash',
+          messages: nextMessages,
           language: locale,
-          messages: [...messages, userMessage].map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
         }),
       });
 
@@ -83,12 +67,11 @@ export default function AiCompanionPage() {
       }
 
       const data = await res.json();
-      const aiResponse = data.text || t('unableToGenerate');
-
-      const assistantMessage: ChatMessage = {
+      const assistantMessage: AiChatMessage = {
         id: `a-${Date.now()}`,
         role: 'assistant',
-        content: aiResponse,
+        content: data.text || t('unableToGenerate'),
+        recommendations: data.recommendations,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -106,7 +89,7 @@ export default function AiCompanionPage() {
     }
   };
 
-  const handleSaveToWatchlist = async (tmdbId: number, title: string) => {
+  const handleAddToWatchlist = async (rec: AiRecommendationItem) => {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -114,20 +97,45 @@ export default function AiCompanionPage() {
       return;
     }
 
-    setSavedIds((prev) => new Set([...prev, tmdbId]));
     try {
       await upsertMediaItem({
-        tmdb_id: tmdbId,
-        media_type: 'movie',
-        title,
-        poster_path: null,
+        tmdb_id: rec.id,
+        media_type: rec.mediaType || 'movie',
+        title: rec.title,
+        poster_path: rec.posterPath || null,
         status: 'plan_to_watch',
         rating: null,
         season_progress: null,
         episode_progress: null,
       });
+      setAddedIds((prev) => ({ ...prev, [rec.id]: 'watchlist' }));
     } catch (e) {
-      console.error(e);
+      console.error('Failed to add to watchlist:', e);
+    }
+  };
+
+  const handleMarkWatched = async (rec: AiRecommendationItem) => {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      window.location.href = `/${locale}/login`;
+      return;
+    }
+
+    try {
+      await upsertMediaItem({
+        tmdb_id: rec.id,
+        media_type: rec.mediaType || 'movie',
+        title: rec.title,
+        poster_path: rec.posterPath || null,
+        status: 'completed',
+        rating: 8,
+        season_progress: null,
+        episode_progress: null,
+      });
+      setAddedIds((prev) => ({ ...prev, [rec.id]: 'watched' }));
+    } catch (e) {
+      console.error('Failed to mark watched:', e);
     }
   };
 
@@ -166,7 +174,7 @@ export default function AiCompanionPage() {
                 <button
                   key={idx}
                   onClick={() => handleSend(prompt)}
-                  className="rounded-xl border border-border/40 bg-background-elevated/60 p-3 text-left text-xs font-semibold text-foreground-muted hover:border-accent/50 hover:text-foreground hover:bg-background-elevated transition-all flex items-center justify-between group cursor-pointer"
+                  className="rounded-2xl border border-border/40 bg-background-elevated/60 p-3.5 text-left text-xs font-semibold text-foreground-muted hover:border-accent/50 hover:text-foreground hover:bg-background-elevated transition-all flex items-center justify-between group cursor-pointer shadow-sm"
                 >
                   <span className="line-clamp-1">{prompt}</span>
                   <ArrowRight className="h-3.5 w-3.5 text-accent opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-2" />
@@ -177,31 +185,118 @@ export default function AiCompanionPage() {
         )}
 
         {/* Messages Container */}
-        <div className="space-y-6 min-h-[380px] rounded-2xl bg-[#0c0c14] border border-border/40 p-5 sm:p-6 shadow-2xl">
-          {messages.map((m) => (
+        <div className="space-y-6 min-h-[380px] rounded-3xl bg-[#0c0c14] border border-border/40 p-5 sm:p-7 shadow-2xl">
+          {messages.map((m, idx) => (
             <div
-              key={m.id}
-              className={`flex gap-3.5 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              key={m.id || idx}
+              className={`flex flex-col space-y-3 ${m.role === 'user' ? 'items-end' : 'items-start'}`}
             >
-              {m.role === 'assistant' && (
-                <div className="h-8 w-8 rounded-xl bg-accent/20 border border-accent/30 flex items-center justify-center text-accent shrink-0 mt-0.5">
-                  <Bot className="h-4 w-4" />
-                </div>
-              )}
+              <div className={`flex gap-3.5 ${m.role === 'user' ? 'justify-end' : 'justify-start'} w-full`}>
+                {m.role === 'assistant' && (
+                  <div className="h-8 w-8 rounded-xl bg-accent/20 border border-accent/30 flex items-center justify-center text-accent shrink-0 mt-0.5 shadow-sm">
+                    <Bot className="h-4 w-4" />
+                  </div>
+                )}
 
-              <div
-                className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-3 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap ${
-                  m.role === 'user'
-                    ? 'bg-accent text-background font-medium shadow-lg'
-                    : 'bg-background-elevated/90 text-foreground border border-border/30 shadow-md'
-                }`}
-              >
-                {m.content}
+                <div
+                  className={`max-w-[85%] sm:max-w-[80%] rounded-2xl px-5 py-3.5 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap ${
+                    m.role === 'user'
+                      ? 'bg-accent text-background font-medium shadow-lg'
+                      : 'bg-background-elevated/90 text-foreground border border-border/30 shadow-md'
+                  }`}
+                >
+                  {m.content}
+                </div>
+
+                {m.role === 'user' && (
+                  <div className="h-8 w-8 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center text-foreground shrink-0 mt-0.5 shadow-sm">
+                    <User className="h-4 w-4" />
+                  </div>
+                )}
               </div>
 
-              {m.role === 'user' && (
-                <div className="h-8 w-8 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center text-foreground shrink-0 mt-0.5">
-                  <User className="h-4 w-4" />
+              {/* Actionable Movie Recommendation Cards */}
+              {m.recommendations && m.recommendations.length > 0 && (
+                <div className="w-full pl-0 sm:pl-11 grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  {m.recommendations.map((rec) => {
+                    const isSaved = addedIds[rec.id];
+
+                    return (
+                      <div
+                        key={rec.id}
+                        className="rounded-2xl border border-border/40 bg-background-elevated/70 p-4 space-y-3 hover:border-accent/40 transition-all shadow-lg flex flex-col justify-between"
+                      >
+                        <div className="flex gap-3.5 items-start">
+                          <div className="relative h-20 w-14 rounded-xl overflow-hidden shrink-0 bg-background border border-border/30 shadow-sm">
+                            {rec.posterPath ? (
+                              <Image
+                                src={`${IMAGE_SIZES.poster.small}${rec.posterPath}`}
+                                alt={rec.title}
+                                fill
+                                className="object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center text-[10px] text-foreground-muted font-bold uppercase">
+                                {rec.title.slice(0, 2)}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="min-w-0 flex-1 space-y-1">
+                            <div className="flex items-center justify-between gap-1">
+                              <h4 className="text-xs sm:text-sm font-bold text-foreground truncate" title={rec.title}>
+                                {rec.title}
+                              </h4>
+                              <span className="shrink-0 text-[10px] font-black px-2 py-0.5 rounded-full bg-accent/15 text-accent border border-accent/25">
+                                {tChat('matchScore', { score: rec.matchScore })}
+                              </span>
+                            </div>
+
+                            {rec.year && (
+                              <p className="text-[11px] text-foreground-muted">
+                                {rec.year} • <span className="capitalize">{rec.mediaType}</span>
+                              </p>
+                            )}
+
+                            <p className="text-[11px] text-foreground-muted/90 leading-snug line-clamp-2">
+                              {rec.matchReason}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-2 border-t border-border/20 gap-2">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleAddToWatchlist(rec)}
+                              disabled={Boolean(isSaved)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-background border border-border/40 text-[11px] font-bold text-foreground hover:bg-accent hover:text-background hover:border-accent transition-all cursor-pointer disabled:opacity-50"
+                            >
+                              {isSaved === 'watchlist' ? <Check className="h-3.5 w-3.5 text-accent" /> : <Clock className="h-3.5 w-3.5" />}
+                              <span>{isSaved === 'watchlist' ? tChat('addedToWatchlist') : tChat('addToWatchlist')}</span>
+                            </button>
+
+                            <button
+                              onClick={() => handleMarkWatched(rec)}
+                              disabled={Boolean(isSaved)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-background border border-border/40 text-[11px] font-bold text-foreground hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-all cursor-pointer disabled:opacity-50"
+                            >
+                              {isSaved === 'watched' ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> : <Eye className="h-3.5 w-3.5" />}
+                              <span>{isSaved === 'watched' ? tChat('markedWatched') : tChat('markWatched')}</span>
+                            </button>
+                          </div>
+
+                          <Link
+                            href={`/${rec.mediaType || 'movie'}/${rec.id}`}
+                            className="p-1.5 rounded-xl text-foreground-muted hover:text-accent hover:bg-accent/10 transition-colors"
+                            title={tChat('viewDetails')}
+                            aria-label={tChat('viewDetails')}
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </Link>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -241,7 +336,7 @@ export default function AiCompanionPage() {
           <button
             type="submit"
             disabled={!input.trim() || isLoading}
-            className="absolute right-2.5 rounded-xl bg-accent p-2 text-background hover:bg-accent-hover transition-all disabled:opacity-30 cursor-pointer shadow-md"
+            className="absolute right-2.5 rounded-xl bg-accent p-2.5 text-background hover:bg-accent-hover transition-all disabled:opacity-30 cursor-pointer shadow-md"
             title={tChat('sendButton')}
             aria-label={tChat('sendButton')}
           >
