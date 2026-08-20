@@ -51,7 +51,7 @@
         "search": "Search for movies or TV shows...",
         "searchLink": "Search",
         "searchPlaceholder": "Search for a movie, tv show, person...",
-        "searchPlaceholderDesktop": "Search for movie, tv, actor, or ask AI...",
+        "searchPlaceholderDesktop": "Search for movie, tv, actor, or ask MARKD...",
         "searchInstructionsHeading": "Search MARKD",
         "searchInstructionsText": "Find movies, TV shows, and actors instantly using our persistent search.",
         "searchNoResults": "No results found",
@@ -366,8 +366,8 @@
         "canceled": "Canceled",
         "inProduction": "In Production",
         "trailer": "Trailer",
-        "askAi": "Ask AI",
-        "askAI": "Ask AI"
+        "askAi": "Ask MARKD",
+        "askAI": "Ask MARKD"
     },
     "Person": {
         "personalInfo": "Personal Info",
@@ -643,7 +643,7 @@
         "importFailed": "Failed to import backup: invalid file format."
     },
     "AiChat": {
-        "title": "Ask AI",
+        "title": "Ask MARKD",
         "subtitle": "Personal cinema companion",
         "inputPlaceholder": "Ask anything about this film or cinema...",
         "inputPlaceholderGeneral": "Ask for recommendations, moods, or themes...",
@@ -654,8 +654,8 @@
         "restore": "Restore AI Assistant",
         "close": "Close AI Assistant",
         "suggestions": "Suggested Questions",
-        "emptyHeading": "Ask Cinema AI",
-        "emptyContextHeading": "Ask About \"{title}\"",
+        "emptyHeading": "Ask MARKD",
+        "emptyContextHeading": "Ask MARKD About \"{title}\"",
         "emptySubtext": "Get plot explanations, hidden themes, similar films, or personalized recommendations.",
         "suggestion1": "Recommend something like Interstellar",
         "suggestion2": "I want a sad movie under two hours",

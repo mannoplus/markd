@@ -51,7 +51,7 @@
         "search": "搜尋電影或電視節目...",
         "searchLink": "搜尋",
         "searchPlaceholder": "搜尋電影、電視節目、演職員...",
-        "searchPlaceholderDesktop": "搜尋電影、電視、演員或向 AI 發問...",
+        "searchPlaceholderDesktop": "搜尋電影、電視、演員或向 MARKD 發問...",
         "searchInstructionsHeading": "搜尋 MARKD",
         "searchInstructionsText": "使用持續搜尋欄快速尋找電影、電視節目與演員。",
         "searchNoResults": "找不到結果",
@@ -366,8 +366,8 @@
         "canceled": "已取消",
         "inProduction": "製作中",
         "trailer": "預告片",
-        "askAi": "Ask AI",
-        "askAI": "Ask AI"
+        "askAi": "Ask MARKD",
+        "askAI": "Ask MARKD"
     },
     "Person": {
         "personalInfo": "個人檔案",
@@ -643,7 +643,7 @@
         "importFailed": "備份檔案格式不正確或匯入失敗。"
     },
     "AiChat": {
-        "title": "Ask AI 影劇助手",
+        "title": "Ask MARKD 影劇助手",
         "subtitle": "專屬個人化電影探索夥伴",
         "inputPlaceholder": "詢問這部電影的劇情、主題或同類推薦…",
         "inputPlaceholderGeneral": "探索推薦、特定氛圍、類型或電影主題…",
@@ -654,8 +654,8 @@
         "restore": "還原 AI 對話",
         "close": "關閉 AI 助手",
         "suggestions": "推薦探索方向",
-        "emptyHeading": "詢問 Cinema AI",
-        "emptyContextHeading": "探索《{title}》",
+        "emptyHeading": "詢問 MARKD 影劇助手",
+        "emptyContextHeading": "詢問 MARKD 關於《{title}》",
         "emptySubtext": "深入了解劇情解析、隱含哲思、幕後花絮或探索個人化推薦。",
         "suggestion1": "推薦類似《星際效應》的燒腦科幻片",
         "suggestion2": "想看兩小時以內的感人催淚電影",
