@@ -8,8 +8,7 @@ import { HeroCarousel } from '@/components/hero-carousel';
 import { PersonalizedHero } from '@/components/home/PersonalizedHero';
 import { RecommendedSection } from '@/components/home/RecommendedSection';
 import { PerfectForTonight } from '@/components/home/PerfectForTonight';
-import { JourneysSpotlight } from '@/components/home/JourneysSpotlight';
-import { ChallengesSpotlight } from '@/components/home/ChallengesSpotlight';
+import { CuratedCollections } from '@/components/home/CuratedCollections';
 import type { TMDBTrendingResult, TMDBWatchProvider, TMDBWatchProviderResult } from '@/types';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRegion } from '@/context/RegionContext';
@@ -599,14 +598,9 @@ export function HomeRedesign({
                 <PerfectForTonight items={[...nowPlayingMovies, ...upcomingMovies]} />
 
                 {/* ====================================================
-                    CINEMA JOURNEYS SPOTLIGHT
+                    EDITORIAL CINEMA COLLECTIONS
                    ==================================================== */}
-                <JourneysSpotlight />
-
-                {/* ====================================================
-                    ACTIVE CHALLENGES SPOTLIGHT
-                   ==================================================== */}
-                <ChallengesSpotlight />
+                <CuratedCollections />
 
                 {/* ====================================================
                     SECTION 1: LATEST TRAILERS

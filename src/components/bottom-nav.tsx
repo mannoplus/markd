@@ -2,7 +2,7 @@
 
 import { Link } from '@/i18n/routing';
 import { usePathname } from 'next/navigation';
-import { Film, Tv, Library, Compass, Award } from 'lucide-react';
+import { Film, Tv, Library, User, Home } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 export function BottomNav() {
@@ -10,11 +10,11 @@ export function BottomNav() {
     const pathname = usePathname();
 
     const NAV_LINKS = [
+        { href: '/', activePath: '/', exact: true, label: t('home') || 'Home', icon: Home },
         { href: '/movies?category=popular', activePath: '/movies', label: t('movies'), icon: Film },
         { href: '/tv-shows?category=popular', activePath: '/tv-shows', label: t('tvShows'), icon: Tv },
-        { href: '/journeys', activePath: '/journeys', label: t('journeys') || 'Journeys', icon: Compass },
-        { href: '/challenges', activePath: '/challenges', label: t('challenges') || 'Challenges', icon: Award },
         { href: '/library', activePath: '/library', label: t('library'), icon: Library },
+        { href: '/profile', activePath: '/profile', label: t('profile') || 'Profile', icon: User },
     ];
 
     return (
@@ -25,8 +25,11 @@ export function BottomNav() {
                 height: 'calc(76px + env(safe-area-inset-bottom))'
             }}
         >
-            {NAV_LINKS.map(({ href, activePath, label, icon: Icon }) => {
-                const isActive = pathname.startsWith(activePath);
+            {NAV_LINKS.map(({ href, activePath, exact, label, icon: Icon }) => {
+                const isActive = exact
+                    ? pathname === '/' || pathname === '/en' || pathname === '/zh-TW'
+                    : pathname.startsWith(activePath);
+
                 return (
                     <Link
                         key={href}
@@ -40,7 +43,7 @@ export function BottomNav() {
                         <div className={`p-1.5 rounded-full ${isActive ? 'bg-accent-muted' : 'bg-transparent'}`}>
                             <Icon className="h-5 w-5" />
                         </div>
-                        <span className="text-[10px] font-medium tracking-wide">{label}</span>
+                        <span className="text-[10px] font-medium tracking-wide whitespace-nowrap">{label}</span>
                     </Link>
                 );
             })}
