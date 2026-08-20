@@ -7,8 +7,9 @@ import {
   getMediaTrailer,
 } from '@/lib/tmdb';
 import { HomeRedesign } from '@/components/home/HomeRedesign';
-import { getTranslations } from 'next-intl/server';
+import { getTranslations, getLocale } from 'next-intl/server';
 import { fetchStrictlyFreeQuota } from '@/app/actions/discover';
+import { getPersonalizedHomeShelvesAction } from '@/app/actions/personalization';
 
 // Server-side filter to verify upcoming media items strictly have video trailers
 async function filterUpcomingWithTrailers(items: any[], type: 'movie' | 'tv') {
@@ -184,6 +185,15 @@ export default async function Home({
     }
   }
 
+  // Fetch personalized companion shelves
+  const locale = await getLocale();
+  let initialShelves = undefined;
+  try {
+    initialShelves = await getPersonalizedHomeShelvesAction(locale, undefined, region);
+  } catch (e) {
+    console.warn('Failed to load initial companion shelves:', e);
+  }
+
   return (
     <HomeRedesign
       initialTrending={carouselMix}
@@ -196,6 +206,7 @@ export default async function Home({
       initialUpcomingShows={enrichedUpcomingShows}
       initialFreeMovies={enrichedFreeMovies}
       initialFreeShows={enrichedFreeShows}
+      initialShelves={initialShelves}
     />
   );
 }

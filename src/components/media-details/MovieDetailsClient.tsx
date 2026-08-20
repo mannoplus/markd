@@ -19,6 +19,7 @@ import type { User } from '@supabase/supabase-js';
 import type { TMDBCastMember, TMDBCrewMember, TMDBVideo, TMDBWatchProviderResult } from '@/types';
 import { MovieCard } from '@/components/movie-card';
 import { formatDuration } from '@/lib/formatters';
+import { emitClientSignal, createSignal } from '@/lib/personalization/signals';
 
 interface MovieDetailsClientProps {
     initialMovie: any;
@@ -60,8 +61,17 @@ export function MovieDetailsClient({ initialMovie, initialUserItem }: MovieDetai
     const [lightboxImage, setLightboxImage] = useState<string | null>(null);
     const [showScrollTop, setShowScrollTop] = useState(false);
 
-    // Check supabase user session on mount
+    // Check supabase user session on mount & emit page viewed signal
     useEffect(() => {
+        emitClientSignal(
+            createSignal('movie.page_viewed', {
+                tmdbId: details.id,
+                mediaType: 'movie',
+                title: details.title,
+                context: { surface: 'details_page' },
+            })
+        );
+
         const supabase = createClient();
         supabase.auth.getUser().then(({ data }) => {
             if (data.user) {
@@ -71,7 +81,7 @@ export function MovieDetailsClient({ initialMovie, initialUserItem }: MovieDetai
                 setIsBookmarked(localStorage.getItem(`markd_bookmarked_${data.user.id}_movie_${details.id}`) === 'true');
             }
         });
-    }, [details.id]);
+    }, [details.id, details.title]);
 
     // Update watch providers and release data when region changes
     useEffect(() => {
@@ -284,6 +294,22 @@ export function MovieDetailsClient({ initialMovie, initialUserItem }: MovieDetai
                     status,
                     rating: ratingVal,
                 });
+
+                // Emit interaction signal for personalized learning
+                const signalName = status === 'completed' 
+                    ? 'movie.completed' 
+                    : status === 'plan_to_watch' 
+                    ? 'movie.watchlist_added' 
+                    : 'movie.status_changed';
+                
+                emitClientSignal(
+                    createSignal(signalName as any, {
+                        tmdbId: details.id,
+                        mediaType: 'movie',
+                        title: details.title,
+                        context: { surface: 'details_page', newStatus: status },
+                    })
+                );
             }
         });
     };
@@ -308,6 +334,18 @@ export function MovieDetailsClient({ initialMovie, initialUserItem }: MovieDetai
                     status: statusVal,
                     rating,
                 });
+
+                if (rating !== null) {
+                    const signalName = rating >= 8 ? 'movie.rated_high' : rating <= 4 ? 'movie.rated_low' : 'movie.rated';
+                    emitClientSignal(
+                        createSignal(signalName as any, {
+                            tmdbId: details.id,
+                            mediaType: 'movie',
+                            title: details.title,
+                            context: { surface: 'details_page', rating },
+                        })
+                    );
+                }
             }
         });
     };

@@ -1,6 +1,6 @@
 /**
  * MARKD — Taste Engine & Movie DNA Classifier
- * "The Spotify for Movies"
+ * Personal Cinema Companion Architecture
  */
 
 import type { TMDBTrendingResult } from '@/types';
@@ -41,6 +41,14 @@ export interface MovieDnaAnalysis {
   moodTags: string[];
 }
 
+export interface SessionTasteContext {
+  activeMood?: string; // e.g. 'Mind-Bending', 'Cozy & Feel-Good', 'Atmospheric Slow-Burn', 'Under 2 Hours'
+  maxRuntime?: number; // e.g. 115
+  temporaryExcludedGenreIds?: number[];
+  temporaryDismissedIds?: Set<number>;
+  isExploreMode?: boolean; // Controlled exploration for novel discoveries
+}
+
 export interface UserTasteProfile {
   userId?: string;
   genreWeights: Record<number, number>; // genreId -> normalized weight (0 - 1)
@@ -52,6 +60,9 @@ export interface UserTasteProfile {
   pacingPreference: 'fast' | 'slow' | 'balanced';
   dismissedTmdbIds: Set<number>;
   alreadyWatchedTmdbIds: Set<number>;
+  notMyTypeIds: Set<number>;
+  lessLikeThisTraits: Set<MovieDnaTrait>;
+  sessionContext?: SessionTasteContext;
 }
 
 export interface RecommendationResult extends TMDBTrendingResult {
@@ -59,10 +70,15 @@ export interface RecommendationResult extends TMDBTrendingResult {
   matchReason: string;
   dnaTraits: MovieDnaTrait[];
   primaryDna: MovieDnaTrait;
+  structuredReason?: {
+    type: string;
+    text: string;
+    referenceTitle?: string;
+  };
 }
 
 // Genre ID mapping for TMDB
-const GENRE_MAP: Record<number, string> = {
+export const GENRE_MAP: Record<number, string> = {
   28: 'Action',
   12: 'Adventure',
   16: 'Animation',
@@ -106,10 +122,12 @@ export function classifyMovieDna(item: any): MovieDnaAnalysis {
       overview.includes('memory') ||
       overview.includes('dimension') ||
       overview.includes('simulation') ||
+      overview.includes('quantum') ||
       title.includes('inception') ||
       title.includes('interstellar') ||
       title.includes('matrix') ||
-      title.includes('tenet')
+      title.includes('tenet') ||
+      title.includes('arrival')
     ) {
       detectedTraits.add('mindBending');
       detectedTraits.add('thoughtProvoking');
@@ -170,7 +188,7 @@ export function classifyMovieDna(item: any): MovieDnaAnalysis {
 
   // 7. Pacing Calculation
   let pacing: 'fast' | 'slow' | 'balanced' = 'balanced';
-  if (runtime > 140 || genreIds.includes(18) && !genreIds.includes(28)) {
+  if (runtime > 140 || (genreIds.includes(18) && !genreIds.includes(28))) {
     detectedTraits.add('slowBurn');
     pacing = 'slow';
   } else if (genreIds.includes(28) && runtime < 115) {
@@ -213,7 +231,8 @@ export function classifyMovieDna(item: any): MovieDnaAnalysis {
  */
 export function calculateUserTasteProfile(
   mediaItems: any[] = [],
-  feedbackItems: any[] = []
+  feedbackItems: any[] = [],
+  sessionContext?: SessionTasteContext
 ): UserTasteProfile {
   const genreCounts: Record<number, number> = {};
   const dnaCounts: Record<MovieDnaTrait, number> = {} as any;
@@ -223,10 +242,17 @@ export function calculateUserTasteProfile(
 
   const dismissedTmdbIds = new Set<number>();
   const alreadyWatchedTmdbIds = new Set<number>();
+  const notMyTypeIds = new Set<number>();
+  const lessLikeThisTraits = new Set<MovieDnaTrait>();
 
   // Process Negative / Explicit Feedback
   feedbackItems.forEach((f) => {
-    if (f.signal_type === 'not_interested' || f.signal_type === 'not_my_type' || f.signal_type === 'less_like_this') {
+    if (f.signal_type === 'not_interested') {
+      dismissedTmdbIds.add(f.tmdb_id);
+    } else if (f.signal_type === 'not_my_type') {
+      notMyTypeIds.add(f.tmdb_id);
+      dismissedTmdbIds.add(f.tmdb_id);
+    } else if (f.signal_type === 'less_like_this') {
       dismissedTmdbIds.add(f.tmdb_id);
     } else if (f.signal_type === 'already_watched') {
       alreadyWatchedTmdbIds.add(f.tmdb_id);
@@ -252,9 +278,15 @@ export function calculateUserTasteProfile(
       dnaCounts[t] = (dnaCounts[t] || 0) + ratingWeight;
     });
 
+    // Genres
+    const gIds = item.genre_ids || (item.genres ? item.genres.map((g: any) => g.id) : []);
+    gIds.forEach((gid: number) => {
+      genreCounts[gid] = (genreCounts[gid] || 0) + ratingWeight;
+    });
+
     // Approximate Decade
-    if (item.created_at || item.releaseDate) {
-      const year = new Date(item.releaseDate || item.created_at).getFullYear();
+    if (item.created_at || item.releaseDate || item.release_date) {
+      const year = new Date(item.releaseDate || item.release_date || item.created_at).getFullYear();
       if (year) {
         const decade = `${Math.floor(year / 10) * 10}s`;
         decadeCounts[decade] = (decadeCounts[decade] || 0) + 1;
@@ -285,6 +317,9 @@ export function calculateUserTasteProfile(
     pacingPreference: 'balanced',
     dismissedTmdbIds,
     alreadyWatchedTmdbIds,
+    notMyTypeIds,
+    lessLikeThisTraits,
+    sessionContext,
   };
 }
 
@@ -292,67 +327,67 @@ export function calculateUserTasteProfile(
  * Calculates a match score percentage (e.g. 98%) between a movie and a user taste profile
  */
 export function calculateMatchScore(movie: any, profile: UserTasteProfile): number {
-  if (profile.dismissedTmdbIds.has(movie.id)) {
-    return 35; // Lower score if explicitly dismissed
+  if (profile.notMyTypeIds?.has(movie.id) || profile.dismissedTmdbIds?.has(movie.id)) {
+    return 30; // Strictly penalized if explicitly dismissed
   }
 
   const dna = classifyMovieDna(movie);
-  let score = 70; // Base score
+  let score = 72; // Base confidence score
 
-  // 1. DNA Trait Match Boost
+  // 1. DNA Trait Match Boost (Cosine-style additive weighting)
   dna.traits.forEach((trait) => {
     if (profile.dnaWeights[trait]) {
-      score += Math.min(6, profile.dnaWeights[trait] * 2);
+      score += Math.min(5, profile.dnaWeights[trait] * 1.5);
     }
   });
 
-  // 2. High TMDB Quality Boost
+  // 2. Genre Alignment Boost
+  const genreIds = movie.genre_ids || (movie.genres ? movie.genres.map((g: any) => g.id) : []);
+  genreIds.forEach((gid: number) => {
+    if (profile.genreWeights[gid]) {
+      score += profile.genreWeights[gid] * 4;
+    }
+  });
+
+  // 3. TMDB Quality / Community Consensus Boost
   if (movie.vote_average) {
-    if (movie.vote_average >= 8.0) score += 10;
-    else if (movie.vote_average >= 7.2) score += 6;
-    else if (movie.vote_average < 6.0) score -= 8;
+    if (movie.vote_average >= 8.2) score += 9;
+    else if (movie.vote_average >= 7.4) score += 5;
+    else if (movie.vote_average < 6.0) score -= 10;
   }
 
-  // 3. Preferred Decade Boost
+  // 4. Preferred Decade Boost
   const year = movie.release_date || movie.first_air_date ? new Date(movie.release_date || movie.first_air_date).getFullYear() : null;
   if (year) {
     const decade = `${Math.floor(year / 10) * 10}s`;
     if (profile.preferredDecades.includes(decade)) {
-      score += 5;
+      score += 4;
     }
   }
 
-  // Cap score reasonably between 72% and 99%
-  return Math.min(99, Math.max(72, Math.round(score)));
-}
-
-/**
- * Generates an intelligent, human-like bilingual recommendation explanation
- */
-export function generateRecommendationExplanation(
-  movie: any,
-  profile: UserTasteProfile,
-  mediaItems: any[] = [],
-  locale: string = 'en'
-): string {
-  const isZh = locale === 'zh-TW' || locale.startsWith('zh');
-  const dna = classifyMovieDna(movie);
-
-  // 1. Look for high-rated reference film in user's history with matching DNA
-  const topRated = mediaItems.find((i) => (i.rating && i.rating >= 8) || i.status === 'completed');
-
-  if (topRated) {
-    if (isZh) {
-      return `因為您給予《${topRated.title}》極高評價，推薦這部同具「${translateDnaTrait(dna.primaryDna, 'zh-TW')}」特質的作品`;
+  // 5. Active Session Mood Alignment
+  if (profile.sessionContext?.activeMood && profile.sessionContext.activeMood !== 'all') {
+    const moodLower = profile.sessionContext.activeMood.toLowerCase();
+    if (
+      (moodLower.includes('mind-bending') && dna.traits.includes('mindBending')) ||
+      (moodLower.includes('cozy') && (dna.traits.includes('funny') || dna.traits.includes('hopeful'))) ||
+      (moodLower.includes('slow-burn') && dna.traits.includes('slowBurn')) ||
+      (moodLower.includes('dark') && (dna.traits.includes('dark') || dna.traits.includes('suspenseful'))) ||
+      (moodLower.includes('emotional') && dna.traits.includes('emotional')) ||
+      (moodLower.includes('action') && dna.traits.includes('actionHeavy')) ||
+      (moodLower.includes('visual') && dna.traits.includes('cinematography'))
+    ) {
+      score += 8;
     }
-    return `Because you loved ${topRated.title}, sharing its signature ${dna.primaryDna} tone`;
   }
 
-  // 2. DNA-based explanation
-  if (isZh) {
-    return `契合您對「${translateDnaTrait(dna.primaryDna, 'zh-TW')}」與高評分敘事的偏好`;
+  // 6. Controlled Exploration Bonus (Prevent narrow filter bubble)
+  if (profile.sessionContext?.isExploreMode) {
+    score += (Math.sin(movie.id || 1) * 3);
   }
-  return `Matches your affinity for ${dna.primaryDna} storytelling and high critical praise`;
+
+  // Cap score realistically between 74% and 99%
+  return Math.min(99, Math.max(74, Math.round(score)));
 }
 
 /**

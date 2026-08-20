@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Star, Tv, Film, Play } from 'lucide-react';
 import { IMAGE_SIZES } from '@/lib/tmdb';
 import { useLocale, useTranslations } from 'next-intl';
+import { emitClientSignal, createSignal } from '@/lib/personalization/signals';
 
 // Regex sanitization utility to isolate Traditional Chinese and English title fragments
 export function sanitizeTitle(title: string, lang: string): string {
@@ -80,6 +81,16 @@ export function MovieCard({
     return (
         <Link
             href={href}
+            onClick={() => {
+                emitClientSignal(
+                    createSignal('movie.card_clicked', {
+                        tmdbId: id,
+                        mediaType,
+                        title,
+                        context: { surface: 'movie_card' },
+                    })
+                );
+            }}
             className={`group block outline-offset-4 ${className}`}
             aria-label={`${sanitizedTitle}${year ? ` (${year})` : ''}`}
         >

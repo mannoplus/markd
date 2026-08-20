@@ -21,6 +21,11 @@ import {
     getCategoryMediaAction,
     discoverMediaAction,
 } from '@/app/actions/discover';
+import { CompanionShelf } from '@/components/companion/CompanionShelf';
+import { MoodMatcherBar } from '@/components/companion/MoodMatcherBar';
+import { ColdStartCompanion } from '@/components/companion/ColdStartCompanion';
+import { TasteControlModal } from '@/components/companion/TasteControlModal';
+import { getPersonalizedHomeShelvesAction, type PersonalizedShelvesResult } from '@/app/actions/personalization';
 
 // Comprehensive Country list
 const CINEMA_COUNTRIES = [
@@ -89,6 +94,7 @@ interface HomeRedesignProps {
     initialUpcomingShows: TMDBTrendingResult[];
     initialFreeMovies: TMDBTrendingResult[];
     initialFreeShows: TMDBTrendingResult[];
+    initialShelves?: PersonalizedShelvesResult;
 }
 
 export function HomeRedesign({
@@ -102,6 +108,7 @@ export function HomeRedesign({
     initialUpcomingShows,
     initialFreeMovies,
     initialFreeShows,
+    initialShelves,
 }: HomeRedesignProps) {
     // ----------------------------------------------------
     // Client State
@@ -110,11 +117,18 @@ export function HomeRedesign({
     const t = useTranslations('Home');
     const tNav = useTranslations('Navigation');
     const tNowShowing = useTranslations('nowShowing');
+    const tCompanion = useTranslations('Companion');
 
     const { region: globalRegion, setRegion: setGlobalRegion } = useRegion();
     const [trendingMedia, setTrendingMedia] = useState<TMDBTrendingResult[]>(initialTrending);
     const [trailerTab, setTrailerTab] = useState<'upcoming' | 'popular' | 'streaming' | 'rent' | 'theaters'>('upcoming');
     const [freeTab, setFreeTab] = useState<'movies' | 'tv'>('movies');
+
+    // Companion Shelves & Mood State
+    const [shelves, setShelves] = useState<PersonalizedShelvesResult | undefined>(initialShelves);
+    const [activeMood, setActiveMood] = useState<string>('all');
+    const [isControlsOpen, setIsControlsOpen] = useState<boolean>(false);
+    const [isLoadingShelves, setIsLoadingShelves] = useState<boolean>(false);
 
     // Section 1: Trailer Modal State
     const [activeTrailer, setActiveTrailer] = useState<{ id: number; type: 'movie' | 'tv'; title: string } | null>(null);
@@ -265,6 +279,22 @@ export function HomeRedesign({
 
         return () => clearInterval(interval);
     }, [globalRegion, locale]);
+
+    // ----------------------------------------------------
+    // Companion: Mood & Shelf Handler
+    // ----------------------------------------------------
+    const handleMoodSelect = async (moodKey: string) => {
+        setActiveMood(moodKey);
+        setIsLoadingShelves(true);
+        try {
+            const data = await getPersonalizedHomeShelvesAction(locale, moodKey, globalRegion);
+            setShelves(data);
+        } catch (e) {
+            console.error('Failed to update mood shelves:', e);
+        } finally {
+            setIsLoadingShelves(false);
+        }
+    };
 
     // ----------------------------------------------------
     // Section 1: Trailer Action Trigger
@@ -583,6 +613,64 @@ export function HomeRedesign({
 
             {/* Main Editorial Content Area */}
             <div className="relative z-20 mx-auto max-w-7xl space-y-16 px-4 pb-24 pt-14 sm:px-6 sm:space-y-20 lg:px-8">
+
+                {/* ====================================================
+                    SECTION 0.5: PERSONAL CINEMA COMPANION & MOOD
+                   ==================================================== */}
+                <div className="space-y-12">
+                    <MoodMatcherBar
+                        activeMood={activeMood}
+                        onSelectMood={handleMoodSelect}
+                        onOpenControls={() => setIsControlsOpen(true)}
+                    />
+
+                    {shelves?.isColdStart && (
+                        <ColdStartCompanion
+                            onUnlock={async () => {
+                                setIsLoadingShelves(true);
+                                try {
+                                    const data = await getPersonalizedHomeShelvesAction(locale, activeMood, globalRegion);
+                                    setShelves(data);
+                                } finally {
+                                    setIsLoadingShelves(false);
+                                }
+                            }}
+                        />
+                    )}
+
+                    {shelves?.tonightsPicks && shelves.tonightsPicks.length > 0 && (
+                        <CompanionShelf
+                            title={tCompanion('tonightsPicks')}
+                            subtitle={tCompanion('tonightsPicksSub')}
+                            items={shelves.tonightsPicks}
+                            badgeText={tCompanion('companionTitle')}
+                        />
+                    )}
+
+                    {shelves?.becauseYouLoved && (
+                        <CompanionShelf
+                            title={tCompanion('becauseYouLoved', { title: shelves.becauseYouLoved.referenceTitle })}
+                            subtitle={tCompanion('becauseYouLovedSub')}
+                            items={shelves.becauseYouLoved.items}
+                        />
+                    )}
+
+                    {shelves?.watchlistGems && (
+                        <CompanionShelf
+                            title={tCompanion('watchlistGems')}
+                            subtitle={tCompanion('watchlistGemsSub')}
+                            items={shelves.watchlistGems}
+                        />
+                    )}
+
+                    {shelves?.rewatchCandidates && (
+                        <CompanionShelf
+                            title={tCompanion('rewatchCandidates')}
+                            subtitle={tCompanion('rewatchCandidatesSub')}
+                            items={shelves.rewatchCandidates}
+                        />
+                    )}
+                </div>
 
                 {/* ====================================================
                     SECTION 1: LATEST TRAILERS
@@ -1137,6 +1225,16 @@ export function HomeRedesign({
                 ) : null}
 
             </div>
+
+            {/* Taste Control & Transparency Modal */}
+            <TasteControlModal
+                isOpen={isControlsOpen}
+                onClose={() => setIsControlsOpen(false)}
+                activeMood={activeMood}
+                onClearMood={() => handleMoodSelect('all')}
+                topTraits={shelves?.userTasteSummary?.topDnaTraits}
+                locale={locale}
+            />
         </div>
     );
 }
