@@ -58,7 +58,6 @@ export function Navbar() {
         { href: '/tv-shows', label: t('tvShows'), icon: Tv },
         { href: '/journeys', label: t('journeys') || 'Journeys', icon: Compass },
         { href: '/challenges', label: t('challenges') || 'Challenges', icon: Award },
-        { href: '/ai', label: t('aiCompanion') || 'Cinema AI', icon: Sparkles },
         { href: '/library', label: t('library'), icon: Library },
     ];
 
@@ -127,7 +126,7 @@ export function Navbar() {
                 </Link>
 
                 {/* Desktop nav */}
-                <div className="hidden items-center gap-1 md:flex">
+                <div className="hidden items-center gap-1 lg:gap-2 md:flex">
                     {NAV_LINKS.map(({ href, label, icon: Icon }) => {
                         const isActive = pathname.startsWith(href);
                         const items = dropdownMenus[href];
@@ -137,25 +136,25 @@ export function Navbar() {
                             return (
                                 <div
                                     key={href}
-                                    className="relative py-2"
+                                    className="relative py-2 flex-shrink-0"
                                     onMouseEnter={() => handleMouseEnter(href)}
                                     onMouseLeave={handleMouseLeave}
                                 >
                                     <button
                                         type="button"
                                         onClick={() => setOpenMenu(isOpen ? null : href)}
-                                        className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-[var(--transition-fast)] cursor-pointer select-none ${isActive
+                                        className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-[var(--transition-fast)] cursor-pointer select-none whitespace-nowrap flex-shrink-0 ${isActive
                                             ? 'bg-accent-muted text-accent'
                                             : 'text-foreground-muted hover:bg-background-elevated hover:text-foreground'
                                             }`}
                                     >
-                                        <Icon className="h-4 w-4" />
-                                        {label}
-                                        <ChevronDown className={`h-3 w-3 text-foreground-muted opacity-50 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                                        <Icon className="h-4 w-4 shrink-0" />
+                                        <span>{label}</span>
+                                        <ChevronDown className={`h-3 w-3 text-foreground-muted opacity-50 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
                                     </button>
 
                                     <div
-                                        className={`absolute top-full left-0 mt-1 w-44 rounded-xl border border-border bg-[#1c1c28] p-1.5 shadow-2xl z-50 flex flex-col transition-all duration-150 origin-top-left ${isOpen
+                                        className={`absolute top-full left-0 mt-1 w-44 rounded-xl border border-border bg-[#161922] p-1.5 shadow-2xl z-50 flex flex-col transition-all duration-150 origin-top-left ${isOpen
                                             ? 'opacity-100 scale-100 pointer-events-auto'
                                             : 'opacity-0 scale-95 pointer-events-none'
                                             }`}
@@ -165,7 +164,7 @@ export function Navbar() {
                                                 key={item.href}
                                                 href={item.href as Parameters<typeof Link>[0]['href']}
                                                 onClick={handleSubLinkClick}
-                                                className="w-full text-left rounded-lg px-3 py-2 text-xs font-semibold text-foreground-muted hover:bg-background-elevated hover:text-foreground transition-all truncate"
+                                                className="w-full text-left rounded-lg px-3 py-2 text-xs font-semibold text-foreground-muted hover:bg-background-elevated hover:text-foreground transition-all truncate whitespace-nowrap"
                                             >
                                                 {item.label}
                                             </Link>
@@ -179,20 +178,20 @@ export function Navbar() {
                             <Link
                                 key={href}
                                 href={href as Parameters<typeof Link>[0]['href']}
-                                className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-[var(--transition-fast)] ${isActive
+                                className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-[var(--transition-fast)] whitespace-nowrap flex-shrink-0 ${isActive
                                     ? 'bg-accent-muted text-accent'
                                     : 'text-foreground-muted hover:bg-background-elevated hover:text-foreground'
                                     }`}
                             >
-                                <Icon className="h-4 w-4" />
-                                {label}
+                                <Icon className="h-4 w-4 shrink-0" />
+                                <span>{label}</span>
                             </Link>
                         );
                     })}
                 </div>
 
-                {/* Auth + Mobile toggle */}
-                <div className="flex items-center gap-3 flex-shrink-0">
+                {/* Auth + Controls */}
+                <div className="flex items-center gap-2.5 sm:gap-3 flex-shrink-0">
                     {/* Search Trigger Buttons */}
                     <button
                         onClick={() => setIsSearchOpen(true)}

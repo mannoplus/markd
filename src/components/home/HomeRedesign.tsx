@@ -568,31 +568,22 @@ export function HomeRedesign({
         freeTab === 'movies' ? freeMovies :
         freeShows;
 
-    const heroFeatured = trendingMedia[0] || initialTrending[0] || initialNowPlaying[0];
-
     return (
         <div className="pb-16 -mt-16 sm:-mt-20 relative">
             {/* ====================================================
-                SECTION 0: CINEMATIC PERSONALIZED HERO
+                SECTION 0: DYNAMIC MULTI-ITEM HERO CAROUSEL
                ==================================================== */}
-            {heroFeatured ? (
-                <div className="relative">
-                    {isLoadingTrending ? (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-30">
-                            <Loader2 className="h-10 w-10 text-accent animate-spin" />
-                        </div>
-                    ) : null}
-                    <PersonalizedHero
-                        movie={heroFeatured}
-                        matchScore={98}
-                        onPlayTrailer={(item) => handleTrailerClick(item)}
-                    />
-                </div>
-            ) : (
-                <div className="relative min-h-[350px]">
-                    <HeroCarousel movies={trendingMedia} />
-                </div>
-            )}
+            <div className="relative min-h-[500px]">
+                {isLoadingTrending ? (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-30">
+                        <Loader2 className="h-10 w-10 text-accent animate-spin" />
+                    </div>
+                ) : null}
+                <HeroCarousel
+                    movies={trendingMedia}
+                    onPlayTrailer={(item) => handleTrailerClick(item)}
+                />
+            </div>
 
             {/* Main Editorial Content Area */}
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-6 relative z-20 space-y-20 pb-24">

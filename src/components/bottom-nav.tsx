@@ -2,7 +2,7 @@
 
 import { Link } from '@/i18n/routing';
 import { usePathname } from 'next/navigation';
-import { Film, Tv, Library, Compass, Sparkles } from 'lucide-react';
+import { Film, Tv, Library, Compass, Award } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 export function BottomNav() {
@@ -11,8 +11,9 @@ export function BottomNav() {
 
     const NAV_LINKS = [
         { href: '/movies?category=popular', activePath: '/movies', label: t('movies'), icon: Film },
+        { href: '/tv-shows?category=popular', activePath: '/tv-shows', label: t('tvShows'), icon: Tv },
         { href: '/journeys', activePath: '/journeys', label: t('journeys') || 'Journeys', icon: Compass },
-        { href: '/ai', activePath: '/ai', label: t('aiCompanion') || 'Cinema AI', icon: Sparkles },
+        { href: '/challenges', activePath: '/challenges', label: t('challenges') || 'Challenges', icon: Award },
         { href: '/library', activePath: '/library', label: t('library'), icon: Library },
     ];
 

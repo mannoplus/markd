@@ -1,11 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Compass, CheckCircle2, Circle, Trophy, ArrowRight, Play, Film, Sparkles, ChevronDown } from 'lucide-react';
+import { Compass, CheckCircle2, Circle, Trophy, ChevronDown, Calendar, Film } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/routing';
-import { getUserJourneysAction, updateJourneyProgressAction } from '@/app/actions';
-import { createClient } from '@/lib/supabase/client';
+import { getUserJourneysAction, updateJourneyProgressAction, getUserMediaItems, upsertMediaItem } from '@/app/actions';
 
 interface JourneyFilm {
   id: number;
@@ -94,33 +93,63 @@ export default function JourneysPage() {
   const locale = useLocale();
 
   const [completedMap, setCompletedMap] = useState<Record<string, number[]>>({
-    nolan: [77, 1124, 155, 27205],
-    ghibli: [81, 10515, 8392],
-    scifi: [264660, 329865],
-    korean: [670, 496243],
+    nolan: [77, 155, 27205],
+    ghibli: [81, 129],
+    scifi: [329865, 438631],
+    korean: [496243],
   });
 
   const [expandedJourney, setExpandedJourney] = useState<string>('nolan');
 
   useEffect(() => {
+    // 1. Sync from user media library items
+    getUserMediaItems().then((res) => {
+      if (res.data) {
+        const completedIds = new Set<number>();
+        res.data.forEach((item: any) => {
+          if (item.status === 'completed' || item.status === 'watching') {
+            completedIds.add(item.tmdb_id);
+          }
+        });
+
+        if (completedIds.size > 0) {
+          setCompletedMap((prev) => {
+            const updated: Record<string, number[]> = { ...prev };
+            ALL_JOURNEYS.forEach((journey) => {
+              const matched = journey.films
+                .map((f) => f.id)
+                .filter((id) => completedIds.has(id));
+              if (matched.length > 0) {
+                updated[journey.id] = Array.from(new Set([...(updated[journey.id] || []), ...matched]));
+              }
+            });
+            return updated;
+          });
+        }
+      }
+    });
+
+    // 2. Sync from Supabase user_journeys table
     getUserJourneysAction().then((res) => {
       if (res.data && res.data.length > 0) {
-        const map: Record<string, number[]> = {};
-        res.data.forEach((j: any) => {
-          map[j.journey_id] = j.completed_tmdb_ids || [];
+        setCompletedMap((prev) => {
+          const map: Record<string, number[]> = { ...prev };
+          res.data.forEach((j: any) => {
+            map[j.journey_id] = Array.from(new Set([...(map[j.journey_id] || []), ...(j.completed_tmdb_ids || [])]));
+          });
+          return map;
         });
-        setCompletedMap((prev) => ({ ...prev, ...map }));
       }
     });
   }, []);
 
-  const handleToggleFilm = async (journeyId: string, filmId: number, total: number) => {
+  const handleToggleFilm = async (journeyId: string, film: JourneyFilm, total: number) => {
     const currentCompleted = completedMap[journeyId] || [];
-    const isDone = currentCompleted.includes(filmId);
+    const isDone = currentCompleted.includes(film.id);
 
     const updated = isDone
-      ? currentCompleted.filter((id) => id !== filmId)
-      : [...currentCompleted, filmId];
+      ? currentCompleted.filter((id) => id !== film.id)
+      : [...currentCompleted, film.id];
 
     setCompletedMap((prev) => ({
       ...prev,
@@ -128,7 +157,18 @@ export default function JourneysPage() {
     }));
 
     try {
-      await updateJourneyProgressAction(journeyId, filmId, total);
+      await updateJourneyProgressAction(journeyId, film.id, total);
+      // Also sync to user media items
+      await upsertMediaItem({
+        tmdb_id: film.id,
+        media_type: 'movie',
+        title: film.title,
+        poster_path: film.posterPath,
+        status: isDone ? 'plan_to_watch' : 'completed',
+        rating: null,
+        season_progress: null,
+        episode_progress: null,
+      });
     } catch (e) {
       console.error(e);
     }
@@ -136,18 +176,19 @@ export default function JourneysPage() {
 
   return (
     <div className="min-h-screen pt-8 pb-20">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 space-y-10">
-        {/* Header */}
-        <div className="space-y-3 border-b border-border/30 pb-8">
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 space-y-10">
+        
+        {/* Page Header with distinct margins */}
+        <div className="space-y-3 border-b border-border/40 pb-8">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-accent/15 border border-accent/30 text-accent">
+            <div className="p-2 rounded-xl bg-white/[0.08] border border-white/[0.1] text-foreground">
               <Compass className="h-6 w-6" />
             </div>
             <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
               {t('title')}
             </h1>
           </div>
-          <p className="text-sm sm:text-base text-foreground-muted max-w-2xl">
+          <p className="text-sm sm:text-base text-foreground-muted max-w-2xl leading-relaxed">
             {t('subtitle')}
           </p>
         </div>
@@ -164,17 +205,17 @@ export default function JourneysPage() {
             return (
               <div
                 key={journey.id}
-                className="rounded-2xl border border-border/40 bg-[#0e0e16] p-6 sm:p-8 shadow-2xl transition-all space-y-6"
+                className="rounded-2xl border border-white/[0.08] bg-[#0E1017] p-6 sm:p-8 shadow-2xl transition-all space-y-6"
               >
                 {/* Journey Summary Bar */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="space-y-2">
                     <div className="flex items-center gap-2.5">
-                      <span className="rounded-full bg-accent/15 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-accent border border-accent/25">
+                      <span className="rounded-md bg-white/[0.06] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-300 border border-white/[0.08]">
                         {journey.badgeTag}
                       </span>
                       {isFullyCompleted && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-3 py-1 text-[11px] font-bold text-emerald-400 border border-emerald-500/30">
+                        <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/15 px-2.5 py-1 text-[11px] font-bold text-emerald-400 border border-emerald-500/30">
                           <Trophy className="h-3.5 w-3.5" />
                           {t('completed')}
                         </span>
@@ -189,9 +230,9 @@ export default function JourneysPage() {
                     </p>
                   </div>
 
-                  {/* Progress Ring & Expand */}
-                  <div className="flex items-center gap-4 shrink-0">
-                    <div className="text-right space-y-1">
+                  {/* Progress & Expand Toggle */}
+                  <div className="flex items-center gap-4 shrink-0 self-start md:self-auto">
+                    <div className="text-left md:text-right space-y-0.5">
                       <span className="text-lg font-black font-mono text-emerald-400">
                         {pct}%
                       </span>
@@ -202,7 +243,8 @@ export default function JourneysPage() {
 
                     <button
                       onClick={() => setExpandedJourney(isExpanded ? '' : journey.id)}
-                      className="rounded-xl bg-background-elevated p-2.5 text-foreground-muted hover:text-foreground border border-border/40 transition-colors cursor-pointer"
+                      className="rounded-xl bg-background-elevated p-2.5 text-foreground-muted hover:text-foreground border border-white/[0.08] transition-colors cursor-pointer"
+                      aria-label="Toggle Milestones"
                     >
                       <ChevronDown className={`h-5 w-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                     </button>
@@ -210,30 +252,30 @@ export default function JourneysPage() {
                 </div>
 
                 {/* Progress Bar */}
-                <div className="h-2 w-full rounded-full bg-background-elevated overflow-hidden border border-border/20">
+                <div className="h-1.5 w-full rounded-full bg-white/[0.05] overflow-hidden border border-white/[0.05]">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-accent via-emerald-400 to-teal-300 transition-all duration-700"
+                    className="h-full rounded-full bg-gradient-to-r from-zinc-300 via-emerald-400 to-teal-300 transition-all duration-700"
                     style={{ width: `${pct}%` }}
                   />
                 </div>
 
-                {/* Interactive Film Milestone Rail (When Expanded) */}
+                {/* Interactive Film Milestone Grid (When Expanded) */}
                 {isExpanded && (
-                  <div className="pt-4 border-t border-border/20 space-y-4">
+                  <div className="pt-4 border-t border-white/[0.06] space-y-4">
                     <h3 className="text-xs font-bold text-foreground-subtle uppercase tracking-wider">
                       {locale === 'zh-TW' ? '旅程光影里程碑' : 'Journey Milestones & Films'}
                     </h3>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                       {journey.films.map((film, idx) => {
                         const isWatched = completed.includes(film.id);
                         return (
                           <div
                             key={film.id}
-                            className={`rounded-xl border p-3.5 transition-all flex flex-col justify-between space-y-3 relative group ${
+                            className={`rounded-xl border p-4 transition-all flex flex-col justify-between space-y-3 ${
                               isWatched
-                                ? 'bg-emerald-950/20 border-emerald-500/40 text-foreground'
-                                : 'bg-background-elevated/40 border-border/30 text-foreground-muted hover:border-border'
+                                ? 'bg-emerald-950/20 border-emerald-500/30 text-foreground'
+                                : 'bg-[#12141F] border-white/[0.06] text-foreground-muted hover:border-white/15'
                             }`}
                           >
                             <div className="flex items-start justify-between gap-2">
@@ -241,8 +283,9 @@ export default function JourneysPage() {
                                 #{idx + 1}
                               </span>
                               <button
-                                onClick={() => handleToggleFilm(journey.id, film.id, total)}
+                                onClick={() => handleToggleFilm(journey.id, film, total)}
                                 className="cursor-pointer transition-transform active:scale-90"
+                                title={isWatched ? 'Mark Unwatched' : 'Mark Watched'}
                               >
                                 {isWatched ? (
                                   <CheckCircle2 className="h-5 w-5 text-emerald-400 fill-emerald-500/20" />
@@ -252,16 +295,17 @@ export default function JourneysPage() {
                               </button>
                             </div>
 
-                            <div>
+                            <div className="space-y-1">
                               <Link
                                 href={`/movie/${film.id}`}
-                                className="font-bold text-xs text-foreground group-hover:text-accent transition-colors line-clamp-2"
+                                className="font-bold text-sm text-foreground hover:text-zinc-200 transition-colors line-clamp-1"
                               >
                                 {film.title}
                               </Link>
-                              <span className="text-[10px] text-foreground-subtle font-mono">
-                                {film.year}
-                              </span>
+                              <div className="flex items-center gap-2 text-[10px] text-foreground-subtle font-mono">
+                                <Calendar className="h-3 w-3" />
+                                <span>{film.year}</span>
+                              </div>
                             </div>
                           </div>
                         );

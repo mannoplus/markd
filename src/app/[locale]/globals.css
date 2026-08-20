@@ -6,20 +6,20 @@
    =========================================== */
 
 :root {
-  /* Core Background Hierarchy */
-  --background: #08080c;
-  --background-secondary: #0f0f16;
-  --background-card: #14141e;
-  --background-elevated: #1a1a26;
-  --background-highlight: #222232;
+  /* Core Background Hierarchy (Obsidian Slate/Zinc Dark) */
+  --background: #0B0D12;
+  --background-secondary: #11141D;
+  --background-card: #151822;
+  --background-elevated: #1B1E2B;
+  --background-highlight: #232738;
 
   /* Surfaces & Glass */
-  --surface-primary: #101018;
-  --surface-secondary: #161622;
-  --surface-elevated: #1e1e2d;
-  --surface-glass: rgba(18, 18, 28, 0.78);
-  --surface-glass-heavy: rgba(14, 14, 22, 0.92);
-  --glass: rgba(20, 20, 30, 0.75);
+  --surface-primary: #12151F;
+  --surface-secondary: #171A26;
+  --surface-elevated: #1E2231;
+  --surface-glass: rgba(17, 20, 29, 0.82);
+  --surface-glass-heavy: rgba(11, 13, 18, 0.94);
+  --glass: rgba(17, 20, 29, 0.78);
 
   /* Typography & Foreground */
   --foreground: #f4f4f7;
