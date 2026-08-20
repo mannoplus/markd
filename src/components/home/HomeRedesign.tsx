@@ -5,9 +5,6 @@ import { Play, RotateCw, HelpCircle, Film, MapPin, X, Loader2, ChevronDown } fro
 import { Link } from '@/i18n/routing';
 import { MovieCard } from '@/components/movie-card';
 import { HeroCarousel } from '@/components/hero-carousel';
-import { RecommendedSection } from '@/components/home/RecommendedSection';
-import { PerfectForTonight } from '@/components/home/PerfectForTonight';
-import { CuratedCollections } from '@/components/home/CuratedCollections';
 import { SectionHeader } from '@/components/section-header';
 import type { TMDBTrendingResult, TMDBWatchProvider, TMDBWatchProviderResult } from '@/types';
 import { useLocale, useTranslations } from 'next-intl';
@@ -586,21 +583,6 @@ export function HomeRedesign({
 
             {/* Main Editorial Content Area */}
             <div className="relative z-20 mx-auto max-w-7xl space-y-16 px-4 pb-24 pt-14 sm:px-6 sm:space-y-20 lg:px-8">
-
-                {/* ====================================================
-                    PERSONALIZED RECOMMENDATIONS (TASTE ENGINE)
-                   ==================================================== */}
-                <RecommendedSection items={trendingMedia} />
-
-                {/* ====================================================
-                    PERFECT FOR TONIGHT (MOOD SWITCHER)
-                   ==================================================== */}
-                <PerfectForTonight items={[...nowPlayingMovies, ...upcomingMovies]} />
-
-                {/* ====================================================
-                    EDITORIAL CINEMA COLLECTIONS
-                   ==================================================== */}
-                <CuratedCollections />
 
                 {/* ====================================================
                     SECTION 1: LATEST TRAILERS
