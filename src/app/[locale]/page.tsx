@@ -23,6 +23,17 @@ export default async function Home({
     getCategoryMedia('/tv/popular', 1, region).catch(() => ({ results: [] })),
   ]);
 
+  // Filter TV shows: current year only, exclude news programs
+  const currentYear = new Date().getFullYear();
+  const newsBlacklist = ['tagesschau', 'nachrichten', 'news', 'xnachrichten'];
+  const filteredPopularTV = (nowPlayingShows.results || []).filter((s: any) => {
+    const year = (s.first_air_date || '').substring(0, 4);
+    const title = (s.name || '').toLowerCase();
+    if (year !== String(currentYear)) return false;
+    if (newsBlacklist.some(kw => title.includes(kw))) return false;
+    return true;
+  });
+
   // Fetch all initial data in parallel for trailers and free content
   const [
     popularTrailersData,
@@ -137,17 +148,19 @@ export default async function Home({
   };
 
   // Enrich initial datasets
-  const enrichedNowPlaying = await injectRTScores(nowPlayingMovies.slice(0, 6)); // Display exactly 6 now playing movies
-  const enrichedPopularShows = await injectRTScores((nowPlayingShows.results || []).slice(0, 6)); // Display exactly 6 popular TV shows
+  const enrichedNowPlaying = await injectRTScores(nowPlayingMovies.slice(0, 6)); // Exactly 6 now playing movies
+  const enrichedPopularShows = await injectRTScores(filteredPopularTV.slice(0, 4)); // Exactly 4 popular TV shows
   const enrichedFreeMovies = await injectRTScores(strictlyFreeMovies); // Exactly 15 free movies
   const enrichedFreeShows = await injectRTScores(strictlyFreeShows); // Exactly 15 free TV shows
 
-  // Dynamic mixed Hero Carousel (6 Now Playing Movies + 6 Popular TV Shows alternating, total 12)
+  // Dynamic mixed Hero Carousel (6 Now Playing Movies + 4 Popular TV Shows, total 10)
   const carouselMix: any[] = [];
   for (let i = 0; i < 6; i++) {
     if (enrichedNowPlaying[i]) {
       carouselMix.push({ ...enrichedNowPlaying[i], media_type: 'movie' });
     }
+  }
+  for (let i = 0; i < 4; i++) {
     if (enrichedPopularShows[i]) {
       carouselMix.push({ ...enrichedPopularShows[i], media_type: 'tv' });
     }

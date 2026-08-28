@@ -186,7 +186,7 @@ export function HomeRedesign({
     };
 
     // ----------------------------------------------------
-    // Carousel 5-minute background refresh (Now Playing + Popular TV)
+    // Carousel 5-minute background refresh (6 Movies + 4 TV Shows, current year)
     // ----------------------------------------------------
     useEffect(() => {
         const interval = setInterval(async () => {
@@ -197,17 +197,24 @@ export function HomeRedesign({
                     getCategoryMediaAction('/tv/popular', 1, globalRegion, locale),
                 ]);
 
-                // Filter TV shows to current year only
+                // Filter TV shows to current year only, exclude news programs
+                const newsBlacklist = ['tagesschau', 'nachrichten', 'news', 'xnachrichten'];
                 const currentYearShows = (showsResult?.results || []).filter((s: any) => {
                     const year = (s.first_air_date || '').substring(0, 4);
-                    return year === String(currentYear);
+                    const title = (s.name || '').toLowerCase();
+                    if (year !== String(currentYear)) return false;
+                    if (newsBlacklist.some(kw => title.includes(kw))) return false;
+                    return true;
                 });
 
+                // Carousel mix: 6 movies + 4 shows
                 const mix: TMDBTrendingResult[] = [];
                 for (let i = 0; i < 6; i++) {
                     if (movies[i]) {
                         mix.push({ ...movies[i], media_type: 'movie' });
                     }
+                }
+                for (let i = 0; i < 4; i++) {
                     if (currentYearShows[i]) {
                         mix.push({ ...currentYearShows[i], media_type: 'tv' });
                     }
@@ -329,16 +336,22 @@ export function HomeRedesign({
                 getStrictlyFreeQuotaAction('tv', 1, newRegion, locale),
             ]);
 
-            // Filter TV shows to current year only
+            // Filter TV shows to current year only, exclude news programs
+            const newsBlacklist = ['tagesschau', 'nachrichten', 'news', 'xnachrichten'];
             const currentYearShows = (popularShowsData?.results || []).filter((s: any) => {
                 const year = (s.first_air_date || '').substring(0, 4);
-                return year === String(currentYear);
+                const title = (s.name || '').toLowerCase();
+                if (year !== String(currentYear)) return false;
+                if (newsBlacklist.some(kw => title.includes(kw))) return false;
+                return true;
             });
 
-            // Carousel mix (6 movies + 6 shows)
+            // Carousel mix: 6 movies + 4 shows
             const mix: TMDBTrendingResult[] = [];
             for (let i = 0; i < 6; i++) {
                 if (trendingMovies[i]) mix.push({ ...trendingMovies[i], media_type: 'movie' });
+            }
+            for (let i = 0; i < 4; i++) {
                 if (currentYearShows[i]) mix.push({ ...currentYearShows[i], media_type: 'tv' });
             }
             setTrendingMedia(enrichClientRTScores(mix));

@@ -257,11 +257,36 @@ body::before {
    breathing room; slightly larger line-height keeps it elegant. */
 :lang(zh-TW) {
   letter-spacing: 0.01em;
+  line-height: 1.7;
 }
 :lang(zh-TW) .section-title,
 :lang(zh-TW) .title-cinematic {
   letter-spacing: 0;
   line-height: 1.25;
+}
+
+/* Chinese body text: slightly larger base for readability with CJK glyphs */
+:lang(zh-TW) body {
+  font-size: 15px;
+}
+
+/* Chinese buttons: extra horizontal padding to prevent clipping of wider glyphs */
+:lang(zh-TW) button,
+:lang(zh-TW) .btn {
+  padding-left: max(0.75rem, env(safe-area-inset-left, 0.75rem));
+  padding-right: max(0.75rem, env(safe-area-inset-right, 0.75rem));
+}
+
+/* Chinese card titles: relaxed line-clamp to avoid mid-character truncation */
+:lang(zh-TW) .line-clamp-1 {
+  -webkit-line-clamp: 1;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+:lang(zh-TW) .line-clamp-2 {
+  -webkit-line-clamp: 2;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 /* ------------------------------------------------------------------
