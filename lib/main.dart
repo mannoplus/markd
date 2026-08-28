@@ -5,13 +5,16 @@ import 'package:webview_flutter/webview_flutter.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Set system UI overlay style to match the dark theme
+  // Edge-to-edge: transparent system nav bar so the WebView renders
+  // seamlessly to the bottom edge (no black bar artifact).
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
-      systemNavigationBarColor: Color(0xFF0D0F15),
+      systemNavigationBarColor: Colors.transparent,
       systemNavigationBarIconBrightness: Brightness.light,
+      systemNavigationBarContrastEnforced: false,
     ),
   );
 
@@ -62,7 +65,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
   void _initWebViewController() {
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(const Color(0xFF0D0F15))
+      ..setBackgroundColor(const Color(0xFF0A0C11)) // matches web --background
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (String url) {
@@ -103,8 +106,15 @@ class _WebViewScreenState extends State<WebViewScreen> {
         }
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFF0D0F15),
+        // Match the web app's --background so no stray dark strip shows
+        backgroundColor: const Color(0xFF0A0C11),
+        // resizeToAvoidBottomInset lets the WebView resize when the Android
+        // keyboard opens, so the web AI input stays fully visible & tappable.
+        resizeToAvoidBottomInset: true,
+        // Only pad the top with SafeArea; the WebView must extend behind the
+        // transparent system navigation bar to eliminate the black bottom bar.
         body: SafeArea(
+          bottom: false,
           child: Stack(
             children: [
               if (!_hasError) WebViewWidget(controller: _controller),
