@@ -10,6 +10,7 @@ import {
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 import { getUserMediaItems, upsertMediaItem } from '@/app/actions';
+import { ToggleSwitch } from '@/components/toggle-switch';
 
 const REGIONS = [
     { code: 'US', label: 'United States (US)' },
@@ -310,21 +311,11 @@ export default function SettingsPage() {
                                     <p className="text-sm font-semibold text-foreground">{t('autoplayTrailers')}</p>
                                     <p className="text-xs leading-relaxed text-foreground-muted">{t('autoplayTrailersDesc')}</p>
                                 </div>
-                                <button
-                                    role="switch"
-                                    aria-checked={autoPlayTrailers}
-                                    aria-label={t('autoplayTrailers')}
-                                    onClick={() => setAutoPlayTrailers(!autoPlayTrailers)}
-                                    className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
-                                        autoPlayTrailers ? 'bg-foreground' : 'bg-background-highlight'
-                                    }`}
-                                >
-                                    <span
-                                        className={`absolute top-0.5 h-5 w-5 rounded-full transition-transform ${
-                                            autoPlayTrailers ? 'translate-x-[22px] bg-background' : 'translate-x-0.5 bg-foreground-subtle'
-                                        }`}
-                                    />
-                                </button>
+                                <ToggleSwitch
+                                    checked={autoPlayTrailers}
+                                    onChange={() => setAutoPlayTrailers(!autoPlayTrailers)}
+                                    label={t('autoplayTrailers')}
+                                />
                             </div>
 
                             {/* Sound FX Toggle */}
@@ -333,21 +324,11 @@ export default function SettingsPage() {
                                     <p className="text-sm font-semibold text-foreground">{t('soundFx')}</p>
                                     <p className="text-xs leading-relaxed text-foreground-muted">{t('soundFxDesc')}</p>
                                 </div>
-                                <button
-                                    role="switch"
-                                    aria-checked={enableSoundFx}
-                                    aria-label={t('soundFx')}
-                                    onClick={() => setEnableSoundFx(!enableSoundFx)}
-                                    className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
-                                        enableSoundFx ? 'bg-foreground' : 'bg-background-highlight'
-                                    }`}
-                                >
-                                    <span
-                                        className={`absolute top-0.5 h-5 w-5 rounded-full transition-transform ${
-                                            enableSoundFx ? 'translate-x-[22px] bg-background' : 'translate-x-0.5 bg-foreground-subtle'
-                                        }`}
-                                    />
-                                </button>
+                                <ToggleSwitch
+                                    checked={enableSoundFx}
+                                    onChange={() => setEnableSoundFx(!enableSoundFx)}
+                                    label={t('soundFx')}
+                                />
                             </div>
                         </div>
 
