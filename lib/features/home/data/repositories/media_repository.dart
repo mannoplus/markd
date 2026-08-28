@@ -26,6 +26,63 @@ abstract class MediaRepository {
 
   /// Simple title-based search.
   Future<List<Media>> search(String query);
+
+  /// Filtered, sorted, paginated discovery results.
+  Future<List<Media>> discover({required DiscoverQuery query});
+
+  /// Genre options available for filtering.
+  Future<List<String>> getGenres();
+}
+
+/// How discover results are ordered.
+enum DiscoverSort { popular, topRated, releaseDate, score }
+
+/// Parameters for a discover page fetch.
+class DiscoverQuery {
+  const DiscoverQuery({
+    this.mediaType = 'movie',
+    this.query = '',
+    this.sort = DiscoverSort.popular,
+    this.genres = const <String>{},
+    this.minYear,
+    this.maxYear,
+    this.minRating,
+    this.page = 1,
+    this.pageSize = 12,
+  });
+
+  final String mediaType; // 'movie' | 'tv'
+  final String query;
+  final DiscoverSort sort;
+  final Set<String> genres;
+  final int? minYear;
+  final int? maxYear;
+  final double? minRating;
+  final int page;
+  final int pageSize;
+
+  DiscoverQuery copyWith({
+    String? mediaType,
+    String? query,
+    DiscoverSort? sort,
+    Set<String>? genres,
+    int? minYear,
+    int? maxYear,
+    double? minRating,
+    int? page,
+  }) {
+    return DiscoverQuery(
+      mediaType: mediaType ?? this.mediaType,
+      query: query ?? this.query,
+      sort: sort ?? this.sort,
+      genres: genres ?? this.genres,
+      minYear: minYear ?? this.minYear,
+      maxYear: maxYear ?? this.maxYear,
+      minRating: minRating ?? this.minRating,
+      page: page ?? this.page,
+      pageSize: pageSize,
+    );
+  }
 }
 
 /// Fully-typed mock implementation preloaded with a sample MARKD catalog so the
@@ -290,6 +347,65 @@ class MockMediaRepository implements MediaRepository {
     if (q.isEmpty) return const [];
     return _catalog.where((m) => m.title.toLowerCase().contains(q)).toList();
   }
+
+  @override
+  Future<List<Media>> discover({required DiscoverQuery query}) async {
+    await Future<void>.delayed(_delay);
+    Iterable<Media> results = _catalog.where(
+      (m) => m.mediaType == query.mediaType,
+    );
+
+    final q = query.query.trim().toLowerCase();
+    if (q.isNotEmpty) {
+      results = results.where((m) => m.title.toLowerCase().contains(q));
+    }
+    if (query.genres.isNotEmpty) {
+      results = results.where(
+        (m) => query.genres.any(m.genres.contains),
+      );
+    }
+    if (query.minYear != null) {
+      results = results.where(
+        (m) => m.releaseYear != null && m.releaseYear! >= query.minYear!,
+      );
+    }
+    if (query.maxYear != null) {
+      results = results.where(
+        (m) => m.releaseYear != null && m.releaseYear! <= query.maxYear!,
+      );
+    }
+    if (query.minRating != null) {
+      results = results.where(
+        (m) => m.voteAverage != null && m.voteAverage! >= query.minRating!,
+      );
+    }
+
+    final sorted = results.toList()..sort(_comparator(query.sort));
+
+    // Simulate pagination over the filtered result set.
+    final start = (query.page - 1) * query.pageSize;
+    if (start >= sorted.length) return const [];
+    return sorted.skip(start).take(query.pageSize).toList();
+  }
+
+  @override
+  Future<List<String>> getGenres() async {
+    await Future<void>.delayed(const Duration(milliseconds: 120));
+    return _catalog.expand((m) => m.genres).toSet().toList()..sort();
+  }
+
+  static Comparator<Media> _comparator(DiscoverSort sort) {
+    return switch (sort) {
+      // Catalog order is curated by popularity.
+      DiscoverSort.popular => (a, b) => b.popularity.compareTo(a.popularity),
+      DiscoverSort.topRated => (a, b) =>
+          (b.voteAverage ?? 0).compareTo(a.voteAverage ?? 0),
+      DiscoverSort.releaseDate => (a, b) =>
+          (b.releaseYear ?? 0).compareTo(a.releaseYear ?? 0),
+      DiscoverSort.score => (a, b) =>
+          (b.voteAverage ?? 0).compareTo(a.voteAverage ?? 0),
+    };
+  }
 }
 
 /// Provides the active [MediaRepository] implementation.
@@ -335,4 +451,15 @@ final mediaByIdProvider = FutureProvider.family<Media?, int>(
 /// Search provider keyed by query.
 final searchProvider = FutureProvider.family<List<Media>, String>(
   (ref, query) => ref.watch(mediaRepositoryProvider).search(query),
+);
+
+/// Discover results keyed by query parameters.
+final discoverProvider =
+    FutureProvider.family<List<Media>, DiscoverQuery>(
+  (ref, query) => ref.watch(mediaRepositoryProvider).discover(query: query),
+);
+
+/// Available genre filter options.
+final genresProvider = FutureProvider<List<String>>(
+  (ref) => ref.watch(mediaRepositoryProvider).getGenres(),
 );

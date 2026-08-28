@@ -4,9 +4,12 @@ import 'package:flutter/material.dart';
 class AppConstants {
   AppConstants._();
 
-  /// Base URL for the MARKD API / TMDB proxy.
-  /// TODO: wire to the real backend or environment config.
-  static const String apiBaseUrl = 'https://api.markd.app';
+  /// Base URL for the MARKD API / TMDB proxy. Override via `--dart-define`
+  /// (MARKD_API_URL) when connecting a real backend.
+  static const String apiBaseUrl = String.fromEnvironment(
+    'MARKD_API_URL',
+    defaultValue: 'https://api.markd.app',
+  );
 
   /// TMDB image base (poster / backdrop).
   static const String tmdbImageBase = 'https://image.tmdb.org/t/p';

@@ -22,6 +22,8 @@ class Media {
   final List<String> genres;
   @JsonKey(name: 'runtime_minutes')
   final int? runtimeMinutes;
+  @JsonKey(defaultValue: 0.0)
+  final double popularity;
 
   const Media({
     required this.id,
@@ -35,6 +37,7 @@ class Media {
     this.tagline,
     this.genres = const <String>[],
     this.runtimeMinutes,
+    this.popularity = 0.0,
   });
 
   factory Media.fromJson(Map<String, dynamic> json) => _$MediaFromJson(json);

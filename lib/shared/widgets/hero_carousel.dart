@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:markd/core/theme/app_colors.dart';
 import 'package:markd/features/home/data/models/media_model.dart';
+import 'package:markd/features/library/application/library_provider.dart';
 
 /// Full-bleed cinematic hero carousel with backdrop slides, a metadata pill
 /// rail, primary playback + watchlist actions, auto-advance, and tappable
@@ -224,15 +225,11 @@ class _HeroSlide extends StatelessWidget {
                 runSpacing: 8,
                 children: [
                   const _ActionButton(
-                    label: 'Play',
+                    label: 'Watch Trailer',
                     icon: Icons.play_arrow_rounded,
                     filled: true,
                   ),
-                  const _ActionButton(
-                    label: 'Add to List',
-                    icon: Icons.bookmark_add_outlined,
-                    filled: false,
-                  ),
+                  _WatchlistButton(media: media),
                   _ActionButton(
                     label: 'Details',
                     icon: Icons.info_outline_rounded,
@@ -245,6 +242,30 @@ class _HeroSlide extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Hero watchlist toggle wired to the shared [libraryProvider].
+class _WatchlistButton extends ConsumerWidget {
+  const _WatchlistButton({required this.media});
+
+  final Media media;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final inList = ref
+            .watch(libraryProvider)
+            .valueOrNull
+            ?.statusOf(media.id) ==
+        LibraryStatus.watchlist;
+    return _ActionButton(
+      label: inList ? '✓ In Watchlist' : '+ Add to Watchlist',
+      icon: inList ? Icons.check_rounded : Icons.bookmark_add_outlined,
+      filled: false,
+      onTap: () => ref
+          .read(libraryProvider.notifier)
+          .toggle(LibraryStatus.watchlist, media),
     );
   }
 }

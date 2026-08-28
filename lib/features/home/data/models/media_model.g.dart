@@ -20,6 +20,7 @@ Media _$MediaFromJson(Map<String, dynamic> json) => Media(
       (json['genres'] as List<dynamic>?)?.map((e) => e as String).toList() ??
       [],
   runtimeMinutes: (json['runtime_minutes'] as num?)?.toInt(),
+  popularity: (json['popularity'] as num?)?.toDouble() ?? 0.0,
 );
 
 Map<String, dynamic> _$MediaToJson(Media instance) => <String, dynamic>{
@@ -34,4 +35,5 @@ Map<String, dynamic> _$MediaToJson(Media instance) => <String, dynamic>{
   'tagline': instance.tagline,
   'genres': instance.genres,
   'runtime_minutes': instance.runtimeMinutes,
+  'popularity': instance.popularity,
 };
