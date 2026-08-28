@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
 export const CINEMA_COUNTRIES = [
     { name: 'Taiwan', code: 'TW' },
@@ -34,20 +34,29 @@ type RegionContextType = {
 const RegionContext = createContext<RegionContextType | undefined>(undefined);
 
 export function RegionProvider({ children }: { children: React.ReactNode }) {
-    const [region, setRegionState] = useState<string>(() => {
-        if (typeof window !== 'undefined') {
-            const stored = localStorage.getItem('global_region');
-            if (stored) return stored;
-            
+    const [region, setRegionState] = useState<string>('TW');
+    const [isInitialized, setIsInitialized] = useState(false);
+
+    useEffect(() => {
+        let initialRegion = 'TW';
+        const stored = localStorage.getItem('global_region');
+        
+        if (stored) {
+            initialRegion = stored;
+        } else {
             const params = new URLSearchParams(window.location.search);
             const urlRegion = params.get('region');
             if (urlRegion && CINEMA_COUNTRIES.some(c => c.code === urlRegion)) {
                 localStorage.setItem('global_region', urlRegion);
-                return urlRegion;
+                initialRegion = urlRegion;
             }
         }
-        return 'TW';
-    });
+        
+        if (initialRegion !== 'TW') {
+            setRegionState(initialRegion);
+        }
+        setIsInitialized(true);
+    }, []);
 
     const setRegion = (newRegion: string) => {
         setRegionState(newRegion);
