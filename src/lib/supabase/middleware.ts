@@ -6,9 +6,33 @@ import { routing } from '@/i18n/routing';
 const handleI18nRouting = createMiddleware(routing);
 
 /**
+ * Map an `Accept-Language` header to our supported locales.
+ * Any Chinese variant (zh, zh-TW, zh-HK, zh-CN, ...) should resolve to `zh-TW`.
+ * Everything else is treated as `en`.
+ */
+function normalizeAcceptLanguage(header: string | null): string | null {
+    if (!header) return null;
+    const wantsChinese = header
+        .split(',')
+        .some((part) => {
+            const lang = part.split(';')[0].trim().toLowerCase();
+            return lang === 'zh' || lang.startsWith('zh-') || lang.startsWith('zh');
+        });
+    return wantsChinese ? 'zh-TW,zh;q=0.9,en;q=0.8' : null;
+}
+
+/**
  * Refresh the Supabase auth session on every request and handle i18n routing.
  */
 export async function updateSession(request: NextRequest) {
+    // 0. Normalize the `Accept-Language` header so Chinese locales resolve to `zh-TW`.
+    // This only affects first-visit users (no NEXT_LOCALE cookie yet); existing
+    // sessions keep their stored locale automatically via next-intl cookie priority.
+    const normalized = normalizeAcceptLanguage(request.headers.get('accept-language'));
+    if (normalized) {
+        request.headers.set('accept-language', normalized);
+    }
+
     // 1. Run next-intl middleware to get the localized response (rewrite or redirect)
     const response = handleI18nRouting(request);
 

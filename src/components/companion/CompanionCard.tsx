@@ -1,15 +1,15 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
-import { Clock, Check, Eye, CheckCircle2, Star } from 'lucide-react';
+import { Star } from 'lucide-react';
 import { upsertMediaItem } from '@/app/actions';
 import { emitClientSignal, createSignal } from '@/lib/personalization/signals';
 import { IMAGE_SIZES } from '@/lib/tmdb';
 import type { PersonalizedShelfItem } from '@/app/actions/personalization';
+import { MediaActionButtons } from '@/components/media-action-buttons';
 
 interface CompanionCardProps {
   item: PersonalizedShelfItem;
@@ -20,9 +20,7 @@ export function CompanionCard({ item, surface = 'home' }: CompanionCardProps) {
   const t = useTranslations('Companion');
   const [isSaved, setIsSaved] = useState<'watchlist' | 'watched' | null>(null);
 
-  const handleAddToWatchlist = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleAddToWatchlist = async () => {
     try {
       await upsertMediaItem({
         tmdb_id: item.id,
@@ -46,9 +44,7 @@ export function CompanionCard({ item, surface = 'home' }: CompanionCardProps) {
     }
   };
 
-  const handleMarkWatched = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleMarkWatched = async () => {
     try {
       await upsertMediaItem({
         tmdb_id: item.id,
@@ -122,37 +118,17 @@ export function CompanionCard({ item, surface = 'home' }: CompanionCardProps) {
         </div>
 
         {/* Sleek Action Buttons */}
-        <div className="flex items-center gap-2 pt-2">
-          <button
-            onClick={handleAddToWatchlist}
-            disabled={Boolean(isSaved)}
-            className={`flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-full text-[11px] font-bold transition-all duration-200 cursor-pointer disabled:opacity-40 ${
-              isSaved === 'watchlist'
-                ? 'bg-accent/15 text-accent border border-accent/30'
-                : 'bg-background-elevated border border-border/40 text-foreground hover:bg-accent hover:text-background hover:border-accent hover:shadow-lg hover:shadow-accent/20'
-            }`}
-            title={t('quickAddToWatchlist')}
-            aria-label={t('quickAddToWatchlist')}
-          >
-            {isSaved === 'watchlist' ? <Check className="h-3.5 w-3.5" /> : <Clock className="h-3.5 w-3.5" />}
-            <span>{isSaved === 'watchlist' ? t('added') : t('quickAddToWatchlist')}</span>
-          </button>
-
-          <button
-            onClick={handleMarkWatched}
-            disabled={Boolean(isSaved)}
-            className={`flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-full text-[11px] font-bold transition-all duration-200 cursor-pointer disabled:opacity-40 ${
-              isSaved === 'watched'
-                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                : 'bg-background-elevated border border-border/40 text-foreground hover:bg-emerald-500 hover:text-white hover:border-emerald-500 hover:shadow-lg hover:shadow-emerald-500/20'
-            }`}
-            title={t('quickMarkWatched')}
-            aria-label={t('quickMarkWatched')}
-          >
-            {isSaved === 'watched' ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-            <span>{isSaved === 'watched' ? t('watched') : t('quickMarkWatched')}</span>
-          </button>
-        </div>
+        <MediaActionButtons
+          className="pt-2"
+          savedState={isSaved}
+          onAddToWatchlist={handleAddToWatchlist}
+          onMarkWatched={handleMarkWatched}
+          disabled={Boolean(isSaved)}
+          watchlistLabel={t('quickAddToWatchlist')}
+          watchlistActiveLabel={t('added')}
+          watchedLabel={t('quickMarkWatched')}
+          watchedActiveLabel={t('watched')}
+        />
       </div>
     </div>
   );

@@ -179,16 +179,16 @@ export function HeroCarousel({ movies, onPlayTrailer }: HeroCarouselProps) {
 
             <button
               onClick={() => handleToggleWatchlist(currentMovie)}
-              className={`inline-flex items-center gap-2 rounded-lg border px-5 py-3 text-xs font-bold uppercase tracking-wider transition-all ${
+              className={`inline-flex items-center justify-center gap-1.5 h-10 px-5 rounded-full border text-[12px] font-medium uppercase tracking-wider transition-all duration-200 ease-out ${
                 watchlistMap[currentMovie.id]
-                  ? 'border-success/40 bg-success/10 text-success'
-                  : 'border-border bg-black/35 text-foreground backdrop-blur-md hover:border-border-hover hover:bg-black/55'
+                  ? 'border-success/40 bg-success/15 text-success hover:bg-success/25 hover:shadow-[0_0_12px_rgba(34,197,94,0.18)]'
+                  : 'border-white/15 bg-white/5 backdrop-blur-sm text-foreground hover:bg-white/15 hover:border-white/25 hover:shadow-[0_0_12px_rgba(255,255,255,0.12)]'
               }`}
             >
               {watchlistMap[currentMovie.id] ? (
-                <Check className="h-4 w-4" />
+                <Check className="h-4 w-4 shrink-0" />
               ) : (
-                <Plus className="h-4 w-4" />
+                <Plus className="h-4 w-4 shrink-0" />
               )}
               <span>
                 {watchlistMap[currentMovie.id] ? t('inWatchlist') : t('addToWatchlist')}

@@ -132,7 +132,7 @@ export default function LoginPage() {
         setOnboardingCompleted(true);
         clearOnboardingState();
         setPending(false);
-        router.push('/home');
+        router.push('/');
     }
 
     const isSubmitDisabled = pending || (lockoutUntil !== null) || (!isLogin && (!isPasswordValid || !passwordsMatch));
@@ -351,7 +351,7 @@ export default function LoginPage() {
                 {/* Skip option */}
                 <div className="mt-12 text-center fade-in slide-in-from-bottom-4 duration-700">
                     <Link 
-                        href="/home"
+                        href="/"
                         className="text-sm font-semibold text-foreground-muted hover:text-foreground transition-colors uppercase tracking-widest pb-1 border-b border-transparent hover:border-foreground/30"
                     >
                         Skip for now

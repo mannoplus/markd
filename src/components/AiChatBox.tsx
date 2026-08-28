@@ -4,15 +4,16 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
-import { 
-    X, Send, Trash2, Minimize2, Plus, Check, Clock, Eye, 
-    ExternalLink, ThumbsDown, SlidersHorizontal, CheckCircle2
+import {
+    X, Send, Trash2, Minimize2,
+    ExternalLink, ThumbsDown, SlidersHorizontal
 } from 'lucide-react';
 import { MarkdLogoIcon } from '@/components/MarkdLogoIcon';
 import { AiMarkdownMessage } from '@/components/AiMarkdownMessage';
 import { Link } from '@/i18n/routing';
 import { upsertMediaItem, submitTasteFeedbackAction } from '@/app/actions';
 import { IMAGE_SIZES } from '@/lib/tmdb';
+import { MediaActionButtons } from '@/components/media-action-buttons';
 import type { AiChatMessage, AiRecommendationItem } from '@/lib/ai/types';
 
 interface AiChatBoxProps {
@@ -433,25 +434,16 @@ export function AiChatBox({
 
                                                 {/* Action Bar */}
                                                 <div className="flex items-center justify-between pt-1 border-t border-border/15 gap-1.5">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <button
-                                                            onClick={() => handleAddToWatchlist(rec)}
-                                                            disabled={Boolean(isSaved)}
-                                                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-background-elevated border border-border/40 text-[10px] font-bold text-foreground hover:bg-accent hover:text-background hover:border-accent transition-all cursor-pointer disabled:opacity-50"
-                                                        >
-                                                            {isSaved === 'watchlist' ? <Check className="h-3 w-3 text-accent" /> : <Clock className="h-3 w-3" />}
-                                                            <span>{isSaved === 'watchlist' ? t('addedToWatchlist') : t('addToWatchlist')}</span>
-                                                        </button>
-
-                                                        <button
-                                                            onClick={() => handleMarkWatched(rec)}
-                                                            disabled={Boolean(isSaved)}
-                                                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-background-elevated border border-border/40 text-[10px] font-bold text-foreground hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-all cursor-pointer disabled:opacity-50"
-                                                        >
-                                                            {isSaved === 'watched' ? <CheckCircle2 className="h-3 w-3 text-emerald-400" /> : <Eye className="h-3 w-3" />}
-                                                            <span>{isSaved === 'watched' ? t('markedWatched') : t('markWatched')}</span>
-                                                        </button>
-                                                    </div>
+                                                    <MediaActionButtons
+                                                        savedState={isSaved ?? null}
+                                                        onAddToWatchlist={() => handleAddToWatchlist(rec)}
+                                                        onMarkWatched={() => handleMarkWatched(rec)}
+                                                        disabled={Boolean(isSaved)}
+                                                        watchlistLabel={t('addToWatchlist')}
+                                                        watchlistActiveLabel={t('addedToWatchlist')}
+                                                        watchedLabel={t('markWatched')}
+                                                        watchedActiveLabel={t('markedWatched')}
+                                                    />
 
                                                     <div className="flex items-center gap-1">
                                                         <button

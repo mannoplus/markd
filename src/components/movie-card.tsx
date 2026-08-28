@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 import { Star, Tv, Film, Play } from 'lucide-react';
 import { IMAGE_SIZES } from '@/lib/tmdb';
 import { useLocale, useTranslations } from 'next-intl';
