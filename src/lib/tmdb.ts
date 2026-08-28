@@ -586,39 +586,6 @@ export async function getTVDetails(id: number): Promise<{
 }
 
 /**
- * Fetch Rotten Tomatoes scores for TV shows via OMDb API
- */
-export async function getTVShowRTScore(imdbId: string): Promise<{ rtScore?: string; rtStatus?: 'fresh' | 'rotten' }> {
-    if (!process.env.OMDB_API_KEY) {
-        return {};
-    }
-
-    try {
-        const omdbRes = await fetch(`https://www.omdbapi.com/?i=${imdbId}&apikey=${process.env.OMDB_API_KEY}`, { 
-            next: { revalidate: 3600 } 
-        });
-        
-        if (omdbRes.ok) {
-            const omdbJson = await omdbRes.json();
-            if (omdbJson.Response === 'True') {
-                const score = omdbJson.Ratings?.find((r: any) => r.Source === 'Rotten Tomatoes')?.Value;
-                if (score && score !== 'N/A') {
-                    const num = parseInt(score.replace('%', ''));
-                    return {
-                        rtScore: score,
-                        rtStatus: num >= 60 ? 'fresh' : 'rotten'
-                    };
-                }
-            }
-        }
-    } catch (e) {
-        console.error('Failed to fetch RT score for TV show:', e);
-    }
-
-    return {};
-}
-
-/**
  * Get watch/streaming providers for a movie or TV show.
  * Filters to the configured region (NEXT_PUBLIC_WATCH_REGION).
  */

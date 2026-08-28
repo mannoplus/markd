@@ -184,27 +184,6 @@ export async function revalidateHomeAction() {
 // TASTE FEEDBACK ACTIONS
 // ============================================================================
 
-export async function getTasteFeedbackAction() {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-        return { data: [], error: null };
-    }
-
-    const { data, error } = await supabase
-        .from('taste_feedback')
-        .select('*')
-        .eq('user_id', user.id);
-
-    if (error) {
-        console.error('Error fetching taste feedback:', error);
-        return { data: [], error: error.message };
-    }
-
-    return { data: data || [], error: null };
-}
-
 export async function submitTasteFeedbackAction({
     tmdb_id,
     media_type,
@@ -246,31 +225,6 @@ export async function submitTasteFeedbackAction({
 // CUSTOM LISTS ACTIONS
 // ============================================================================
 
-export async function getUserCustomListsAction() {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-        return { data: [], error: null };
-    }
-
-    const { data, error } = await supabase
-        .from('custom_lists')
-        .select(`
-            *,
-            items:custom_list_items(*)
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-    if (error) {
-        console.error('Error fetching custom lists:', error);
-        return { data: [], error: error.message };
-    }
-
-    return { data: data || [], error: null };
-}
-
 export async function createCustomListAction({
     title,
     description,
@@ -307,43 +261,5 @@ export async function createCustomListAction({
     return { error: null, data };
 }
 
-export async function addCustomListItemAction({
-    list_id,
-    tmdb_id,
-    media_type,
-    title,
-    poster_path,
-}: {
-    list_id: string;
-    tmdb_id: number;
-    media_type: MediaType;
-    title: string;
-    poster_path: string | null;
-}) {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-        return { error: 'Not authenticated' };
-    }
-
-    const { error } = await supabase
-        .from('custom_list_items')
-        .insert({
-            list_id,
-            tmdb_id,
-            media_type,
-            title,
-            poster_path,
-        });
-
-    if (error) {
-        console.error('Error adding item to custom list:', error);
-        return { error: error.message };
-    }
-
-    revalidatePath('/library');
-    return { error: null };
-}
 
 
