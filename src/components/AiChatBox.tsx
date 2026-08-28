@@ -238,7 +238,7 @@ export function AiChatBox({
         return (
             <button
                 onClick={() => setIsMinimized(false)}
-                className="fixed bottom-6 right-6 z-50 p-3.5 rounded-full bg-accent text-background hover:bg-accent-hover shadow-2xl hover:shadow-accent/40 active:scale-95 transition-all flex items-center justify-center cursor-pointer border border-accent/30 shadow-[0_0_20px_rgba(255,255,255,0.25)]"
+                className="fixed bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] right-4 z-50 p-3.5 rounded-full bg-accent text-background hover:bg-accent-hover shadow-2xl hover:shadow-accent/40 active:scale-95 transition-all flex items-center justify-center cursor-pointer border border-accent/30 shadow-[0_0_20px_rgba(255,255,255,0.25)] md:bottom-6 md:right-6"
                 title={t('restore')}
                 aria-label={t('restore')}
             >
@@ -272,7 +272,7 @@ export function AiChatBox({
             role="dialog"
             aria-modal="true"
             aria-labelledby="ai-chat-title"
-            className="fixed bottom-6 right-6 z-50 w-full max-w-[420px] h-[580px] rounded-3xl bg-[#0a0a10]/95 backdrop-blur-xl border border-border/40 shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-300 font-sans select-none"
+            className="fixed bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] right-2 left-2 z-50 h-[min(65dvh,580px)] max-w-[420px] rounded-3xl bg-[#0a0a10]/95 backdrop-blur-xl border border-border/40 shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-300 font-sans select-none md:bottom-6 md:left-auto md:right-6 md:h-[580px]"
         >
             {/* Header: Pure, Cinematic & Balanced */}
             <div className="px-5 py-3.5 border-b border-border/20 bg-background-elevated/40 flex items-center justify-between">

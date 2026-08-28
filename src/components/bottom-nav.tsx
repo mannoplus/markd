@@ -30,7 +30,7 @@ export function BottomNav() {
                 paddingBottom: 'env(safe-area-inset-bottom)',
             }}
         >
-            <div className="mx-auto flex h-16 max-w-lg items-stretch justify-around px-2">
+            <div className="mx-auto flex h-14 max-w-lg items-stretch justify-around px-2">
                 {NAV_LINKS.map(({ href, activePath, exact, label, icon: Icon }) => {
                     const isActive = exact
                         ? pathname === '/' || pathname === '/en' || pathname === '/zh-TW'
