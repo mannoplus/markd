@@ -40,6 +40,7 @@
         "lastUpdated": "最後更新時間"
     },
     "Navigation": {
+        "home": "首頁",
         "dashboard": "個人主頁",
         "library": "影劇收藏庫",
         "wrapped": "年度回顧",

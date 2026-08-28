@@ -40,6 +40,7 @@
         "lastUpdated": "Last updated"
     },
     "Navigation": {
+        "home": "Home",
         "dashboard": "Dashboard",
         "library": "Library",
         "wrapped": "Wrapped",

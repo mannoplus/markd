@@ -25,18 +25,18 @@ export default async function Home({
     rentTrailersData,
     theaterTrailersData,
   ] = await Promise.all([
-    discoverMedia('movie', { region, watch_region: region, sort_by: 'popularity.desc' }), // Localized Trending Movies
-    discoverMedia('tv', { region, watch_region: region, sort_by: 'popularity.desc' }), // Localized Trending TV Shows
-    getCategoryMedia('/movie/popular', 1, region),
-    discoverMedia('movie', { with_watch_monetization_types: 'flatrate', watch_region: region, sort_by: 'popularity.desc' }),
-    discoverMedia('movie', { with_watch_monetization_types: 'rent', watch_region: region, sort_by: 'popularity.desc' }),
-    getCategoryMedia('/movie/now_playing', 1, region),
+    discoverMedia('movie', { region, watch_region: region, sort_by: 'popularity.desc' }).catch(() => ({ results: [], total_pages: 0, total_results: 0 })),
+    discoverMedia('tv', { region, watch_region: region, sort_by: 'popularity.desc' }).catch(() => ({ results: [], total_pages: 0, total_results: 0 })),
+    getCategoryMedia('/movie/popular', 1, region).catch(() => ({ results: [], total_pages: 0, total_results: 0 })),
+    discoverMedia('movie', { with_watch_monetization_types: 'flatrate', watch_region: region, sort_by: 'popularity.desc' }).catch(() => ({ results: [], total_pages: 0, total_results: 0 })),
+    discoverMedia('movie', { with_watch_monetization_types: 'rent', watch_region: region, sort_by: 'popularity.desc' }).catch(() => ({ results: [], total_pages: 0, total_results: 0 })),
+    getCategoryMedia('/movie/now_playing', 1, region).catch(() => ({ results: [], total_pages: 0, total_results: 0 })),
   ]);
 
   // Fetch free content with strict 15-item quota loops, localized to current region
   const [strictlyFreeMovies, strictlyFreeShows] = await Promise.all([
-    fetchStrictlyFreeQuota('movie', 1, 15, region),
-    fetchStrictlyFreeQuota('tv', 1, 15, region),
+    fetchStrictlyFreeQuota('movie', 1, 15, region).catch(() => []),
+    fetchStrictlyFreeQuota('tv', 1, 15, region).catch(() => []),
   ]);
 
   // RT Fallback & Dynamic OMDb Injector Helper
