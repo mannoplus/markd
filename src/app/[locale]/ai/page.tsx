@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Sparkles, Send, Bot, User, Loader2, ArrowRight, Clock, Eye, ExternalLink, Check, CheckCircle2 } from 'lucide-react';
+import { Send, User, ArrowRight, Clock, Eye, ExternalLink, Check, CheckCircle2 } from 'lucide-react';
+import { MarkdLogoIcon } from '@/components/MarkdLogoIcon';
+import { AiMarkdownMessage } from '@/components/AiMarkdownMessage';
 import { useTranslations, useLocale } from 'next-intl';
 import Image from 'next/image';
 import { Link } from '@/i18n/routing';
@@ -152,7 +154,7 @@ export default function AiCompanionPage() {
         {/* Header */}
         <div className="text-center space-y-2 border-b border-border/30 pb-6">
           <div className="inline-flex items-center gap-2 rounded-full bg-accent/15 px-3.5 py-1 text-xs font-black uppercase text-accent border border-accent/25 tracking-wider">
-            <Sparkles className="h-3.5 w-3.5 animate-pulse" />
+            <MarkdLogoIcon className="h-3.5 w-3.5 animate-pulse" />
             <span>{tCommon('brandName')} {tChat('assistantName')}</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
@@ -194,18 +196,18 @@ export default function AiCompanionPage() {
               <div className={`flex gap-3.5 ${m.role === 'user' ? 'justify-end' : 'justify-start'} w-full`}>
                 {m.role === 'assistant' && (
                   <div className="h-8 w-8 rounded-xl bg-accent/20 border border-accent/30 flex items-center justify-center text-accent shrink-0 mt-0.5 shadow-sm">
-                    <Bot className="h-4 w-4" />
+                    <MarkdLogoIcon className="h-4 w-4" />
                   </div>
                 )}
 
                 <div
-                  className={`max-w-[85%] sm:max-w-[80%] rounded-2xl px-5 py-3.5 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap ${
+                  className={`max-w-[85%] sm:max-w-[80%] rounded-2xl px-5 py-3.5 text-xs sm:text-sm leading-relaxed shadow-md ${
                     m.role === 'user'
                       ? 'bg-accent text-background font-medium shadow-lg'
-                      : 'bg-background-elevated/90 text-foreground border border-border/30 shadow-md'
+                      : 'bg-background-elevated/90 text-foreground border border-border/30 backdrop-blur-sm'
                   }`}
                 >
-                  {m.content}
+                  <AiMarkdownMessage content={m.content} role={m.role} />
                 </div>
 
                 {m.role === 'user' && (
@@ -303,13 +305,21 @@ export default function AiCompanionPage() {
           ))}
 
           {isLoading && (
-            <div className="flex gap-3.5 justify-start">
+            <div 
+              role="status"
+              aria-live="polite"
+              className="flex gap-3.5 justify-start animate-in fade-in duration-200"
+            >
               <div className="h-8 w-8 rounded-xl bg-accent/20 border border-accent/30 flex items-center justify-center text-accent shrink-0">
-                <Bot className="h-4 w-4" />
+                <MarkdLogoIcon className="h-4 w-4 animate-pulse" />
               </div>
-              <div className="rounded-2xl bg-background-elevated/90 px-4 py-3 border border-border/30 flex items-center gap-2 text-xs text-foreground-muted">
-                <Loader2 className="h-3.5 w-3.5 text-accent animate-spin" />
+              <div className="rounded-2xl bg-background-elevated/90 px-4 py-3 border border-border/30 flex items-center gap-2.5 text-xs font-semibold text-foreground/90 shadow-md">
                 <span>{t('aiThinking')}</span>
+                <span className="flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-accent/80 animate-bounce [animation-delay:-0.3s]" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-accent/80 animate-bounce [animation-delay:-0.15s]" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-accent/80 animate-bounce" />
+                </span>
               </div>
             </div>
           )}

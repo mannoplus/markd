@@ -44,7 +44,7 @@
         "library": "影劇收藏庫",
         "wrapped": "年度回顧",
         "profile": "個人檔案",
-        "aiCompanion": "影劇 AI 助手",
+        "aiCompanion": "MARKD 影劇助手",
         "signIn": "登入",
         "movies": "電影",
         "tvShows": "電視節目",
@@ -208,7 +208,7 @@
         "close": "結束回顧"
     },
     "AiCompanion": {
-        "title": "影劇 AI 專屬助手",
+        "title": "MARKD 影劇 AI 助手",
         "subtitle": "基於您的個人品味模型展開自然對話，發現下一部命中註定的好片。",
         "inputPlaceholder": "輸入您的觀影偏好、情節元素或心情（例如：「推薦一部兩小時內、視覺驚艷的憂鬱科幻片」）...",
         "matchConfidence": "品味契合度",
@@ -223,8 +223,8 @@
         "playTrailer": "觀看預告片",
         "welcomeMessage": "您好！我是您的 MARKD 影劇 AI 專屬助手。您可以告訴我您今晚的心情、喜歡的特定情節元素，或是想找類似某部電影的作品，我會為您推薦最契合品味的好片。",
         "recommendedPromptsHeading": "✨ 熱門推薦探索靈感",
-        "aiThinking": "AI 正在為您搜尋最佳光影匹配...",
-        "aiServiceBusy": "AI 助手連線忙碌中，請稍候重試。",
+        "aiThinking": "MARKD 正在思考中…",
+        "aiServiceBusy": "MARKD 助手連線忙碌中，請稍候重試。",
         "unableToGenerate": "暫時無法取得推薦，請重試。"
     },
     "LibraryViews": {
@@ -665,9 +665,9 @@
         "contextSuggestion2": "推薦幾部氛圍與風格相近的作品",
         "contextSuggestion3": "請解析結局的意涵與隱喻",
         "contextSuggestion4": "這部作品的導演還有哪些代表作？",
-        "assistantName": "Cinema AI",
-        "loading": "Cinema AI 正在為您構思…",
-        "failedRequest": "暫時無法連線至 Cinema AI，請稍後再試。",
+        "assistantName": "MARKD",
+        "loading": "MARKD 正在為您構思…",
+        "failedRequest": "暫時無法連線至 MARKD，請稍後再試。",
         "sendButton": "發送訊息",
         "matchScore": "{score}% 契合",
         "whyItMatches": "推薦契合原因",

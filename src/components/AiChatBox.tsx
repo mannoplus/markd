@@ -5,9 +5,11 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { 
-    Sparkles, X, Send, Trash2, Minimize2, Loader2, Plus, Check, Clock, Eye, 
+    X, Send, Trash2, Minimize2, Plus, Check, Clock, Eye, 
     ExternalLink, ThumbsDown, SlidersHorizontal, CheckCircle2
 } from 'lucide-react';
+import { MarkdLogoIcon } from '@/components/MarkdLogoIcon';
+import { AiMarkdownMessage } from '@/components/AiMarkdownMessage';
 import { Link } from '@/i18n/routing';
 import { upsertMediaItem, submitTasteFeedbackAction } from '@/app/actions';
 import { IMAGE_SIZES } from '@/lib/tmdb';
@@ -235,11 +237,11 @@ export function AiChatBox({
         return (
             <button
                 onClick={() => setIsMinimized(false)}
-                className="fixed bottom-6 right-6 z-50 p-4 rounded-full bg-accent text-background hover:bg-accent-hover shadow-2xl hover:shadow-accent/40 active:scale-95 transition-all flex items-center justify-center cursor-pointer border border-accent/30 shadow-[0_0_20px_rgba(20,240,240,0.35)]"
+                className="fixed bottom-6 right-6 z-50 p-3.5 rounded-full bg-accent text-background hover:bg-accent-hover shadow-2xl hover:shadow-accent/40 active:scale-95 transition-all flex items-center justify-center cursor-pointer border border-accent/30 shadow-[0_0_20px_rgba(255,255,255,0.25)]"
                 title={t('restore')}
                 aria-label={t('restore')}
             >
-                <Sparkles className="h-6 w-6 animate-pulse" />
+                <MarkdLogoIcon className="h-5 w-5 animate-pulse" />
                 {messages.length > 0 && (
                     <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white rounded-full text-[10px] font-black flex items-center justify-center border border-[#07070a]">
                         {messages.length}
@@ -275,7 +277,7 @@ export function AiChatBox({
             <div className="px-5 py-3.5 border-b border-border/20 bg-background-elevated/40 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                     <div className="h-7 w-7 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center text-accent">
-                        <Sparkles className="h-4 w-4 animate-pulse" />
+                        <MarkdLogoIcon className="h-4 w-4 animate-pulse" />
                     </div>
                     <div>
                         <h2 id="ai-chat-title" className="text-sm font-extrabold tracking-wide text-foreground">
@@ -323,7 +325,7 @@ export function AiChatBox({
                 {messages.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-4 my-auto">
                         <div className="h-16 w-16 rounded-3xl bg-accent/10 border border-accent/25 flex items-center justify-center text-accent shadow-xl">
-                            <Sparkles className="h-8 w-8 animate-pulse" />
+                            <MarkdLogoIcon className="h-8 w-8 animate-pulse" />
                         </div>
                         <div className="space-y-1 max-w-xs">
                             <h3 className="text-base font-extrabold text-foreground">
@@ -343,7 +345,7 @@ export function AiChatBox({
                                     className="w-full text-left px-3.5 py-2.5 rounded-2xl bg-background-elevated/60 hover:bg-accent/15 border border-border/30 hover:border-accent/40 text-xs text-foreground-muted hover:text-foreground transition-all cursor-pointer shadow-sm group flex items-center justify-between"
                                 >
                                     <span className="truncate">{prompt}</span>
-                                    <Sparkles className="h-3 w-3 text-accent/60 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-1.5" />
+                                    <MarkdLogoIcon className="h-3 w-3 text-accent/60 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-1.5" />
                                 </button>
                             ))}
                         </div>
@@ -360,13 +362,13 @@ export function AiChatBox({
                             
                             {/* Message Text Bubble */}
                             <div 
-                                className={`rounded-2xl px-4 py-3 text-xs leading-relaxed max-w-[90%] whitespace-pre-wrap border shadow-md ${
+                                className={`rounded-2xl px-4.5 py-3.5 text-xs leading-relaxed max-w-[92%] border shadow-md transition-all ${
                                     m.role === 'user' 
                                         ? 'bg-accent/15 border-accent/30 text-foreground font-medium' 
-                                        : 'bg-background-elevated/70 border-border/30 text-foreground-muted/95'
+                                        : 'bg-background-elevated/80 border-border/30 text-foreground/90 backdrop-blur-sm'
                                 }`}
                             >
-                                {m.content}
+                                <AiMarkdownMessage content={m.content} role={m.role} />
                             </div>
 
                             {/* Structured Recommendation Cards */}
@@ -481,9 +483,22 @@ export function AiChatBox({
                 )}
 
                 {isLoading && (
-                    <div className="flex items-center gap-2 text-xs text-foreground-muted p-2 rounded-2xl bg-background-elevated/40 w-fit">
-                        <Loader2 className="h-3.5 w-3.5 animate-spin text-accent" />
-                        <span>{t('loading')}</span>
+                    <div 
+                        role="status"
+                        aria-live="polite"
+                        className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl bg-background-elevated/80 border border-border/40 w-fit shadow-md animate-in fade-in duration-200"
+                    >
+                        <div className="h-5 w-5 rounded-lg bg-accent/15 border border-accent/30 flex items-center justify-center text-accent shrink-0">
+                            <MarkdLogoIcon className="h-3 w-3 animate-pulse" />
+                        </div>
+                        <span className="text-xs font-semibold text-foreground/90 tracking-wide">
+                            {t('loading')}
+                        </span>
+                        <span className="flex items-center gap-1 ml-0.5">
+                            <span className="h-1.5 w-1.5 rounded-full bg-accent/80 animate-bounce [animation-delay:-0.3s]" />
+                            <span className="h-1.5 w-1.5 rounded-full bg-accent/80 animate-bounce [animation-delay:-0.15s]" />
+                            <span className="h-1.5 w-1.5 rounded-full bg-accent/80 animate-bounce" />
+                        </span>
                     </div>
                 )}
 

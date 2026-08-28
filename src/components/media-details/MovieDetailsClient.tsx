@@ -7,8 +7,9 @@ import Image from 'next/image';
 import { 
     Star, Clock, Calendar, Film, Heart, Bookmark, Globe, 
     Loader2, Play, Plus, Trash2, ArrowUp,
-    Facebook, Instagram, Twitter, Sparkles
+    Facebook, Instagram, Twitter
 } from 'lucide-react';
+import { MarkdLogoIcon } from '@/components/MarkdLogoIcon';
 import { Link } from '@/i18n/routing';
 import { useRegion } from '@/context/RegionContext';
 import { AiChatBox } from '@/components/AiChatBox';
@@ -714,9 +715,9 @@ export function MovieDetailsClient({ initialMovie, initialUserItem }: MovieDetai
                                     <button
                                         onClick={() => setIsAiChatOpen(true)}
                                         data-ai-trigger="true"
-                                        className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-accent/15 border border-accent/30 font-extrabold text-xs tracking-wider h-8 hover:bg-accent/25 hover:border-accent hover:shadow-[0_0_12px_rgba(20,240,240,0.35)] transition-all cursor-pointer text-accent"
+                                        className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-accent/15 border border-accent/30 font-extrabold text-xs tracking-wider h-8 hover:bg-accent/25 hover:border-accent hover:shadow-[0_0_12px_rgba(255,255,255,0.25)] transition-all cursor-pointer text-accent"
                                     >
-                                        <Sparkles className="h-3.5 w-3.5 animate-pulse" />
+                                        <MarkdLogoIcon className="h-3.5 w-3.5 animate-pulse" />
                                         <span>{t('askAi')}</span>
                                     </button>
                                 </div>

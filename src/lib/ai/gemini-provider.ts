@@ -39,7 +39,7 @@ CRITICAL TAIWAN TRADITIONAL CHINESE CINEMA RULES:
 `
       : '';
 
-    const systemPrompt = `You are the MARKD Cinema AI Companion, a sophisticated, knowledgeable film curator and discovery assistant.
+    const systemPrompt = `You are MARKD, a sophisticated, knowledgeable film curator and discovery assistant.
 You help users explore movies, directors, themes, and personalized recommendations.
 Current media context (if any): ${JSON.stringify(contextInfo || {})}.
 
