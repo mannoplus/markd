@@ -10,7 +10,7 @@ export function Footer() {
     const t = useTranslations('Footer');
     const pathname = usePathname();
 
-    if (pathname?.includes('/onboarding')) {
+    if (pathname?.includes('/onboarding') || pathname?.includes('/login')) {
         return null;
     }
 

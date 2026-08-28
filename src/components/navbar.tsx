@@ -139,7 +139,7 @@ export function Navbar() {
         }
     };
 
-    if (pathname?.includes('/onboarding')) {
+    if (pathname?.includes('/onboarding') || pathname?.includes('/login')) {
         return null;
     }
 
