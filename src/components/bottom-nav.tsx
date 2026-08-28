@@ -10,6 +10,10 @@ export function BottomNav() {
     const tAccessibility = useTranslations('Accessibility');
     const pathname = usePathname();
 
+    if (pathname?.includes('/onboarding')) {
+        return null;
+    }
+
     const NAV_LINKS = [
         { href: '/', activePath: '/', exact: true, label: t('home') || 'Home', icon: Home },
         { href: '/movies?category=popular', activePath: '/movies', label: t('movies'), icon: Film },

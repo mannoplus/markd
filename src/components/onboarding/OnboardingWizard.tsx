@@ -16,20 +16,7 @@ import type {
   FavoriteTitleItem,
 } from '@/lib/onboarding/types';
 
-interface Genre {
-  id: number;
-  name: string;
-}
-
-interface OnboardingWizardProps {
-  movieGenres: Genre[];
-  tvGenres: Genre[];
-}
-
-export function OnboardingWizard({
-  movieGenres,
-  tvGenres,
-}: OnboardingWizardProps) {
+export function OnboardingWizard() {
   const t = useTranslations('Onboarding');
   const router = useRouter();
 
@@ -61,8 +48,8 @@ export function OnboardingWizard({
     });
   };
 
-  // Genre handlers
-  const handleToggleMovieGenre = (id: number, name: string) => {
+  // Genre toggle handler
+  const handleToggleGenre = (id: number, name: string) => {
     updateState((prev) => {
       const isSelected = prev.genres.movie.includes(id);
       const nextIds = isSelected
@@ -74,26 +61,8 @@ export function OnboardingWizard({
 
       return {
         ...prev,
-        genres: { ...prev.genres, movie: nextIds },
-        genreNames: { ...prev.genreNames, movie: nextNames, tv: prev.genreNames?.tv || [] },
-      };
-    });
-  };
-
-  const handleToggleTvGenre = (id: number, name: string) => {
-    updateState((prev) => {
-      const isSelected = prev.genres.tv.includes(id);
-      const nextIds = isSelected
-        ? prev.genres.tv.filter((gId) => gId !== id)
-        : [...prev.genres.tv, id];
-      const nextNames = isSelected
-        ? (prev.genreNames?.tv || []).filter((gName) => gName !== name)
-        : [...(prev.genreNames?.tv || []), name];
-
-      return {
-        ...prev,
-        genres: { ...prev.genres, tv: nextIds },
-        genreNames: { ...prev.genreNames, tv: nextNames, movie: prev.genreNames?.movie || [] },
+        genres: { movie: nextIds, tv: [] },
+        genreNames: { movie: nextNames, tv: [] },
       };
     });
   };
@@ -128,8 +97,7 @@ export function OnboardingWizard({
   };
 
   // Validation per step
-  const isStep1Valid =
-    state.genres.movie.length >= 3 && state.genres.tv.length >= 3;
+  const isStep1Valid = state.genres.movie.length >= 3;
   const isStep2Valid = state.favoriteTitles.length >= 3;
   const isStep3Valid = state.tasteAnswers.length >= 4;
 
@@ -146,7 +114,7 @@ export function OnboardingWizard({
       updateState((prev) => ({ ...prev, currentStep: prev.currentStep + 1 }));
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
-      // Step 3 finished -> route to login page
+      // Step 3 finished -> route to login page to merge preferences
       router.push('/login');
     }
   };
@@ -160,173 +128,151 @@ export function OnboardingWizard({
 
   if (!isLoaded) {
     return (
-      <div className="min-h-[500px] flex items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+      <div className="h-screen w-full bg-black flex items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-white border-t-transparent" />
       </div>
     );
   }
 
   const getStepBadge = () => {
     switch (state.currentStep) {
-      case 1:
-        return t('step1Badge');
-      case 2:
-        return t('step2Badge');
-      case 3:
-        return t('step3Badge');
-      default:
-        return '';
+      case 1: return t('step1Badge') || 'Step 1: Genres';
+      case 2: return t('step2Badge') || 'Step 2: Favorite Titles';
+      case 3: return t('step3Badge') || 'Step 3: Taste DNA';
+      default: return '';
     }
   };
 
   const getStepTitle = () => {
     switch (state.currentStep) {
-      case 1:
-        return t('step1Title');
-      case 2:
-        return t('step2Title');
-      case 3:
-        return t('step3Title');
-      default:
-        return '';
+      case 1: return t('step1Title') || 'What moves you?';
+      case 2: return t('step2Title') || 'Anchor your taste.';
+      case 3: return t('step3Title') || 'Define your Taste DNA.';
+      default: return '';
     }
   };
 
   const getStepSubtitle = () => {
     switch (state.currentStep) {
-      case 1:
-        return t('step1Subtitle');
-      case 2:
-        return t('step2Subtitle');
-      case 3:
-        return t('step3Subtitle');
-      default:
-        return '';
+      case 1: return t('step1Subtitle') || "Select the genres that define your tastes. We'll tailor your experience from here.";
+      case 2: return t('step2Subtitle') || 'Pick at least 3 movies or shows you love to jumpstart your recommendations.';
+      case 3: return t('step3Subtitle') || 'The final layer. Tell us about the vibes and storytelling styles that keep you watching.';
+      default: return '';
     }
   };
 
   const progressPercent = ((state.currentStep - 1) / 3) * 100 + (canProceed ? 33.33 : 15);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-3 duration-500 pb-16">
-      {/* Progress Bar & Counter */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between text-xs font-black uppercase tracking-wider text-foreground-muted">
-          <span>{t('stepCounter', { current: state.currentStep, total: 3 })}</span>
-          <span>{Math.min(100, Math.round(progressPercent))}%</span>
+    <div className="min-h-screen bg-[#000000] text-white flex flex-col justify-between relative overflow-x-hidden selection:bg-white selection:text-black font-sans">
+      {/* Fixed Top Progress Bar */}
+      <div className="fixed top-0 left-0 right-0 h-1 bg-white/10 z-50">
+        <div
+          className="h-full bg-white transition-all duration-700 ease-out"
+          style={{ width: `${progressPercent}%` }}
+        />
+      </div>
+
+      {/* Main Scrollable Canvas */}
+      <main className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16 max-w-5xl space-y-10">
+        {/* Header Block */}
+        <header className="space-y-3 max-w-2xl">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest bg-white/10 text-white border border-white/15">
+            <span>{getStepBadge()}</span>
+          </div>
+
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-[1.1]">
+            {getStepTitle()}
+          </h1>
+
+          <p className="text-sm md:text-base text-white/60 font-normal leading-relaxed">
+            {getStepSubtitle()}
+          </p>
+        </header>
+
+        {/* Step Body */}
+        <div className="pb-8">
+          {state.currentStep === 1 && (
+            <StepGenres
+              selectedGenres={state.genres.movie}
+              onToggleGenre={handleToggleGenre}
+            />
+          )}
+
+          {state.currentStep === 2 && (
+            <StepTitles
+              selectedGenres={state.genres.movie}
+              favoriteTitles={state.favoriteTitles}
+              onToggleTitle={handleToggleTitle}
+              onRemoveTitle={handleRemoveTitle}
+            />
+          )}
+
+          {state.currentStep === 3 && (
+            <StepTasteQuestions
+              answers={state.tasteAnswers}
+              onSelectAnswer={handleSelectTasteAnswer}
+            />
+          )}
         </div>
+      </main>
 
-        <div className="h-2 w-full bg-background-elevated rounded-full overflow-hidden border border-border/40">
-          <div
-            className="h-full bg-gradient-to-r from-accent/80 to-accent transition-all duration-500 rounded-full"
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-      </div>
+      {/* Fixed/Sticky Bottom Action Bar */}
+      <footer className="sticky bottom-0 left-0 right-0 bg-black/85 backdrop-blur-xl border-t border-white/10 py-4 px-4 sm:px-8 z-40">
+        <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
+          {/* Back button */}
+          <div>
+            {state.currentStep > 1 ? (
+              <button
+                type="button"
+                onClick={handleBack}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/20 bg-white/5 text-xs font-bold text-white hover:bg-white/10 transition-all cursor-pointer"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <span>{t('back') || 'Back'}</span>
+              </button>
+            ) : (
+              <div />
+            )}
+          </div>
 
-      {/* Header Container */}
-      <div className="space-y-2 text-center sm:text-left">
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-accent/15 text-accent border border-accent/25">
-          {getStepBadge()}
-        </span>
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight">
-          {getStepTitle()}
-        </h1>
-        <p className="text-sm sm:text-base text-foreground-muted max-w-2xl">
-          {getStepSubtitle()}
-        </p>
-      </div>
+          {/* Center/Right Status & Continue Button */}
+          <div className="flex items-center gap-4">
+            {!canProceed && (
+              <span className="hidden sm:inline text-xs font-semibold text-white/50">
+                {state.currentStep === 1 &&
+                  (t('genreMinRequirement', { min: 3, count: state.genres.movie.length }) || `Select at least 3 genres (${state.genres.movie.length}/3)`)}
+                {state.currentStep === 2 &&
+                  (t('pickMinRequirement', { min: 3, count: state.favoriteTitles.length }) || `Pick at least 3 titles (${state.favoriteTitles.length}/3)`)}
+                {state.currentStep === 3 && (t('answerAllRequirement') || 'Please answer all 4 questions')}
+              </span>
+            )}
 
-      {/* Step Body */}
-      <div className="pt-2">
-        {state.currentStep === 1 && (
-          <StepGenres
-            movieGenres={movieGenres}
-            tvGenres={tvGenres}
-            selectedMovieGenres={state.genres.movie}
-            selectedTvGenres={state.genres.tv}
-            onToggleMovieGenre={handleToggleMovieGenre}
-            onToggleTvGenre={handleToggleTvGenre}
-          />
-        )}
-
-        {state.currentStep === 2 && (
-          <StepTitles
-            favoriteTitles={state.favoriteTitles}
-            onToggleTitle={handleToggleTitle}
-            onRemoveTitle={handleRemoveTitle}
-          />
-        )}
-
-        {state.currentStep === 3 && (
-          <StepTasteQuestions
-            answers={state.tasteAnswers}
-            onSelectAnswer={handleSelectTasteAnswer}
-          />
-        )}
-      </div>
-
-      {/* Navigation Footer */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-border/40">
-        {/* Back Button */}
-        <div>
-          {state.currentStep > 1 ? (
             <button
               type="button"
-              onClick={handleBack}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-border/50 bg-background-elevated text-xs font-bold text-foreground hover:bg-background-highlight transition-all cursor-pointer"
+              onClick={handleNext}
+              disabled={!canProceed}
+              className={`inline-flex items-center justify-center gap-2 px-7 py-3 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer ${
+                canProceed
+                  ? 'bg-white text-black shadow-lg shadow-white/10 hover:bg-white/90 active:scale-[0.98]'
+                  : 'bg-white/10 text-white/30 border border-white/5 cursor-not-allowed'
+              }`}
             >
-              <ArrowLeft className="h-4 w-4" />
-              <span>{t('back')}</span>
+              {state.currentStep === 3 ? (
+                <>
+                  <CheckCircle2 className="h-4 w-4 stroke-[2.5]" />
+                  <span>{t('completeAndSignIn') || 'Save Taste Profile & Sign In'}</span>
+                </>
+              ) : (
+                <>
+                  <span>{t('continue') || 'Continue'}</span>
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              )}
             </button>
-          ) : (
-            <div />
-          )}
+          </div>
         </div>
-
-        {/* Validation Helper Hint & Next Button */}
-        <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
-          {!canProceed && (
-            <span className="text-xs font-medium text-amber-400/90 text-center sm:text-right">
-              {state.currentStep === 1 &&
-                t('genreMinRequirement', {
-                  min: 3,
-                  movieCount: state.genres.movie.length,
-                  tvCount: state.genres.tv.length,
-                })}
-              {state.currentStep === 2 &&
-                t('pickMinRequirement', {
-                  min: 3,
-                  count: state.favoriteTitles.length,
-                })}
-              {state.currentStep === 3 && t('answerAllRequirement')}
-            </span>
-          )}
-
-          <button
-            type="button"
-            onClick={handleNext}
-            disabled={!canProceed}
-            className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3 rounded-xl text-sm font-extrabold transition-all cursor-pointer ${
-              canProceed
-                ? 'bg-accent text-background shadow-lg shadow-accent/25 hover:bg-accent/90 hover:shadow-accent/40 active:scale-[0.98]'
-                : 'bg-background-elevated text-foreground-muted/50 border border-border/40 cursor-not-allowed opacity-60'
-            }`}
-          >
-            {state.currentStep === 3 ? (
-              <>
-                <CheckCircle2 className="h-4 w-4 stroke-[2.5]" />
-                <span>{t('completeAndSignIn')}</span>
-              </>
-            ) : (
-              <>
-                <span>{t('continue')}</span>
-                <ArrowRight className="h-4 w-4" />
-              </>
-            )}
-          </button>
-        </div>
-      </div>
+      </footer>
     </div>
   );
 }

@@ -14,15 +14,9 @@ export default async function OnboardingPage() {
     redirect('/dashboard');
   }
 
-  // Fetch initial genre lists for Step 1
-  const [movieGenres, tvGenres] = await Promise.all([
-    getGenresList('movie').catch(() => []),
-    getGenresList('tv').catch(() => []),
-  ]);
-
   return (
-    <div className="min-h-screen pt-24 pb-20 px-4 sm:px-6 max-w-7xl mx-auto">
-      <OnboardingWizard movieGenres={movieGenres} tvGenres={tvGenres} />
+    <div className="min-h-screen bg-black">
+      <OnboardingWizard />
     </div>
   );
 }

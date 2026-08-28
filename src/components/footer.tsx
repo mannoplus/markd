@@ -1,10 +1,18 @@
+'use client';
+
 import { Github } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { useTranslations } from 'next-intl';
 import { AboutModal } from '@/components/about-modal';
+import { usePathname } from 'next/navigation';
 
 export function Footer() {
     const t = useTranslations('Footer');
+    const pathname = usePathname();
+
+    if (pathname?.includes('/onboarding')) {
+        return null;
+    }
 
     return (
         <footer className="border-t border-border bg-background-secondary pb-safe">

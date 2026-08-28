@@ -30,6 +30,10 @@ export function Navbar() {
     const navRef = useRef<HTMLElement>(null);
     const userMenuRef = useRef<HTMLDivElement>(null);
 
+    if (pathname?.includes('/onboarding')) {
+        return null;
+    }
+
     const NAV_ITEMS: NavItem[] = [
         {
             href: '/movies',

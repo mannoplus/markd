@@ -164,3 +164,115 @@ export async function mergeOnboardingPreferencesAction(state: OnboardingState): 
     };
   }
 }
+
+const CURATED_FALLBACK_TITLES = [
+  { id: 693134, title: 'Dune: Part Two', type: 'movie' as const, year: '2024', posterPath: '/1pdfLvkbY9ohJlCjQH2CZjjYVvJ.jpg', voteAverage: 8.2 },
+  { id: 872585, title: 'Oppenheimer', type: 'movie' as const, year: '2023', posterPath: '/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg', voteAverage: 8.1 },
+  { id: 569094, title: 'Spider-Man: Across the Spider-Verse', type: 'movie' as const, year: '2023', posterPath: '/8Vt6mWEReuy4Of61Lnj5Xj704m8.jpg', voteAverage: 8.4 },
+  { id: 157336, title: 'Interstellar', type: 'movie' as const, year: '2014', posterPath: '/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg', voteAverage: 8.4 },
+  { id: 27205, title: 'Inception', type: 'movie' as const, year: '2010', posterPath: '/oYuLEt3zVCKq57qu2F8dT7NIa6f.jpg', voteAverage: 8.4 },
+  { id: 155, title: 'The Dark Knight', type: 'movie' as const, year: '2008', posterPath: '/qJ2tW6WMUDux911r6m7haRef0WH.jpg', voteAverage: 8.5 },
+  { id: 496243, title: 'Parasite', type: 'movie' as const, year: '2019', posterPath: '/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg', voteAverage: 8.5 },
+  { id: 603692, title: 'John Wick: Chapter 4', type: 'movie' as const, year: '2023', posterPath: '/vZloFAK7NKnMGKEslbb5VSAvqSQ.jpg', voteAverage: 7.8 },
+  { id: 329865, title: 'Arrival', type: 'movie' as const, year: '2016', posterPath: '/x2OAH0j2CSuZ1p777b7gXw6Nis2.jpg', voteAverage: 7.9 },
+  { id: 545611, title: 'Everything Everywhere All at Once', type: 'movie' as const, year: '2022', posterPath: '/rKgvtzOI0ZzpxtCHm9n4L1v9z9K.jpg', voteAverage: 7.8 },
+  { id: 335984, title: 'Blade Runner 2049', type: 'movie' as const, year: '2017', posterPath: '/gajva2L0rPYkEWjzgFlBXCAVBE5.jpg', voteAverage: 8.0 },
+  { id: 1022789, title: 'Inside Out 2', type: 'movie' as const, year: '2024', posterPath: '/vpnVM9B6NMmQpWeZvzLvDESb2QY.jpg', voteAverage: 7.6 },
+];
+
+export async function getOnboardingRecommendationsAction(params: {
+  genreIds?: number[];
+  query?: string;
+  locale?: string;
+}): Promise<import('@/lib/onboarding/types').FavoriteTitleItem[]> {
+  const { genreIds = [], query, locale } = params;
+  const seenIds = new Set<number>();
+  const results: import('@/lib/onboarding/types').FavoriteTitleItem[] = [];
+
+  const { searchMultiWithPeople, discoverMedia } = await import('@/lib/tmdb');
+
+  // Case 1: Search query supplied by user
+  if (query && query.trim().length > 0) {
+    try {
+      const searchRes = await searchMultiWithPeople(query.trim(), 1);
+      for (const item of searchRes.results || []) {
+        if (!item.id || seenIds.has(item.id)) continue;
+        if (!item.poster_path) continue;
+        if (item.media_type !== 'movie' && item.media_type !== 'tv') continue;
+
+        seenIds.add(item.id);
+        results.push({
+          id: item.id,
+          title: item.title || item.name || '',
+          type: (item.media_type || 'movie') as 'movie' | 'tv',
+          year: (item.release_date || item.first_air_date || '').substring(0, 4),
+          posterPath: item.poster_path,
+          voteAverage: item.vote_average,
+        });
+
+        if (results.length >= 12) break;
+      }
+      return results;
+    } catch (e) {
+      console.error('Failed to search titles for onboarding:', e);
+    }
+  }
+
+  // Case 2: Dynamic discovery based on Step 1 selected genre IDs
+  if (genreIds.length > 0) {
+    try {
+      const genreString = genreIds.slice(0, 4).join('|');
+      const lang = locale === 'zh-TW' ? 'zh-TW' : 'en-US';
+
+      const [movieData, tvData] = await Promise.all([
+        discoverMedia('movie', {
+          with_genres: genreString,
+          sort_by: 'popularity.desc',
+          'vote_count.gte': '150',
+          language: lang,
+        }),
+        discoverMedia('tv', {
+          with_genres: genreString,
+          sort_by: 'popularity.desc',
+          'vote_count.gte': '100',
+          language: lang,
+        }),
+      ]);
+
+      // Interleave movies and tv shows matching the user's genre selection
+      const pool = [...(movieData.results || []), ...(tvData.results || [])];
+      // Sort by popularity / rating
+      pool.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+
+      for (const item of pool) {
+        if (!item.id || seenIds.has(item.id)) continue;
+        if (!item.poster_path) continue;
+
+        seenIds.add(item.id);
+        results.push({
+          id: item.id,
+          title: item.title || item.name || '',
+          type: (item.media_type || 'movie') as 'movie' | 'tv',
+          year: (item.release_date || item.first_air_date || '').substring(0, 4),
+          posterPath: item.poster_path,
+          voteAverage: item.vote_average,
+        });
+
+        if (results.length >= 12) break;
+      }
+    } catch (e) {
+      console.error('Failed to discover genre recommendations for onboarding:', e);
+    }
+  }
+
+  // Backfill if needed to ensure strictly 12 items with zero duplicates
+  for (const fallback of CURATED_FALLBACK_TITLES) {
+    if (results.length >= 12) break;
+    if (!seenIds.has(fallback.id)) {
+      seenIds.add(fallback.id);
+      results.push(fallback);
+    }
+  }
+
+  return results.slice(0, 12);
+}
