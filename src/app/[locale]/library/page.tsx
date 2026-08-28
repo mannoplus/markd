@@ -2,14 +2,15 @@ import { getUserMediaItems } from '@/app/actions';
 import { redirect } from 'next/navigation';
 import { LibraryTabs } from './library-tabs';
 import { ErrorState } from '@/components/empty-state';
-import { getTranslations } from 'next-intl/server';
+import { getTranslations, getLocale } from 'next-intl/server';
 
 export default async function LibraryPage() {
     const { data: items, error } = await getUserMediaItems();
     const t = await getTranslations('Library');
+    const locale = await getLocale();
 
     if (error === 'Not authenticated') {
-        redirect('/login');
+        redirect(`/${locale}/login`);
     }
 
     return (

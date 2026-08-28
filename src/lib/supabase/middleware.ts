@@ -48,13 +48,19 @@ export async function updateSession(request: NextRequest) {
 
     if (isProtected && !user) {
         const url = request.nextUrl.clone();
-        url.pathname = '/login'; // next-intl will handle prefixing the locale on the next request if needed
+        // Preserve the locale prefix in the redirect
+        const localeMatch = pathname.match(/^\/([a-z]{2}(?:-[A-Z]{2})?)(\/|$)/);
+        const locale = localeMatch?.[1] ?? 'en';
+        url.pathname = `/${locale}/login`;
         return NextResponse.redirect(url);
     }
 
     if (pathname.includes('/onboarding') && user) {
         const url = request.nextUrl.clone();
-        url.pathname = '/home';
+        // Preserve the locale prefix in the redirect
+        const localeMatch = pathname.match(/^\/([a-z]{2}(?:-[A-Z]{2})?)(\/|$)/);
+        const locale = localeMatch?.[1] ?? 'en';
+        url.pathname = `/${locale}/home`;
         return NextResponse.redirect(url);
     }
 

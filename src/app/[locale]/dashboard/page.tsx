@@ -11,7 +11,7 @@ export default async function DashboardPage() {
     const locale = await getLocale();
 
     if (error === 'Not authenticated') {
-        redirect('/login');
+        redirect(`/${locale}/login`);
     }
 
     const watching = items?.filter(i => i.status === 'watching') || [];

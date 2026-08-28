@@ -11,7 +11,7 @@ import {
     setOnboardingCompleted,
 } from '@/lib/onboarding/storage';
 import { mergeOnboardingPreferencesAction } from '@/app/actions/onboarding';
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 
 export default function LoginPage() {
     const t = useTranslations('Login');

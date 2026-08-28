@@ -285,7 +285,7 @@ export function Navbar() {
                                     <span>{t('profile')}</span>
                                 </Link>
                                 <Link
-                                    href="/home"
+                                    href="/dashboard"
                                     role="menuitem"
                                     onClick={() => setIsUserMenuOpen(false)}
                                     className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm text-foreground transition-colors hover:bg-background-elevated"
