@@ -7,6 +7,11 @@ import {
   clearOnboardingState,
   setOnboardingCompleted,
 } from '@/lib/onboarding/storage';
+import {
+  getShadowProfile,
+  hasShadowProfileData,
+  clearShadowProfile,
+} from '@/lib/onboarding/shadow';
 import { mergeOnboardingPreferencesAction } from '@/app/actions/onboarding';
 
 export function DashboardOnboardingSync() {
@@ -15,16 +20,19 @@ export function DashboardOnboardingSync() {
   useEffect(() => {
     async function syncPendingOnboarding() {
       const state = getOnboardingState();
+      const shadow = getShadowProfile();
       if (
         state.favoriteTitles.length > 0 ||
         state.genres.movie.length > 0 ||
-        state.tasteAnswers.length > 0
+        state.tasteAnswers.length > 0 ||
+        hasShadowProfileData(shadow)
       ) {
         try {
-          const res = await mergeOnboardingPreferencesAction(state);
+          const res = await mergeOnboardingPreferencesAction(state, shadow);
           if (res.success) {
             setOnboardingCompleted(true);
             clearOnboardingState();
+            clearShadowProfile();
             router.refresh();
           }
         } catch (e) {

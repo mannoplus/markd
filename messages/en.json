@@ -746,8 +746,6 @@
     },
     "Companion": {
         "companionTitle": "Cinema Companion",
-        "tonightsPicks": "Tonight's Picks for You",
-        "tonightsPicksSub": "Curated to match your taste profile and viewing habits",
         "becauseYouLoved": "Because You Loved {title}",
         "becauseYouLovedSub": "Sharing themes, mood, and creative DNA",
         "moodMatch": "Matching Tonight's Mood",

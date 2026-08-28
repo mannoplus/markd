@@ -7,11 +7,13 @@ import { ArrowLeft, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { StepGenres } from './StepGenres';
 import { StepTitles } from './StepTitles';
 import { StepTasteQuestions } from './StepTasteQuestions';
+import { ScrollToTop } from './ScrollToTop';
 import {
   getOnboardingState,
   saveOnboardingState,
   isOnboardingCompleted,
 } from '@/lib/onboarding/storage';
+import { updateShadowProfile } from '@/lib/onboarding/shadow';
 import type {
   OnboardingState,
   FavoriteTitleItem,
@@ -34,11 +36,9 @@ export function OnboardingWizard() {
     };
   });
 
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isLoaded] = useState(() => typeof window !== 'undefined');
 
   useEffect(() => {
-    setIsLoaded(true);
-
     // If onboarding was already completed (or bypassed via "Skip for now" on
     // the auth screen), the wizard must not be reachable — e.g. via the
     // browser/app Back button. Send the user straight to the home page.
@@ -67,6 +67,9 @@ export function OnboardingWizard() {
         ? (prev.genreNames?.movie || []).filter((gName) => gName !== name)
         : [...(prev.genreNames?.movie || []), name];
 
+      // Shadow profile: persist the full genre selection set on every toggle
+      updateShadowProfile({ genres: nextIds });
+
       return {
         ...prev,
         genres: { movie: nextIds, tv: [] },
@@ -82,21 +85,33 @@ export function OnboardingWizard() {
       const nextTitles = exists
         ? prev.favoriteTitles.filter((t) => t.id !== item.id)
         : [...prev.favoriteTitles, item];
+
+      // Shadow profile: liked titles are captured incrementally
+      updateShadowProfile({ likedTitles: nextTitles });
+
       return { ...prev, favoriteTitles: nextTitles };
     });
   };
 
   const handleRemoveTitle = (id: number) => {
-    updateState((prev) => ({
-      ...prev,
-      favoriteTitles: prev.favoriteTitles.filter((t) => t.id !== id),
-    }));
+    updateState((prev) => {
+      const nextTitles = prev.favoriteTitles.filter((t) => t.id !== id);
+
+      // Shadow profile: keep liked titles in sync with removals
+      updateShadowProfile({ likedTitles: nextTitles, dislikedTitles: prev.favoriteTitles.filter((t) => t.id === id) });
+
+      return { ...prev, favoriteTitles: nextTitles };
+    });
   };
 
   // Taste question handler
   const handleSelectTasteAnswer = (questionId: string, answerId: string) => {
     updateState((prev) => {
       const filtered = prev.tasteAnswers.filter((a) => a.questionId !== questionId);
+
+      // Shadow profile: each taste answer is captured incrementally
+      updateShadowProfile({ preferences: { [questionId]: answerId } });
+
       return {
         ...prev,
         tasteAnswers: [...filtered, { questionId, answerId }],
@@ -120,7 +135,7 @@ export function OnboardingWizard() {
     if (!canProceed) return;
     if (state.currentStep < 3) {
       updateState((prev) => ({ ...prev, currentStep: prev.currentStep + 1 }));
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      // Scroll reset handled by <ScrollToTop> at the wrapper level
     } else {
       // Step 3 finished -> route to login page to merge preferences
       router.push('/login');
@@ -130,7 +145,6 @@ export function OnboardingWizard() {
   const handleBack = () => {
     if (state.currentStep > 1) {
       updateState((prev) => ({ ...prev, currentStep: prev.currentStep - 1 }));
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -173,6 +187,9 @@ export function OnboardingWizard() {
 
   return (
     <div className="min-h-screen bg-[#000000] text-white flex flex-col justify-between relative overflow-x-hidden selection:bg-white selection:text-black font-sans">
+      {/* Instant scroll-to-top on every step change / back-forward nav */}
+      <ScrollToTop trigger={state.currentStep} />
+
       {/* Fixed Top Progress Bar */}
       <div className="fixed top-0 left-0 right-0 h-1 bg-white/10 z-50">
         <div

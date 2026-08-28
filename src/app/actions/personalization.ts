@@ -4,7 +4,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { calculateUserTasteProfile, calculateMatchScore, type UserTasteProfile, type MovieDnaTrait } from '@/lib/taste-engine';
 import { buildRecommendationReason, type StructuredReason } from '@/lib/personalization/reasons';
-import { discoverMedia, getCategoryMedia } from '@/lib/tmdb';
+import { discoverMedia } from '@/lib/tmdb';
 import type { InteractionSignal } from '@/lib/personalization/signals';
 
 export interface PersonalizedShelfItem {
@@ -30,7 +30,6 @@ export interface PersonalizedShelvesResult {
     totalTracked: number;
     avgRating: number;
   };
-  tonightsPicks: PersonalizedShelfItem[];
   becauseYouLoved?: {
     referenceTitle: string;
     items: PersonalizedShelfItem[];
@@ -181,8 +180,7 @@ export async function getPersonalizedHomeShelvesAction(
 
   // 2. Cold Start Flow (New or Low-Data Users)
   if (isColdStart) {
-    const [popularMovies, acclaimedSciFi, feelGoodDrama] = await Promise.all([
-      getCategoryMedia('/movie/popular', 1, region),
+    const [acclaimedSciFi, feelGoodDrama] = await Promise.all([
       discoverMedia('movie', { with_genres: '878,18', 'vote_count.gte': '500', sort_by: 'vote_average.desc', language: targetLang }),
       discoverMedia('movie', { with_genres: '35,18', 'vote_count.gte': '400', sort_by: 'vote_average.desc', language: targetLang }),
     ]);
@@ -207,7 +205,6 @@ export async function getPersonalizedHomeShelvesAction(
     return {
       isColdStart: true,
       activeMood: sessionMood,
-      tonightsPicks: formatCandidates(popularMovies?.results || []),
       starterCollections: [
         {
           titleKey: 'curatedStarter',
@@ -269,27 +266,7 @@ export async function getPersonalizedHomeShelvesAction(
 
   const allCandidates = Array.from(candidateMap.values());
 
-  // Rank Tonight's Picks
-  const tonightsPicks: PersonalizedShelfItem[] = allCandidates
-    .map((m) => {
-      const struct = buildRecommendationReason(m, profile, mediaItems, sessionMood, locale);
-      return {
-        id: m.id,
-        title: m.title || m.name,
-        posterPath: m.poster_path,
-        backdropPath: m.backdrop_path,
-        mediaType: (m.media_type || 'movie') as 'movie' | 'tv',
-        year: (m.release_date || m.first_air_date || '').substring(0, 4),
-        rating: m.vote_average,
-        matchScore: calculateMatchScore(m, profile),
-        reason: struct.text,
-        structuredReason: struct,
-      };
-    })
-    .sort((a, b) => b.matchScore - a.matchScore)
-    .slice(0, 10);
-
-  // Because You Loved [Favorite Title]
+  // Rank Because You Loved candidates
   let becauseYouLoved: PersonalizedShelvesResult['becauseYouLoved'] = undefined;
   const topFavorite = mediaItems.find((i) => (i.rating && i.rating >= 8) || i.status === 'completed');
 
@@ -365,7 +342,6 @@ export async function getPersonalizedHomeShelvesAction(
       totalTracked: mediaItems.length,
       avgRating: profile.avgRating,
     },
-    tonightsPicks,
     becauseYouLoved,
     watchlistGems: watchlistGems.length > 0 ? watchlistGems : undefined,
     rewatchCandidates: rewatchCandidates.length > 0 ? rewatchCandidates : undefined,

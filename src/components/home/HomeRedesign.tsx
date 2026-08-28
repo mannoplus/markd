@@ -420,15 +420,6 @@ export function HomeRedesign({
                         />
                     )}
 
-                    {shelves?.tonightsPicks && shelves.tonightsPicks.length > 0 && (
-                        <CompanionShelf
-                            title={tCompanion('tonightsPicks')}
-                            subtitle={tCompanion('tonightsPicksSub')}
-                            items={shelves.tonightsPicks}
-                            badgeText={tCompanion('companionTitle')}
-                        />
-                    )}
-
                     {shelves?.watchlistGems && (
                         <CompanionShelf
                             title={tCompanion('watchlistGems')}

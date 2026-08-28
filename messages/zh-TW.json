@@ -746,8 +746,6 @@
     },
     "Companion": {
         "companionTitle": "個人電影陪伴助手",
-        "tonightsPicks": "今晚為您精選",
-        "tonightsPicksSub": "根據您的個人品味基因與觀影足跡量身推薦",
         "becauseYouLoved": "因為您喜愛《{title}》",
         "becauseYouLovedSub": "延續相同的故事靈魂、氛圍與創作基因",
         "moodMatch": "契合今晚的心境",

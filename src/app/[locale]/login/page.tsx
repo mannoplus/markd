@@ -10,6 +10,11 @@ import {
     clearOnboardingState,
     setOnboardingCompleted,
 } from '@/lib/onboarding/storage';
+import {
+  getShadowProfile,
+  hasShadowProfileData,
+  clearShadowProfile,
+} from '@/lib/onboarding/shadow';
 import { mergeOnboardingPreferencesAction } from '@/app/actions/onboarding';
 
 export default function LoginPage() {
@@ -114,22 +119,27 @@ export default function LoginPage() {
         }
 
         // Server action succeeded — session cookie is now set
-        // If login/signup succeeds and we have pending onboarding preferences, merge them
+        // If login/signup succeeds and we have pending onboarding preferences
+        // or a shadow profile, merge them into the account (idempotent:
+        // local data is cleared only after a confirmed successful merge).
         const state = getOnboardingState();
+        const shadow = getShadowProfile();
         if (
-            state.favoriteTitles.length > 0 ||
-            state.genres.movie.length > 0 ||
-            state.tasteAnswers.length > 0
+          state.favoriteTitles.length > 0 ||
+          state.genres.movie.length > 0 ||
+          state.tasteAnswers.length > 0 ||
+          hasShadowProfileData(shadow)
         ) {
-            try {
-                await mergeOnboardingPreferencesAction(state);
-            } catch (e) {
-                console.warn('Failed to merge onboarding preferences on login:', e);
-            }
+          try {
+            await mergeOnboardingPreferencesAction(state, shadow);
+          } catch (e) {
+            console.warn('Failed to merge onboarding preferences on login:', e);
+          }
         }
 
         setOnboardingCompleted(true);
         clearOnboardingState();
+        clearShadowProfile();
         setPending(false);
         router.push('/');
     }

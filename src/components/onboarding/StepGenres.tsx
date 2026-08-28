@@ -3,6 +3,7 @@
 import React from 'react';
 import { useTranslations } from 'next-intl';
 import { Check } from 'lucide-react';
+import { useGenrePosters } from '@/lib/onboarding/genre-posters';
 
 export interface GenreItemConfig {
   id: number;
@@ -32,6 +33,13 @@ export const ONBOARDING_18_GENRES: GenreItemConfig[] = [
   { id: 37, nameKey: 'western', defaultName: 'Western', posterPath: '/7oWY8vdWW7TmTJb9ugMI0stgahY.jpg' },
 ];
 
+/**
+ * Genres whose static poster paths are broken/missing. For these, artwork is
+ * fetched dynamically from TMDB (most popular movie in the genre) and cached
+ * for 24h. All other genres keep their known-good static artwork.
+ */
+const DYNAMIC_POSTER_GENRE_IDS = [28, 27, 35, 99, 10752, 37];
+
 interface StepGenresProps {
   selectedGenres: number[];
   onToggleGenre: (id: number, name: string) => void;
@@ -42,6 +50,9 @@ export function StepGenres({
   onToggleGenre,
 }: StepGenresProps) {
   const t = useTranslations('Onboarding');
+  const { posters: dynamicPosters, loading: postersLoading } = useGenrePosters(
+    DYNAMIC_POSTER_GENRE_IDS
+  );
 
   return (
     <div className="space-y-6">
@@ -60,7 +71,12 @@ export function StepGenres({
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
         {ONBOARDING_18_GENRES.map((genre) => {
           const isSelected = selectedGenres.includes(genre.id);
-          const genreName = t(`genre_${genre.nameKey}` as any) || genre.defaultName;
+          const genreName = t(`genre_${genre.nameKey}` as Parameters<typeof t>[0]) || genre.defaultName;
+
+          const isDynamic = DYNAMIC_POSTER_GENRE_IDS.includes(genre.id);
+          const dynamicPoster = isDynamic ? dynamicPosters[genre.id] : undefined;
+          const posterPath = dynamicPoster || genre.posterPath;
+          const showShimmer = isDynamic && !dynamicPoster && postersLoading;
 
           return (
             <button
@@ -73,13 +89,22 @@ export function StepGenres({
                   : 'bg-white/5 border-white/10 hover:border-white/30 hover:bg-white/10'
               }`}
             >
-              {/* Background Poster Artwork */}
-              <div
-                className="absolute inset-0 bg-cover bg-center transition-all duration-500 opacity-40 group-hover:opacity-65 group-hover:scale-105"
-                style={{
-                  backgroundImage: `url('https://image.tmdb.org/t/p/w500${genre.posterPath}')`,
-                }}
-              />
+              {/* Background Poster Artwork — dynamic trending poster with
+                  static fallback; shimmer while fetching */}
+              {showShimmer ? (
+                <div
+                  className="absolute inset-0 bg-white/5 animate-pulse"
+                  role="status"
+                  aria-label={genreName}
+                />
+              ) : (
+                <div
+                  className="absolute inset-0 bg-cover bg-center transition-all duration-500 opacity-40 group-hover:opacity-65 group-hover:scale-105"
+                  style={{
+                    backgroundImage: `url('https://image.tmdb.org/t/p/w500${posterPath}')`,
+                  }}
+                />
+              )}
 
               {/* Gradient Scrim for text legibility */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent pointer-events-none" />

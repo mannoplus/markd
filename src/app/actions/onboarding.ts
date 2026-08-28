@@ -2,8 +2,157 @@
 
 import { createClient } from '@/lib/supabase/server';
 import type { OnboardingState } from '@/lib/onboarding/types';
+import type { ShadowProfile } from '@/lib/onboarding/shadow';
 
-export async function mergeOnboardingPreferencesAction(state: OnboardingState): Promise<{ success: boolean; error?: string }> {
+/** Server-side sanitization for shadow profile data (no PII, bounded sizes). */
+function sanitizeShadow(shadow: ShadowProfile): ShadowProfile {
+  const cleanTitles = (arr: unknown) =>
+    Array.isArray(arr)
+      ? (arr as ShadowProfile['likedTitles'])
+          .filter(
+            (t): t is NonNullable<ShadowProfile['likedTitles'][number]> =>
+              !!t &&
+              typeof t === 'object' &&
+              typeof t.id === 'number' &&
+              Number.isFinite(t.id) &&
+              typeof t.title === 'string'
+          )
+          .map((t) => ({
+            id: Math.trunc(t.id),
+            title: t.title.slice(0, 300),
+            type: t.type === 'tv' ? ('tv' as const) : ('movie' as const),
+            year: typeof t.year === 'string' ? t.year.slice(0, 10) : undefined,
+            posterPath: typeof t.posterPath === 'string' ? t.posterPath.slice(0, 300) : null,
+            voteAverage:
+              typeof t.voteAverage === 'number' && Number.isFinite(t.voteAverage)
+                ? t.voteAverage
+                : undefined,
+          }))
+          .slice(0, 100)
+      : [];
+
+  const cleanPrefs: Record<string, string> = {};
+  if (shadow.preferences && typeof shadow.preferences === 'object') {
+    for (const [k, v] of Object.entries(shadow.preferences as Record<string, unknown>).slice(0, 50)) {
+      if (typeof k === 'string' && k.length > 0 && k.length <= 100 && typeof v === 'string' && v.length <= 100) {
+        cleanPrefs[k] = v;
+      }
+    }
+  }
+
+  return {
+    genres: Array.isArray(shadow.genres)
+      ? shadow.genres
+          .filter((g) => typeof g === 'number' && Number.isFinite(g))
+          .map((g) => Math.trunc(g))
+          .slice(0, 50)
+      : [],
+    likedTitles: cleanTitles(shadow.likedTitles),
+    dislikedTitles: cleanTitles(shadow.dislikedTitles),
+    preferences: cleanPrefs,
+    lastUpdated: typeof shadow.lastUpdated === 'string' ? shadow.lastUpdated.slice(0, 40) : '',
+  };
+}
+
+/**
+ * Merge strategy: union of preference data. Explicit onboarding selections
+ * take precedence over shadow-profile data; within the shadow profile the
+ * most recent `lastUpdated` timestamp wins on conflicts.
+ */
+function mergeShadowIntoState(state: OnboardingState, shadow: ShadowProfile): OnboardingState {
+  // Union genres — explicit onboarding genre order (state) comes first.
+  const stateGenres = state.genres?.movie ?? [];
+  const mergedGenres = Array.from(new Set([...stateGenres, ...shadow.genres]));
+
+  // Union favorite titles by id — explicit selections overwrite shadow entries.
+  const titlesById = new Map<number, NonNullable<OnboardingState['favoriteTitles']>[number]>();
+  for (const t of shadow.likedTitles) {
+    titlesById.set(t.id, {
+      id: t.id,
+      title: t.title,
+      type: t.type,
+      year: t.year,
+      posterPath: t.posterPath,
+      voteAverage: t.voteAverage,
+    });
+  }
+  for (const t of state.favoriteTitles ?? []) titlesById.set(t.id, t);
+  const mergedTitles = Array.from(titlesById.values());
+
+  // Merge taste answers: explicit onboarding answers take precedence.
+  const answerByQuestion = new Map<string, string>();
+  for (const [questionId, answerId] of Object.entries(shadow.preferences)) {
+    answerByQuestion.set(questionId, answerId);
+  }
+  for (const a of state.tasteAnswers ?? []) answerByQuestion.set(a.questionId, a.answerId);
+  const mergedAnswers = Array.from(answerByQuestion.entries()).map(([questionId, answerId]) => ({
+    questionId,
+    answerId,
+  }));
+
+  // Only keep shadow genre names for genres that survived the merge.
+  const genreNamesById = new Map<number, string>();
+  const stateNames = state.genreNames?.movie ?? [];
+  stateGenres.forEach((id, i) => {
+    if (stateNames[i]) genreNamesById.set(id, stateNames[i]);
+  });
+
+  return {
+    genres: { movie: mergedGenres, tv: state.genres?.tv ?? [] },
+    genreNames: {
+      movie: mergedGenres.map((id) => genreNamesById.get(id) ?? String(id)),
+      tv: state.genreNames?.tv ?? [],
+    },
+    favoriteTitles: mergedTitles,
+    tasteAnswers: mergedAnswers,
+    currentStep: state.currentStep ?? 1,
+  };
+}
+
+/**
+ * Fetches a trending/popular poster for each requested genre (used by the
+ * onboarding genre-selection screen). Queries TMDB discover with
+ * `sort_by: popularity.desc` per genre and returns the first result that
+ * has poster artwork. One genre failing never breaks the others.
+ */
+export async function getTrendingGenrePostersAction(
+  genreIds: number[]
+): Promise<Record<number, string>> {
+  const posters: Record<number, string> = {};
+  if (!Array.isArray(genreIds) || genreIds.length === 0) return posters;
+
+  const { discoverMedia } = await import('@/lib/tmdb');
+
+  await Promise.all(
+    genreIds
+      .filter((id) => Number.isFinite(id))
+      .slice(0, 25)
+      .map(async (genreId) => {
+        try {
+          const res = await discoverMedia('movie', {
+            with_genres: String(Math.trunc(genreId)),
+            sort_by: 'popularity.desc',
+            'vote_count.gte': '100',
+            include_adult: 'false',
+          });
+          const top = (res.results || []).find((m) => m.poster_path);
+          if (top?.poster_path) {
+            posters[genreId] = top.poster_path;
+          }
+        } catch (e) {
+          // Isolated failure: this genre simply falls back to its static poster.
+          console.warn(`Failed to fetch trending poster for genre ${genreId}:`, e);
+        }
+      })
+  );
+
+  return posters;
+}
+
+export async function mergeOnboardingPreferencesAction(
+  rawState: OnboardingState,
+  shadow?: ShadowProfile | null
+): Promise<{ success: boolean; error?: string }> {
   try {
     const supabase = await createClient();
     const {
@@ -14,6 +163,13 @@ export async function mergeOnboardingPreferencesAction(state: OnboardingState): 
     if (authError || !user) {
       return { success: false, error: 'User is not authenticated' };
     }
+
+    // 0. Sanitize + merge the unauthenticated Shadow Profile (if any).
+    //    Merge strategy: explicit onboarding selections take precedence,
+    //    otherwise fall back to shadow data; arrays are unioned by id.
+    const state = shadow
+      ? mergeShadowIntoState(rawState, sanitizeShadow(shadow))
+      : rawState;
 
     // 1. Insert Favorite Titles as rated media_items
     if (state.favoriteTitles && state.favoriteTitles.length > 0) {
