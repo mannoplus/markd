@@ -11,7 +11,6 @@ import {
     setOnboardingCompleted,
 } from '@/lib/onboarding/storage';
 import { mergeOnboardingPreferencesAction } from '@/app/actions/onboarding';
-import { Link } from '@/i18n/routing';
 
 export default function LoginPage() {
     const t = useTranslations('Login');
@@ -350,12 +349,23 @@ export default function LoginPage() {
 
                 {/* Skip option */}
                 <div className="mt-12 text-center fade-in slide-in-from-bottom-4 duration-700">
-                    <Link 
-                        href="/"
+                    <button
+                        type="button"
+                        onClick={() => {
+                            // Bypass onboarding entirely: mark it completed so the
+                            // OnboardingGate on the home page doesn't bounce the user
+                            // back into the onboarding wizard.
+                            setOnboardingCompleted(true);
+                            // Keep the collected taste-profile state in localStorage so
+                            // DashboardOnboardingSync can still merge it after sign-in.
+                            // replace() (not push()) clears this auth screen from the
+                            // history stack, so "Back" can't return to onboarding/auth.
+                            router.replace('/');
+                        }}
                         className="text-sm font-semibold text-foreground-muted hover:text-foreground transition-colors uppercase tracking-widest pb-1 border-b border-transparent hover:border-foreground/30"
                     >
                         Skip for now
-                    </Link>
+                    </button>
                 </div>
             </div>
         </div>

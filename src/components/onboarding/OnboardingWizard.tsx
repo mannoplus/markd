@@ -10,6 +10,7 @@ import { StepTasteQuestions } from './StepTasteQuestions';
 import {
   getOnboardingState,
   saveOnboardingState,
+  isOnboardingCompleted,
 } from '@/lib/onboarding/storage';
 import type {
   OnboardingState,
@@ -37,7 +38,14 @@ export function OnboardingWizard() {
 
   useEffect(() => {
     setIsLoaded(true);
-  }, []);
+
+    // If onboarding was already completed (or bypassed via "Skip for now" on
+    // the auth screen), the wizard must not be reachable — e.g. via the
+    // browser/app Back button. Send the user straight to the home page.
+    if (isOnboardingCompleted()) {
+      router.replace('/');
+    }
+  }, [router]);
 
   // Synchronize state changes to localStorage
   const updateState = (updater: (prev: OnboardingState) => OnboardingState) => {
