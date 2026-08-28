@@ -192,46 +192,4 @@ export interface TMDBPersonCredit {
     department?: string;
 }
 
-// ---------- Box Office ----------
 
-export interface BoxOfficeMovie {
-    id: number;
-    rank: number;
-    title: string;
-    poster_path: string | null;
-    backdrop_path: string | null;
-    overview: string;
-    tagline: string;
-    release_date: string;
-    runtime: number;
-    vote_average: number;
-    vote_count: number;
-    revenue: number; // Total revenue
-    weeklyRevenue?: number; // Weekly revenue (last 7 days)
-    budget: number;
-    popularity: number;
-    genres: { id: number; name: string }[];
-    director: string | null;
-    cast: { id: number; name: string; character: string; profile_path: string | null }[];
-    omdbRtScore?: string;
-    rtStatus?: 'fresh' | 'rotten';
-    weekChange?: number; // Week-over-week change percentage
-    lastUpdated?: string; // ISO timestamp of when the data was last fetched
-}
-
-export interface BoxOfficeModalData extends BoxOfficeMovie {
-    production_companies: { id: number; name: string }[];
-    release_date_localized: Record<string, string>; // country_code -> date
-    rating_mpaa: string | null;
-    crew: { id: number; name: string; job: string; profile_path: string | null }[];
-    images: {
-        posters: { file_path: string }[];
-        backdrops: { file_path: string }[];
-    };
-    videos: { key: string; name: string; type: string; site: string }[];
-    omdb?: {
-        imdbRating?: string;
-        rottenTomatoes?: string;
-        metacritic?: string;
-    };
-}

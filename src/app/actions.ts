@@ -156,25 +156,6 @@ export async function searchMediaAction(query: string) {
     }
 }
 
-// ============================================================================
-// BOX OFFICE ACTIONS
-// ============================================================================
-
-export async function getBoxOfficeModalAction(movieId: number) {
-    const { getBoxOfficeModalDetails } = await import('@/lib/tmdb');
-    try {
-        const data = await getBoxOfficeModalDetails(movieId);
-        return data;
-    } catch (error) {
-        console.error('Error fetching box office modal details:', error);
-        return null;
-    }
-}
-
-// ============================================================================
-// CACHE / REVALIDATION ACTIONS
-// ============================================================================
-
 export async function revalidateHomeAction() {
     revalidatePath('/', 'layout');
     return { success: true };
