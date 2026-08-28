@@ -121,9 +121,9 @@ export function LibraryTabs({ items }: { items: LibraryItem[] }) {
     return (
         <div className="space-y-8">
             {/* Top Filter & View Mode Controls Bar */}
-            <div className="flex flex-col gap-4 border-b border-border/40 pb-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="space-y-6 border-b border-border/40 pb-6">
                 {/* Navigation Tabs */}
-                <div role="tablist" aria-label={t('title')} className="flex gap-1 overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
+                <div role="tablist" aria-label={t('title')} className="flex gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
                     {TABS.map((tab) => {
                         const isActive = activeTab === tab.value;
                         const Icon = tab.icon;
@@ -133,13 +133,13 @@ export function LibraryTabs({ items }: { items: LibraryItem[] }) {
                                 role="tab"
                                 aria-selected={isActive}
                                 onClick={() => setActiveTab(tab.value)}
-                                className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-bold transition-colors ${
+                                className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-4 py-2.5 text-xs font-bold transition-colors min-h-[44px] ${
                                     isActive
                                         ? 'border-foreground bg-foreground text-background'
                                         : 'border-border bg-background-elevated/60 text-foreground-muted hover:border-border-hover hover:text-foreground'
                                 }`}
                             >
-                                <Icon className="h-3.5 w-3.5" />
+                                <Icon className="h-4 w-4" />
                                 <span>{tab.label}</span>
                                 <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${isActive ? 'bg-background/15 text-background' : 'bg-background-highlight text-foreground-subtle'}`}>
                                     {tab.count}
@@ -151,28 +151,28 @@ export function LibraryTabs({ items }: { items: LibraryItem[] }) {
 
                 {/* Toolbar */}
                 {activeTab !== 'lists' && (
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-3">
                         {/* Search */}
                         <div className="relative">
-                            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-foreground-muted" />
+                            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground-muted" />
                             <input
                                 type="search"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder={tViews('search') || 'Search your library…'}
                                 aria-label={tViews('search') || 'Search your library'}
-                                className="w-44 rounded-lg border border-border bg-background-elevated py-2 pl-9 pr-3 text-xs text-foreground placeholder:text-foreground-subtle focus:border-border-active focus:outline-none sm:w-52"
+                                className="w-full min-h-[44px] rounded-lg border border-border bg-background-elevated py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-foreground-subtle focus:border-border-active focus:outline-none sm:w-64"
                             />
                         </div>
 
                         {/* Sort */}
                         <div className="relative">
-                            <ArrowUpDown className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-foreground-muted" />
+                            <ArrowUpDown className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground-muted" />
                             <select
                                 value={sortBy}
                                 onChange={(e) => setSortBy(e.target.value as SortOption)}
                                 aria-label={tViews('sortBy')}
-                                className="appearance-none rounded-lg border border-border bg-background-elevated py-2 pl-9 pr-8 text-xs font-semibold text-foreground focus:border-border-active focus:outline-none"
+                                className="appearance-none min-h-[44px] rounded-lg border border-border bg-background-elevated py-2.5 pl-10 pr-8 text-xs font-semibold text-foreground focus:border-border-active focus:outline-none"
                             >
                                 <option value="added_desc">{tViews('sortAddedDesc')}</option>
                                 <option value="rating_desc">{tViews('sortRatingDesc')}</option>
@@ -187,7 +187,7 @@ export function LibraryTabs({ items }: { items: LibraryItem[] }) {
                                 onClick={() => setViewMode('editorial')}
                                 aria-pressed={viewMode === 'editorial'}
                                 aria-label={tViews('gridView')}
-                                className={`rounded-md p-2 transition-colors ${viewMode === 'editorial' ? 'bg-foreground text-background' : 'text-foreground-muted hover:text-foreground'}`}
+                                className={`rounded-md p-2.5 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center ${viewMode === 'editorial' ? 'bg-foreground text-background' : 'text-foreground-muted hover:text-foreground'}`}
                             >
                                 <LayoutGrid className="h-4 w-4" />
                             </button>
@@ -195,7 +195,7 @@ export function LibraryTabs({ items }: { items: LibraryItem[] }) {
                                 onClick={() => setViewMode('compact')}
                                 aria-pressed={viewMode === 'compact'}
                                 aria-label={tViews('compactView')}
-                                className={`rounded-md p-2 transition-colors ${viewMode === 'compact' ? 'bg-foreground text-background' : 'text-foreground-muted hover:text-foreground'}`}
+                                className={`rounded-md p-2.5 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center ${viewMode === 'compact' ? 'bg-foreground text-background' : 'text-foreground-muted hover:text-foreground'}`}
                             >
                                 <Grid3X3 className="h-4 w-4" />
                             </button>
@@ -203,7 +203,7 @@ export function LibraryTabs({ items }: { items: LibraryItem[] }) {
                                 onClick={() => setViewMode('list')}
                                 aria-pressed={viewMode === 'list'}
                                 aria-label={tViews('listView')}
-                                className={`rounded-md p-2 transition-colors ${viewMode === 'list' ? 'bg-foreground text-background' : 'text-foreground-muted hover:text-foreground'}`}
+                                className={`rounded-md p-2.5 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center ${viewMode === 'list' ? 'bg-foreground text-background' : 'text-foreground-muted hover:text-foreground'}`}
                             >
                                 <List className="h-4 w-4" />
                             </button>

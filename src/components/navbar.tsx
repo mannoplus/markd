@@ -2,7 +2,7 @@
 
 import { Link } from '@/i18n/routing';
 import { usePathname } from 'next/navigation';
-import { Search, Library, LogIn, X, Film, Tv, ChevronDown, Settings, User as UserIcon } from 'lucide-react';
+import { Search, Library, LogIn, Film, Tv, ChevronDown, Settings, User as UserIcon } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { useState, useEffect, useRef } from 'react';
@@ -129,14 +129,6 @@ export function Navbar() {
     const handleSignOut = async () => {
         const { logout } = await import('@/app/[locale]/login/actions');
         await logout();
-    };
-
-    const handleDeleteAccount = async () => {
-        const confirmed = window.confirm(t('deleteAccount'));
-        if (confirmed) {
-            const { deleteAccount } = await import('@/app/[locale]/login/actions');
-            await deleteAccount();
-        }
     };
 
     if (pathname?.includes('/onboarding') || pathname?.includes('/login')) {
@@ -293,13 +285,13 @@ export function Navbar() {
                                     <span>{t('profile')}</span>
                                 </Link>
                                 <Link
-                                    href="/settings"
+                                    href="/home"
                                     role="menuitem"
                                     onClick={() => setIsUserMenuOpen(false)}
                                     className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm text-foreground transition-colors hover:bg-background-elevated"
                                 >
-                                    <Settings className="h-4 w-4" />
-                                    <span>{t('settings')}</span>
+                                    <Film className="h-4 w-4" />
+                                    <span>{t('dashboard')}</span>
                                 </Link>
 
                                 <div className="my-1 border-t border-border" />
@@ -312,16 +304,6 @@ export function Navbar() {
                                 >
                                     <LogIn className="h-4 w-4 rotate-180" />
                                     <span>{t('signOut')}</span>
-                                </button>
-
-                                <button
-                                    type="button"
-                                    role="menuitem"
-                                    onClick={handleDeleteAccount}
-                                    className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm font-medium text-tomato-rotten transition-colors hover:bg-tomato-rotten/10"
-                                >
-                                    <X className="h-4 w-4" />
-                                    <span>{t('deleteAccount')}</span>
                                 </button>
                             </div>
                         </div>

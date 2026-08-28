@@ -17,8 +17,6 @@ import {
     discoverMediaAction,
 } from '@/app/actions/discover';
 import { CompanionShelf } from '@/components/companion/CompanionShelf';
-import { MoodMatcherBar } from '@/components/companion/MoodMatcherBar';
-import { ColdStartCompanion } from '@/components/companion/ColdStartCompanion';
 import { TasteControlModal } from '@/components/companion/TasteControlModal';
 import { OnboardingGate } from '@/components/onboarding/OnboardingGate';
 import { getPersonalizedHomeShelvesAction, type PersonalizedShelvesResult } from '@/app/actions/personalization';
@@ -114,9 +112,8 @@ export function HomeRedesign({
     const [trailerTab, setTrailerTab] = useState<'popular' | 'streaming' | 'rent' | 'theaters'>('popular');
     const [freeTab, setFreeTab] = useState<'movies' | 'tv'>('movies');
 
-    // Companion Shelves & Mood State
+    // Companion Shelves State
     const [shelves, setShelves] = useState<PersonalizedShelvesResult | undefined>(initialShelves);
-    const [activeMood, setActiveMood] = useState<string>('all');
     const [isControlsOpen, setIsControlsOpen] = useState<boolean>(false);
     const [isLoadingShelves, setIsLoadingShelves] = useState<boolean>(false);
 
@@ -189,23 +186,30 @@ export function HomeRedesign({
     };
 
     // ----------------------------------------------------
-    // Carousel 5-minute background refresh
+    // Carousel 5-minute background refresh (Now Playing + Popular TV)
     // ----------------------------------------------------
     useEffect(() => {
         const interval = setInterval(async () => {
             try {
-                const [movies, shows] = await Promise.all([
+                const currentYear = new Date().getFullYear();
+                const [movies, showsResult] = await Promise.all([
                     getTrendingAction('movie', 'day', globalRegion, locale),
-                    getTrendingAction('tv', 'day', globalRegion, locale),
+                    getCategoryMediaAction('/tv/popular', 1, globalRegion, locale),
                 ]);
+
+                // Filter TV shows to current year only
+                const currentYearShows = (showsResult?.results || []).filter((s: any) => {
+                    const year = (s.first_air_date || '').substring(0, 4);
+                    return year === String(currentYear);
+                });
 
                 const mix: TMDBTrendingResult[] = [];
                 for (let i = 0; i < 6; i++) {
                     if (movies[i]) {
                         mix.push({ ...movies[i], media_type: 'movie' });
                     }
-                    if (shows[i]) {
-                        mix.push({ ...shows[i], media_type: 'tv' });
+                    if (currentYearShows[i]) {
+                        mix.push({ ...currentYearShows[i], media_type: 'tv' });
                     }
                 }
 
@@ -221,16 +225,15 @@ export function HomeRedesign({
     }, [globalRegion, locale]);
 
     // ----------------------------------------------------
-    // Companion: Mood & Shelf Handler
+    // Companion: Shelf refresh handler
     // ----------------------------------------------------
-    const handleMoodSelect = async (moodKey: string) => {
-        setActiveMood(moodKey);
+    const refreshShelves = async () => {
         setIsLoadingShelves(true);
         try {
-            const data = await getPersonalizedHomeShelvesAction(locale, moodKey, globalRegion);
+            const data = await getPersonalizedHomeShelvesAction(locale, undefined, globalRegion);
             setShelves(data);
         } catch (e) {
-            console.error('Failed to update mood shelves:', e);
+            console.error('Failed to refresh shelves:', e);
         } finally {
             setIsLoadingShelves(false);
         }
@@ -303,10 +306,12 @@ export function HomeRedesign({
         setIsLoadingTrailers(true);
         setIsLoadingFree(true);
 
+        const currentYear = new Date().getFullYear();
+
         try {
             const [
                 trendingMovies,
-                trendingShows,
+                popularShowsData,
                 popularTrailersData,
                 streamingTrailersData,
                 rentTrailersData,
@@ -315,7 +320,7 @@ export function HomeRedesign({
                 freeShowsData,
             ] = await Promise.all([
                 getTrendingAction('movie', 'day', newRegion, locale),
-                getTrendingAction('tv', 'day', newRegion, locale),
+                getCategoryMediaAction('/tv/popular', 1, newRegion, locale),
                 getCategoryMediaAction('/movie/popular', 1, newRegion, locale),
                 discoverMediaAction('movie', { with_watch_monetization_types: 'flatrate', watch_region: newRegion, sort_by: 'popularity.desc', language: locale === 'zh-TW' ? 'zh-TW' : 'en-US' }),
                 discoverMediaAction('movie', { with_watch_monetization_types: 'rent', watch_region: newRegion, sort_by: 'popularity.desc', language: locale === 'zh-TW' ? 'zh-TW' : 'en-US' }),
@@ -324,11 +329,17 @@ export function HomeRedesign({
                 getStrictlyFreeQuotaAction('tv', 1, newRegion, locale),
             ]);
 
+            // Filter TV shows to current year only
+            const currentYearShows = (popularShowsData?.results || []).filter((s: any) => {
+                const year = (s.first_air_date || '').substring(0, 4);
+                return year === String(currentYear);
+            });
+
             // Carousel mix (6 movies + 6 shows)
             const mix: TMDBTrendingResult[] = [];
             for (let i = 0; i < 6; i++) {
                 if (trendingMovies[i]) mix.push({ ...trendingMovies[i], media_type: 'movie' });
-                if (trendingShows[i]) mix.push({ ...trendingShows[i], media_type: 'tv' });
+                if (currentYearShows[i]) mix.push({ ...currentYearShows[i], media_type: 'tv' });
             }
             setTrendingMedia(enrichClientRTScores(mix));
             setIsLoadingTrending(false);
@@ -385,26 +396,14 @@ export function HomeRedesign({
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-16 py-12">
 
                 {/* ====================================================
-                    COMPANION SHELVES & MOOD MATCHER
+                    COMPANION SHELVES — Personalized Recommendations
                    ==================================================== */}
                 <div className="space-y-12">
-                    <MoodMatcherBar
-                        activeMood={activeMood}
-                        onSelectMood={handleMoodSelect}
-                        onOpenControls={() => setIsControlsOpen(true)}
-                    />
-
-                    {shelves?.isColdStart && (
-                        <ColdStartCompanion
-                            onUnlock={async () => {
-                                setIsLoadingShelves(true);
-                                try {
-                                    const data = await getPersonalizedHomeShelvesAction(locale, activeMood, globalRegion);
-                                    setShelves(data);
-                                } finally {
-                                    setIsLoadingShelves(false);
-                                }
-                            }}
+                    {shelves?.becauseYouLoved && (
+                        <CompanionShelf
+                            title={tCompanion('becauseYouLoved', { title: shelves.becauseYouLoved.referenceTitle })}
+                            subtitle={tCompanion('becauseYouLovedSub')}
+                            items={shelves.becauseYouLoved.items}
                         />
                     )}
 
@@ -414,14 +413,6 @@ export function HomeRedesign({
                             subtitle={tCompanion('tonightsPicksSub')}
                             items={shelves.tonightsPicks}
                             badgeText={tCompanion('companionTitle')}
-                        />
-                    )}
-
-                    {shelves?.becauseYouLoved && (
-                        <CompanionShelf
-                            title={tCompanion('becauseYouLoved', { title: shelves.becauseYouLoved.referenceTitle })}
-                            subtitle={tCompanion('becauseYouLovedSub')}
-                            items={shelves.becauseYouLoved.items}
                         />
                     )}
 
@@ -830,8 +821,8 @@ export function HomeRedesign({
             <TasteControlModal
                 isOpen={isControlsOpen}
                 onClose={() => setIsControlsOpen(false)}
-                activeMood={activeMood}
-                onClearMood={() => handleMoodSelect('all')}
+                activeMood="all"
+                onClearMood={refreshShelves}
                 topTraits={shelves?.userTasteSummary?.topDnaTraits}
                 locale={locale}
             />

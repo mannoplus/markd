@@ -1,6 +1,7 @@
 import {
   discoverMedia,
   getCategoryMedia,
+  getNowPlaying,
 } from '@/lib/tmdb';
 import { HomeRedesign } from '@/components/home/HomeRedesign';
 import { getTranslations, getLocale } from 'next-intl/server';
@@ -16,17 +17,19 @@ export default async function Home({
   const resolvedParams = await searchParams;
   const region = typeof resolvedParams.region === 'string' ? resolvedParams.region : 'TW';
 
-  // Fetch all initial data in parallel, fully localized by region parameter
+  // Fetch Now Playing / In Theaters for the hero carousel, localized by region
+  const [nowPlayingMovies, nowPlayingShows] = await Promise.all([
+    getNowPlaying(region).catch(() => []),
+    getCategoryMedia('/tv/popular', 1, region).catch(() => ({ results: [] })),
+  ]);
+
+  // Fetch all initial data in parallel for trailers and free content
   const [
-    trendingMovies,
-    trendingShows,
     popularTrailersData,
     streamingTrailersData,
     rentTrailersData,
     theaterTrailersData,
   ] = await Promise.all([
-    discoverMedia('movie', { region, watch_region: region, sort_by: 'popularity.desc' }).catch(() => ({ results: [], total_pages: 0, total_results: 0 })),
-    discoverMedia('tv', { region, watch_region: region, sort_by: 'popularity.desc' }).catch(() => ({ results: [], total_pages: 0, total_results: 0 })),
     getCategoryMedia('/movie/popular', 1, region).catch(() => ({ results: [], total_pages: 0, total_results: 0 })),
     discoverMedia('movie', { with_watch_monetization_types: 'flatrate', watch_region: region, sort_by: 'popularity.desc' }).catch(() => ({ results: [], total_pages: 0, total_results: 0 })),
     discoverMedia('movie', { with_watch_monetization_types: 'rent', watch_region: region, sort_by: 'popularity.desc' }).catch(() => ({ results: [], total_pages: 0, total_results: 0 })),
@@ -134,19 +137,19 @@ export default async function Home({
   };
 
   // Enrich initial datasets
-  const enrichedTrendingMovies = await injectRTScores(trendingMovies.results?.slice(0, 6) || []); // Display exactly 6 trending movies
-  const enrichedTrendingShows = await injectRTScores(trendingShows.results?.slice(0, 6) || []); // Display exactly 6 trending TV shows
+  const enrichedNowPlaying = await injectRTScores(nowPlayingMovies.slice(0, 6)); // Display exactly 6 now playing movies
+  const enrichedPopularShows = await injectRTScores((nowPlayingShows.results || []).slice(0, 6)); // Display exactly 6 popular TV shows
   const enrichedFreeMovies = await injectRTScores(strictlyFreeMovies); // Exactly 15 free movies
   const enrichedFreeShows = await injectRTScores(strictlyFreeShows); // Exactly 15 free TV shows
 
-  // Dynamic mixed Trending Carousel (6 Trending Movies + 6 Trending TV Shows alternating, total 12)
+  // Dynamic mixed Hero Carousel (6 Now Playing Movies + 6 Popular TV Shows alternating, total 12)
   const carouselMix: any[] = [];
   for (let i = 0; i < 6; i++) {
-    if (enrichedTrendingMovies[i]) {
-      carouselMix.push({ ...enrichedTrendingMovies[i], media_type: 'movie' });
+    if (enrichedNowPlaying[i]) {
+      carouselMix.push({ ...enrichedNowPlaying[i], media_type: 'movie' });
     }
-    if (enrichedTrendingShows[i]) {
-      carouselMix.push({ ...enrichedTrendingShows[i], media_type: 'tv' });
+    if (enrichedPopularShows[i]) {
+      carouselMix.push({ ...enrichedPopularShows[i], media_type: 'tv' });
     }
   }
 
