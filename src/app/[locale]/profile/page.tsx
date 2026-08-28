@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { getUserMediaItems } from '@/app/actions';
 import { Link } from '@/i18n/routing';
 import { SectionHeader } from '@/components/section-header';
+import { ToggleSwitch } from '@/components/toggle-switch';
 
 export default function ProfilePage() {
     const t = useTranslations('Profile');
@@ -199,23 +200,11 @@ export default function ProfilePage() {
                                     <span className="block text-sm font-semibold text-foreground">{row.label}</span>
                                     <p className="text-xs leading-relaxed text-foreground-muted">{row.description}</p>
                                 </div>
-                                <button
-                                    role="switch"
-                                    aria-checked={isOn}
-                                    aria-label={row.label}
-                                    onClick={() => handleTogglePrivacy(row.key)}
-                                    className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
-                                        isOn ? 'bg-foreground' : 'bg-background-highlight'
-                                    }`}
-                                >
-                                    <span
-                                        className={`absolute top-0.5 h-5 w-5 rounded-full transition-transform ${
-                                            isOn
-                                                ? 'translate-x-[22px] bg-background'
-                                                : 'translate-x-0.5 bg-foreground-subtle'
-                                        }`}
-                                    />
-                                </button>
+                                <ToggleSwitch
+                                    checked={isOn}
+                                    onChange={() => handleTogglePrivacy(row.key)}
+                                    label={row.label}
+                                />
                             </div>
                         );
                     })}

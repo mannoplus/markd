@@ -15,13 +15,13 @@ export function Footer() {
     }
 
     return (
-        <footer className="border-t border-border bg-background-secondary pb-safe">
-            <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-4 py-10 md:flex-row md:px-6 lg:px-8">
-                <div className="flex w-full justify-center md:w-auto md:justify-start">
+        <footer className="border-t border-border/60 bg-background-secondary pb-safe">
+            <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-4 py-6 text-xs text-foreground-subtle md:flex-row md:gap-6 md:px-6 lg:px-8">
+                <div className="flex shrink-0 items-center justify-center md:justify-start">
                     <Logo size="sm" className="opacity-70 transition-opacity hover:opacity-100" />
                 </div>
 
-                <p className="max-w-md flex-1 text-center text-xs leading-relaxed text-foreground-subtle">
+                <p className="max-w-md flex-1 text-center leading-relaxed md:text-left">
                     {t.rich('text', {
                         tmdb: (chunks) => (
                             <a
@@ -36,16 +36,16 @@ export function Footer() {
                     })}
                 </p>
 
-                <div className="flex w-full items-center justify-center gap-5 md:w-auto md:justify-end">
+                <div className="flex shrink-0 items-center justify-center gap-4 md:justify-end">
                     <AboutModal />
                     <a
                         href="https://github.com"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-foreground-subtle transition-colors hover:text-foreground-muted"
+                        className="transition-colors hover:text-foreground-muted"
                         aria-label="GitHub"
                     >
-                        <Github className="h-5 w-5" />
+                        <Github className="h-4 w-4" />
                     </a>
                 </div>
             </div>
