@@ -2,7 +2,7 @@ import { getUserMediaItems } from '@/app/actions';
 import { redirect } from 'next/navigation';
 import { MovieCard } from '@/components/movie-card';
 import { Link } from '@/i18n/routing';
-import { Eye, Clock, ChevronRight, Sparkles, Compass } from 'lucide-react';
+import { Eye, Clock, ChevronRight } from 'lucide-react';
 import { getTranslations, getLocale } from 'next-intl/server';
 import { getPersonalizedHomeShelvesAction } from '@/app/actions/personalization';
 import { CompanionShelf } from '@/components/companion/CompanionShelf';
@@ -36,7 +36,6 @@ export default async function DashboardPage() {
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-border/40 pb-6">
                 <div className="space-y-2">
                     <div className="inline-flex items-center gap-2 rounded-full bg-accent/15 px-3.5 py-1 text-xs font-black uppercase text-accent border border-accent/25 tracking-wider">
-                        <Sparkles className="h-3.5 w-3.5 animate-pulse" />
                         <span>{tCompanion('companionTitle')}</span>
                     </div>
                     <h1 className="text-4xl font-extrabold tracking-tight md:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-foreground to-foreground/60 pb-1">
@@ -59,7 +58,6 @@ export default async function DashboardPage() {
                 <div className="rounded-3xl bg-gradient-to-r from-[#121220] via-background-elevated/80 to-[#0c0c16] border border-border/40 p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
                     <div className="space-y-1.5">
                         <span className="text-xs font-black uppercase tracking-wider text-accent flex items-center gap-1.5">
-                            <Sparkles className="h-3.5 w-3.5" />
                             <span>{tCompanion('tasteProfileHeading')}</span>
                         </span>
                         <p className="text-xs text-foreground-muted">

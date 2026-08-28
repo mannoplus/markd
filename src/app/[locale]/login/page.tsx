@@ -22,6 +22,8 @@ export default function LoginPage() {
     const [error, setError] = useState<string | null>(null);
     const [pending, setPending] = useState(false);
     const [hasOnboardingData, setHasOnboardingData] = useState(false);
+    const [showBanner, setShowBanner] = useState(true);
+    const [checklistVisible, setChecklistVisible] = useState(true);
 
     // Form states
     const [password, setPassword] = useState('');
@@ -39,6 +41,23 @@ export default function LoginPage() {
     const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
     const isPasswordValid = hasMinLength && hasUppercase && hasSpecialChar;
     const passwordsMatch = password === confirmPassword && password.length > 0;
+
+    // Auto-dismiss banner after 1.5s
+    useEffect(() => {
+        const timer = setTimeout(() => setShowBanner(false), 1500);
+        return () => clearTimeout(timer);
+    }, []);
+
+    // Animate password checklist fade-out when all rules pass
+    useEffect(() => {
+        if (isPasswordValid && checklistVisible) {
+            const timer = setTimeout(() => setChecklistVisible(false), 600);
+            return () => clearTimeout(timer);
+        }
+        if (!isPasswordValid && !checklistVisible) {
+            setChecklistVisible(true);
+        }
+    }, [isPasswordValid, checklistVisible]);
 
     useEffect(() => {
         const state = getOnboardingState();
@@ -95,6 +114,7 @@ export default function LoginPage() {
             return;
         }
 
+        // Server action succeeded — session cookie is now set
         // If login/signup succeeds and we have pending onboarding preferences, merge them
         const state = getOnboardingState();
         if (
@@ -111,7 +131,8 @@ export default function LoginPage() {
 
         setOnboardingCompleted(true);
         clearOnboardingState();
-        router.push('/dashboard');
+        setPending(false);
+        router.push('/home');
     }
 
     const isSubmitDisabled = pending || (lockoutUntil !== null) || (!isLogin && (!isPasswordValid || !passwordsMatch));
@@ -124,13 +145,18 @@ export default function LoginPage() {
 
             <div className="w-full max-w-md z-10 flex flex-col">
                 
-                {/* Status Banner */}
-                <div className="mb-10 fade-in slide-in-from-top-4 duration-500">
-                    <div className="mx-auto w-fit px-4 py-2 rounded-full bg-accent/10 border border-accent/20 flex items-center gap-2 text-sm text-accent shadow-[0_0_15px_rgba(var(--accent),0.15)]">
-                        <CheckCircle2 className="h-4 w-4 shrink-0" />
-                        <span className="font-medium tracking-wide">Taste profile calibrated! Preferences saved to this device.</span>
+                {/* Status Banner — auto-dismisses after 1.5s */}
+                {showBanner && (
+                    <div className="mb-10 fade-in slide-in-from-top-4 duration-500">
+                        <div
+                            className="mx-auto w-fit px-4 py-2 rounded-full bg-accent/10 border border-accent/20 flex items-center gap-2 text-sm text-accent shadow-[0_0_15px_rgba(var(--accent),0.15)] transition-opacity duration-500"
+                            style={{ opacity: showBanner ? 1 : 0 }}
+                        >
+                            <CheckCircle2 className="h-4 w-4 shrink-0" />
+                            <span className="font-medium tracking-wide">Taste profile calibrated — preferences saved to this device.</span>
+                        </div>
                     </div>
-                </div>
+                )}
 
                 {/* Main Auth Card */}
                 <div className="w-full p-10 bg-background/60 backdrop-blur-3xl border border-border/50 rounded-[2rem] shadow-2xl relative overflow-hidden transition-all duration-500 ease-out">
@@ -188,8 +214,12 @@ export default function LoginPage() {
                                 />
                             </div>
 
-                            {!isLogin && (isPasswordFocused || password.length > 0) && (
-                                <div className="space-y-2.5 px-1 py-1 text-sm fade-in">
+                            {!isLogin && (isPasswordFocused || password.length > 0) && checklistVisible && (
+                                <div
+                                    className={`space-y-2.5 px-1 py-1 text-sm transition-all duration-500 ${
+                                        isPasswordValid ? 'opacity-0 -translate-y-2 pointer-events-none' : 'opacity-100 translate-y-0'
+                                    }`}
+                                >
                                     <div className={`flex items-center gap-2 transition-colors duration-300 ${hasMinLength ? 'text-green-500' : 'text-foreground-muted'}`}>
                                         <div className={`h-4 w-4 rounded-full flex items-center justify-center border ${hasMinLength ? 'border-green-500 bg-green-500/10' : 'border-border/80'}`}>
                                             {hasMinLength && <Check className="h-2.5 w-2.5" />}
@@ -212,7 +242,7 @@ export default function LoginPage() {
                             )}
 
                             {!isLogin && (
-                                <div className="space-y-2 pt-1 fade-in">
+                                <div className="space-y-2 pt-3 fade-in">
                                     <label htmlFor="confirmPassword" className="text-sm font-semibold text-foreground-subtle uppercase tracking-wider ml-1">
                                         Confirm Password
                                     </label>
@@ -308,6 +338,7 @@ export default function LoginPage() {
                                     setPassword('');
                                     setConfirmPassword('');
                                     setIsPasswordFocused(false);
+                                    setChecklistVisible(true);
                                 }}
                                 className="font-bold text-foreground hover:text-accent ml-2 transition-colors focus:outline-none"
                             >
@@ -320,7 +351,7 @@ export default function LoginPage() {
                 {/* Skip option */}
                 <div className="mt-12 text-center fade-in slide-in-from-bottom-4 duration-700">
                     <Link 
-                        href="/dashboard"
+                        href="/home"
                         className="text-sm font-semibold text-foreground-muted hover:text-foreground transition-colors uppercase tracking-widest pb-1 border-b border-transparent hover:border-foreground/30"
                     >
                         Skip for now

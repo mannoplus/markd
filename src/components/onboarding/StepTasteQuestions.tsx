@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useTranslations } from 'next-intl';
-import { Check, Sparkles, Compass, Zap, Moon, History, Rocket, Flame, Eye, Film, Heart } from 'lucide-react';
+import { Check, Compass, Zap, Moon, History, Rocket, Flame, Eye, Film, Heart, Gem } from 'lucide-react';
 import type { TasteAnswerItem } from '@/lib/onboarding/types';
 
 interface StepTasteQuestionsProps {
@@ -35,7 +35,7 @@ export function StepTasteQuestions({
       options: [
         { id: 'scifi', label: t('q2_opt1') || 'Modern Epic & Sci-Fi', sub: 'Spectacle, scale & worlds', icon: Rocket },
         { id: 'mystery', label: t('q2_opt2') || 'Classic Cinema & Noir', sub: 'Timeless storytelling', icon: History },
-        { id: 'nostalgic', label: t('q2_opt3') || 'Charming & Heartfelt', sub: 'Emotional resonance', icon: Sparkles },
+        { id: 'nostalgic', label: t('q2_opt3') || 'Charming & Heartfelt', sub: 'Emotional resonance', icon: Heart },
         { id: 'heist', label: t('q2_opt4') || 'Clever Heists & Mysteries', sub: 'Sharp dialogue & puzzles', icon: Compass },
       ],
     },
@@ -45,7 +45,7 @@ export function StepTasteQuestions({
       subtitle: t('q3_subtitle') || 'How you discover and select new titles',
       options: [
         { id: 'blockbusters', label: t('q3_opt1') || 'Blockbusters & Big Hits', sub: 'Cultural tentpoles & crowds', icon: Flame },
-        { id: 'hidden_gems', label: t('q3_opt2') || 'Hidden Indie Gems', sub: 'Festival breakouts & originality', icon: Sparkles },
+        { id: 'hidden_gems', label: t('q3_opt2') || 'Hidden Indie Gems', sub: 'Festival breakouts & originality', icon: Gem },
         { id: 'arthouse', label: t('q3_opt3') || 'Auteur & Visionary Style', sub: 'Director-driven masterpieces', icon: Film },
         { id: 'eclectic', label: t('q3_opt4') || 'Eclectic Explorer', sub: 'Diverse eras & unexpected picks', icon: Compass },
       ],
@@ -57,7 +57,7 @@ export function StepTasteQuestions({
       options: [
         { id: 'plot_twists', label: t('q4_opt1') || 'Unpredictable Plot Twists', sub: 'Keeping you guessing until the end', icon: Zap },
         { id: 'character_depth', label: t('q4_opt2') || 'Deep Character Depth', sub: 'Rich emotions & believable arcs', icon: Heart },
-        { id: 'visuals', label: t('q4_opt3') || 'Immersive Visual Splendor', sub: 'Stunning cinematography & design', icon: Sparkles },
+        { id: 'visuals', label: t('q4_opt3') || 'Immersive Visual Splendor', sub: 'Stunning cinematography & design', icon: Eye },
         { id: 'entertainment', label: t('q4_opt4') || 'Snappy Pacing & Entertainment', sub: 'Zero boring moments, pure flow', icon: Rocket },
       ],
     },
@@ -69,7 +69,7 @@ export function StepTasteQuestions({
 
   return (
     <div className="space-y-12 max-w-4xl mx-auto">
-      {QUESTIONS.map((q, qIndex) => {
+      {QUESTIONS.map((q) => {
         const selectedId = getSelectedAnswer(q.id);
         const isAnswered = Boolean(selectedId);
 
@@ -78,9 +78,6 @@ export function StepTasteQuestions({
             {/* Question Header */}
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-1">
-                <span className="text-[11px] font-bold uppercase tracking-widest text-white/50">
-                  {t('questionNumber', { number: `0${qIndex + 1}` }) || `Layer 0${qIndex + 1}`}
-                </span>
                 <h2 className="text-lg md:text-xl font-bold text-white tracking-tight">
                   {q.title}
                 </h2>
