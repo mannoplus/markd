@@ -30,9 +30,6 @@ export function Navbar() {
     const navRef = useRef<HTMLElement>(null);
     const userMenuRef = useRef<HTMLDivElement>(null);
 
-    if (pathname?.includes('/onboarding')) {
-        return null;
-    }
 
     const NAV_ITEMS: NavItem[] = [
         {
@@ -141,6 +138,10 @@ export function Navbar() {
             await deleteAccount();
         }
     };
+
+    if (pathname?.includes('/onboarding')) {
+        return null;
+    }
 
     return (
         <header ref={navRef} className="fixed top-0 left-0 right-0 z-50 glass border-b border-border pt-safe">
