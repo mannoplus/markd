@@ -7,6 +7,7 @@ import { getTranslations, getLocale } from 'next-intl/server';
 import { getPersonalizedHomeShelvesAction } from '@/app/actions/personalization';
 import { CompanionShelf } from '@/components/companion/CompanionShelf';
 import { translateDnaTrait, type MovieDnaTrait } from '@/lib/taste-engine';
+import { DashboardOnboardingSync } from '@/components/dashboard/DashboardOnboardingSync';
 
 export default async function DashboardPage() {
     const { data: items, error } = await getUserMediaItems();
@@ -30,6 +31,7 @@ export default async function DashboardPage() {
 
     return (
         <div className="min-h-screen pt-24 pb-20 px-4 max-w-7xl mx-auto space-y-16 fade-in animate-in slide-in-from-bottom-4 duration-500">
+            <DashboardOnboardingSync />
             {/* Header Area */}
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-border/40 pb-6">
                 <div className="space-y-2">

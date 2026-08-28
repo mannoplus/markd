@@ -1,15 +1,37 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { login, signup } from './actions';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Sparkles, CheckCircle2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { useRouter } from '@/i18n/routing';
+import {
+    getOnboardingState,
+    clearOnboardingState,
+    setOnboardingCompleted,
+} from '@/lib/onboarding/storage';
+import { mergeOnboardingPreferencesAction } from '@/app/actions/onboarding';
 
 export default function LoginPage() {
     const t = useTranslations('Login');
+    const tOnboarding = useTranslations('Onboarding');
+    const router = useRouter();
+
     const [isLogin, setIsLogin] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [pending, setPending] = useState(false);
+    const [hasOnboardingData, setHasOnboardingData] = useState(false);
+
+    useEffect(() => {
+        const state = getOnboardingState();
+        if (
+            state.favoriteTitles.length > 0 ||
+            state.genres.movie.length > 0 ||
+            state.tasteAnswers.length > 0
+        ) {
+            setHasOnboardingData(true);
+        }
+    }, []);
 
     async function handleSubmit(formData: FormData) {
         setError(null);
@@ -21,7 +43,26 @@ export default function LoginPage() {
         if (result?.error) {
             setError(result.error);
             setPending(false);
+            return;
         }
+
+        // If login/signup succeeds and we have pending onboarding preferences, merge them
+        const state = getOnboardingState();
+        if (
+            state.favoriteTitles.length > 0 ||
+            state.genres.movie.length > 0 ||
+            state.tasteAnswers.length > 0
+        ) {
+            try {
+                await mergeOnboardingPreferencesAction(state);
+            } catch (e) {
+                console.warn('Failed to merge onboarding preferences on login:', e);
+            }
+        }
+
+        setOnboardingCompleted(true);
+        clearOnboardingState();
+        router.push('/dashboard');
     }
 
     return (
@@ -29,6 +70,17 @@ export default function LoginPage() {
             <div className="w-full max-w-md p-8 glass border border-border rounded-2xl shadow-2xl relative overflow-hidden">
                 {/* Decorative background glow */}
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-accent/20 rounded-full blur-[80px] pointer-events-none" />
+
+                {/* Onboarding Calibrated Banner */}
+                {hasOnboardingData && (
+                    <div className="relative z-10 mb-6 p-3 rounded-xl bg-accent/15 border border-accent/30 flex items-center gap-2.5 text-xs text-accent">
+                        <CheckCircle2 className="h-4 w-4 shrink-0 stroke-[2.5]" />
+                        <div className="space-y-0.5">
+                            <p className="font-bold">{tOnboarding('authPromptTitle')}</p>
+                            <p className="text-[11px] opacity-80">{tOnboarding('savedLocally')}</p>
+                        </div>
+                    </div>
+                )}
 
                 <div className="relative z-10 text-center mb-8">
                     <h1 className="text-3xl font-extrabold tracking-tight">
@@ -138,7 +190,7 @@ export default function LoginPage() {
                                 setIsLogin(!isLogin);
                                 setError(null);
                             }}
-                            className="font-semibold text-accent hover:underline focus:outline-none"
+                            className="font-semibold text-accent hover:underline focus:outline-none ml-1"
                         >
                             {isLogin ? t('signUpBtn') : t('signInBtn')}
                         </button>

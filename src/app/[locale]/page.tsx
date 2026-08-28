@@ -1,33 +1,11 @@
 import {
-  getNowPlaying,
-  getUpcomingMovies,
-  getUpcomingTVShows,
   discoverMedia,
   getCategoryMedia,
-  getMediaTrailer,
 } from '@/lib/tmdb';
 import { HomeRedesign } from '@/components/home/HomeRedesign';
 import { getTranslations, getLocale } from 'next-intl/server';
 import { fetchStrictlyFreeQuota } from '@/app/actions/discover';
 import { getPersonalizedHomeShelvesAction } from '@/app/actions/personalization';
-
-// Server-side filter to verify upcoming media items strictly have video trailers
-async function filterUpcomingWithTrailers(items: any[], type: 'movie' | 'tv') {
-  const results = await Promise.all(
-    items.map(async (item) => {
-      try {
-        const trailerKey = await getMediaTrailer(type, item.id);
-        if (trailerKey) {
-          return { ...item, trailerKey };
-        }
-      } catch (e) {
-        console.error(`Failed to check trailer for ${type} ${item.id}:`, e);
-      }
-      return null;
-    })
-  );
-  return results.filter((item): item is any => item !== null);
-}
 
 export default async function Home({
   searchParams,
@@ -40,21 +18,15 @@ export default async function Home({
 
   // Fetch all initial data in parallel, fully localized by region parameter
   const [
-    nowPlaying,
     trendingMovies,
     trendingShows,
-    upcomingMovies,
-    upcomingShows,
     popularTrailersData,
     streamingTrailersData,
     rentTrailersData,
     theaterTrailersData,
   ] = await Promise.all([
-    getNowPlaying(region), // Localized In Cinemas
     discoverMedia('movie', { region, watch_region: region, sort_by: 'popularity.desc' }), // Localized Trending Movies
     discoverMedia('tv', { region, watch_region: region, sort_by: 'popularity.desc' }), // Localized Trending TV Shows
-    getUpcomingMovies(region),
-    getUpcomingTVShows(region),
     getCategoryMedia('/movie/popular', 1, region),
     discoverMedia('movie', { with_watch_monetization_types: 'flatrate', watch_region: region, sort_by: 'popularity.desc' }),
     discoverMedia('movie', { with_watch_monetization_types: 'rent', watch_region: region, sort_by: 'popularity.desc' }),
@@ -161,16 +133,9 @@ export default async function Home({
     );
   };
 
-  // Verify and filter upcoming trailers (strictly exclude those without trailer video key)
-  const validatedUpcomingMovies = await filterUpcomingWithTrailers(upcomingMovies, 'movie');
-  const validatedUpcomingShows = await filterUpcomingWithTrailers(upcomingShows, 'tv');
-
   // Enrich initial datasets
-  const enrichedNowPlaying = await injectRTScores(nowPlaying); // Fetch all movies for cinemas dynamically
   const enrichedTrendingMovies = await injectRTScores(trendingMovies.results?.slice(0, 6) || []); // Display exactly 6 trending movies
   const enrichedTrendingShows = await injectRTScores(trendingShows.results?.slice(0, 6) || []); // Display exactly 6 trending TV shows
-  const enrichedUpcomingMovies = await injectRTScores(validatedUpcomingMovies.slice(0, 10));
-  const enrichedUpcomingShows = await injectRTScores(validatedUpcomingShows.slice(0, 10));
   const enrichedFreeMovies = await injectRTScores(strictlyFreeMovies); // Exactly 15 free movies
   const enrichedFreeShows = await injectRTScores(strictlyFreeShows); // Exactly 15 free TV shows
 
@@ -197,13 +162,10 @@ export default async function Home({
   return (
     <HomeRedesign
       initialTrending={carouselMix}
-      initialNowPlaying={enrichedNowPlaying}
       initialPopularTrailers={popularTrailersData.results || []}
       initialStreamingTrailers={streamingTrailersData.results || []}
       initialRentTrailers={rentTrailersData.results || []}
       initialTheaterTrailers={theaterTrailersData.results || []}
-      initialUpcomingMovies={enrichedUpcomingMovies}
-      initialUpcomingShows={enrichedUpcomingShows}
       initialFreeMovies={enrichedFreeMovies}
       initialFreeShows={enrichedFreeShows}
       initialShelves={initialShelves}

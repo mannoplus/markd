@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useRef } from 'react';
-import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { CompanionCard } from './CompanionCard';
 import type { PersonalizedShelfItem } from '@/app/actions/personalization';
 
@@ -40,17 +40,11 @@ export function CompanionShelf({
       <div className="flex items-end justify-between px-1">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            {icon ? (
-              icon
-            ) : (
-              <div className="h-6 w-6 rounded-lg bg-accent/15 border border-accent/30 flex items-center justify-center text-accent">
-                <Sparkles className="h-3.5 w-3.5 animate-pulse" />
-              </div>
-            )}
-            <h3 className="text-xl md:text-2xl font-black tracking-tight text-foreground flex items-center gap-2">
+            {icon && icon}
+            <h3 className="text-xl md:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
               <span>{title}</span>
               {badgeText && (
-                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-accent/15 text-accent border border-accent/25 tracking-wider">
+                <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-accent/15 text-accent border border-accent/25 tracking-wider">
                   {badgeText}
                 </span>
               )}
@@ -67,14 +61,14 @@ export function CompanionShelf({
         <div className="hidden sm:flex items-center gap-1.5">
           <button
             onClick={() => handleScroll('left')}
-            className="p-2 rounded-full bg-background-elevated/70 border border-border/40 hover:bg-accent hover:text-background hover:border-accent text-foreground-muted transition-all cursor-pointer shadow-sm active:scale-95"
+            className="p-2 rounded-full bg-background-elevated/70 border border-border/40 hover:bg-accent hover:text-background hover:border-accent text-foreground-muted transition-colors cursor-pointer shadow-sm"
             aria-label="Scroll left"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
           <button
             onClick={() => handleScroll('right')}
-            className="p-2 rounded-full bg-background-elevated/70 border border-border/40 hover:bg-accent hover:text-background hover:border-accent text-foreground-muted transition-all cursor-pointer shadow-sm active:scale-95"
+            className="p-2 rounded-full bg-background-elevated/70 border border-border/40 hover:bg-accent hover:text-background hover:border-accent text-foreground-muted transition-colors cursor-pointer shadow-sm"
             aria-label="Scroll right"
           >
             <ChevronRight className="h-4 w-4" />

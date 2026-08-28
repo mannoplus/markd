@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { 
-  Sparkles, Clock, Check, Eye, CheckCircle2, MoreVertical, 
+  Clock, Check, Eye, CheckCircle2, MoreVertical, 
   ThumbsDown, EyeOff, Ban, ExternalLink, Star 
 } from 'lucide-react';
 import { upsertMediaItem } from '@/app/actions';
@@ -133,8 +133,7 @@ export function CompanionCard({ item, surface = 'home', onDismiss }: CompanionCa
         <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c14] via-transparent to-black/30 pointer-events-none" />
 
         {/* Match Score Badge */}
-        <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1 rounded-full bg-black/75 backdrop-blur-md px-2.5 py-1 text-[10px] font-black text-accent border border-accent/30 shadow-lg shadow-black/50">
-          <Sparkles className="h-3 w-3 animate-pulse" />
+        <div className="absolute top-2.5 left-2.5 z-10 flex items-center rounded-full bg-black/80 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-bold text-accent border border-accent/30 shadow-md">
           <span>{t('matchScore', { score: item.matchScore })}</span>
         </div>
 

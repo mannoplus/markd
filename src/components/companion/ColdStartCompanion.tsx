@@ -63,8 +63,7 @@ export function ColdStartCompanion({ onUnlock }: ColdStartCompanionProps) {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
         <div className="space-y-1.5">
-          <div className="inline-flex items-center gap-2 rounded-full bg-accent/15 px-3 py-0.5 text-xs font-black uppercase text-accent border border-accent/25 tracking-wider">
-            <Sparkles className="h-3.5 w-3.5 animate-pulse" />
+          <div className="inline-flex items-center rounded-full bg-accent/15 px-3 py-0.5 text-xs font-bold uppercase text-accent border border-accent/25 tracking-wider">
             <span>{t('companionTitle')}</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">

@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Play, RotateCw, HelpCircle, Film, MapPin, X, Loader2, ChevronDown } from 'lucide-react';
+import { Play, RotateCw, HelpCircle, Film, X, Loader2, ChevronDown } from 'lucide-react';
 import { Link } from '@/i18n/routing';
-import { MovieCard } from '@/components/movie-card';
 import { HeroCarousel } from '@/components/hero-carousel';
 import { SectionHeader } from '@/components/section-header';
 import type { TMDBTrendingResult, TMDBWatchProvider, TMDBWatchProviderResult } from '@/types';
@@ -11,13 +10,9 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useRegion } from '@/context/RegionContext';
 import {
     getMediaTrailerAction,
-    getNowPlayingAction,
     getWatchProvidersAction,
-    getUpcomingMoviesAction,
-    getUpcomingTVShowsAction,
     getTrendingAction,
     getStrictlyFreeQuotaAction,
-    getUpcomingWithTrailersAction,
     getCategoryMediaAction,
     discoverMediaAction,
 } from '@/app/actions/discover';
@@ -25,10 +20,11 @@ import { CompanionShelf } from '@/components/companion/CompanionShelf';
 import { MoodMatcherBar } from '@/components/companion/MoodMatcherBar';
 import { ColdStartCompanion } from '@/components/companion/ColdStartCompanion';
 import { TasteControlModal } from '@/components/companion/TasteControlModal';
+import { OnboardingGate } from '@/components/onboarding/OnboardingGate';
 import { getPersonalizedHomeShelvesAction, type PersonalizedShelvesResult } from '@/app/actions/personalization';
 
 // Comprehensive Country list
-const CINEMA_COUNTRIES = [
+const AVAILABLE_COUNTRIES = [
     { name: 'Taiwan', code: 'TW' },
     { name: 'United States', code: 'US' },
     { name: 'China', code: 'CN' },
@@ -85,13 +81,10 @@ const getProviderUrl = (name: string, fallback: string) => {
 
 interface HomeRedesignProps {
     initialTrending: TMDBTrendingResult[];
-    initialNowPlaying: TMDBTrendingResult[];
     initialPopularTrailers: TMDBTrendingResult[];
     initialStreamingTrailers: TMDBTrendingResult[];
     initialRentTrailers: TMDBTrendingResult[];
     initialTheaterTrailers: TMDBTrendingResult[];
-    initialUpcomingMovies: TMDBTrendingResult[];
-    initialUpcomingShows: TMDBTrendingResult[];
     initialFreeMovies: TMDBTrendingResult[];
     initialFreeShows: TMDBTrendingResult[];
     initialShelves?: PersonalizedShelvesResult;
@@ -99,13 +92,10 @@ interface HomeRedesignProps {
 
 export function HomeRedesign({
     initialTrending,
-    initialNowPlaying,
     initialPopularTrailers,
     initialStreamingTrailers,
     initialRentTrailers,
     initialTheaterTrailers,
-    initialUpcomingMovies,
-    initialUpcomingShows,
     initialFreeMovies,
     initialFreeShows,
     initialShelves,
@@ -121,7 +111,7 @@ export function HomeRedesign({
 
     const { region: globalRegion, setRegion: setGlobalRegion } = useRegion();
     const [trendingMedia, setTrendingMedia] = useState<TMDBTrendingResult[]>(initialTrending);
-    const [trailerTab, setTrailerTab] = useState<'upcoming' | 'popular' | 'streaming' | 'rent' | 'theaters'>('upcoming');
+    const [trailerTab, setTrailerTab] = useState<'popular' | 'streaming' | 'rent' | 'theaters'>('popular');
     const [freeTab, setFreeTab] = useState<'movies' | 'tv'>('movies');
 
     // Companion Shelves & Mood State
@@ -140,19 +130,6 @@ export function HomeRedesign({
     const [streamingTrailers, setStreamingTrailers] = useState<TMDBTrendingResult[]>(initialStreamingTrailers);
     const [rentTrailers, setRentTrailers] = useState<TMDBTrendingResult[]>(initialRentTrailers);
     const [theaterTrailers, setTheaterTrailers] = useState<TMDBTrendingResult[]>(initialTheaterTrailers);
-
-    // Section 2: Cinema State
-    const [nowPlayingMovies, setNowPlayingMovies] = useState<TMDBTrendingResult[]>(initialNowPlaying);
-    const [isLoadingCinemas, setIsLoadingCinemas] = useState<boolean>(false);
-
-    // Section 3 & 4: Upcoming Feeds State
-    const [upcomingMovies, setUpcomingMovies] = useState<TMDBTrendingResult[]>(initialUpcomingMovies);
-    const [upcomingMoviesTime, setUpcomingMoviesTime] = useState<number>(0);
-    const [isUpdatingMovies, setIsUpdatingMovies] = useState<boolean>(false);
-
-    const [upcomingShows, setUpcomingShows] = useState<TMDBTrendingResult[]>(initialUpcomingShows);
-    const [upcomingShowsTime, setUpcomingShowsTime] = useState<number>(0);
-    const [isUpdatingShows, setIsUpdatingShows] = useState<boolean>(false);
 
     // Section 1: Hover Trailer Video Preview States
     const [hoveredTrailerId, setHoveredTrailerId] = useState<number | null>(null);
@@ -183,7 +160,7 @@ export function HomeRedesign({
         setHoveredTrailerKey(null);
     };
 
-    // Section 5: Free Providers State
+    // Free Providers State
     const [freeMovies, setFreeMovies] = useState<TMDBTrendingResult[]>(initialFreeMovies);
     const [freeShows, setFreeShows] = useState<TMDBTrendingResult[]>(initialFreeShows);
     const [isLoadingFree, setIsLoadingFree] = useState<boolean>(false);
@@ -194,8 +171,6 @@ export function HomeRedesign({
     // Section Loaders during Global Region changes
     const [isLoadingTrending, setIsLoadingTrending] = useState<boolean>(false);
     const [isLoadingTrailers, setIsLoadingTrailers] = useState<boolean>(false);
-    const [isLoadingUpcomingMovies, setIsLoadingUpcomingMovies] = useState<boolean>(false);
-    const [isLoadingUpcomingShows, setIsLoadingUpcomingShows] = useState<boolean>(false);
 
     // ----------------------------------------------------
     // Helper to calculate client-side synthetic RT score
@@ -214,7 +189,7 @@ export function HomeRedesign({
     };
 
     // ----------------------------------------------------
-    // Section 0: Carousel 5-minute background refresh (linked to globalRegion)
+    // Carousel 5-minute background refresh
     // ----------------------------------------------------
     useEffect(() => {
         const interval = setInterval(async () => {
@@ -246,41 +221,6 @@ export function HomeRedesign({
     }, [globalRegion, locale]);
 
     // ----------------------------------------------------
-    // Section 1: Latest Trailers 5-Minute Background Sync (linked to globalRegion)
-    // ----------------------------------------------------
-    useEffect(() => {
-        const interval = setInterval(async () => {
-            try {
-                const [movies, shows] = await Promise.all([
-                    getUpcomingWithTrailersAction('movie', globalRegion, locale),
-                    getUpcomingWithTrailersAction('tv', globalRegion, locale),
-                ]);
-
-                if (movies.length > 0) {
-                    const enrichedMovies = enrichClientRTScores(movies.slice(0, 10));
-                    setUpcomingMovies(enrichedMovies);
-                    const now = Date.now();
-                    localStorage.setItem('upcoming_movies_data', JSON.stringify(enrichedMovies));
-                    localStorage.setItem('upcoming_movies_time', String(now));
-                    setUpcomingMoviesTime(now);
-                }
-                if (shows.length > 0) {
-                    const enrichedShows = enrichClientRTScores(shows.slice(0, 10));
-                    setUpcomingShows(enrichedShows);
-                    const now = Date.now();
-                    localStorage.setItem('upcoming_shows_data', JSON.stringify(enrichedShows));
-                    localStorage.setItem('upcoming_shows_time', String(now));
-                    setUpcomingShowsTime(now);
-                }
-            } catch (e) {
-                console.error('Failed to background sync trailers:', e);
-            }
-        }, 300000); // 5 minutes
-
-        return () => clearInterval(interval);
-    }, [globalRegion, locale]);
-
-    // ----------------------------------------------------
     // Companion: Mood & Shelf Handler
     // ----------------------------------------------------
     const handleMoodSelect = async (moodKey: string) => {
@@ -297,7 +237,7 @@ export function HomeRedesign({
     };
 
     // ----------------------------------------------------
-    // Section 1: Trailer Action Trigger
+    // Trailer Action Trigger
     // ----------------------------------------------------
     const handleTrailerClick = async (item: TMDBTrendingResult) => {
         const type = item.media_type || 'movie';
@@ -319,134 +259,7 @@ export function HomeRedesign({
     };
 
     // ----------------------------------------------------
-    // Section 2: Cinema Manual Update handler
-    // ----------------------------------------------------
-    const triggerCinemasUpdate = async () => {
-        setIsLoadingCinemas(true);
-        try {
-            const data = await getNowPlayingAction(globalRegion, locale);
-            setNowPlayingMovies(enrichClientRTScores(data));
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setIsLoadingCinemas(false);
-        }
-    };
-
-    // ----------------------------------------------------
-    // Section 2: Background auto-refresh for In Cinemas every 6 hours
-    // ----------------------------------------------------
-    useEffect(() => {
-        const interval = setInterval(async () => {
-            try {
-                const data = await getNowPlayingAction(globalRegion, locale);
-                setNowPlayingMovies(enrichClientRTScores(data));
-            } catch (e) {
-                console.error('Failed to background auto-update cinemas:', e);
-            }
-        }, 21600000); // 6 hours
-
-        return () => clearInterval(interval);
-    }, [globalRegion, locale]);
-
-    // ----------------------------------------------------
-    // Section 3 & 4: Caching & Auto/Manual Update timers
-    // ----------------------------------------------------
-    useEffect(() => {
-        const cachedMovies = localStorage.getItem('upcoming_movies_data');
-        const cachedMoviesTime = localStorage.getItem('upcoming_movies_time');
-        if (cachedMovies && cachedMoviesTime) {
-            const age = Date.now() - Number(cachedMoviesTime);
-            if (age < 12 * 60 * 60 * 1000) {
-                setUpcomingMovies(JSON.parse(cachedMovies));
-                setUpcomingMoviesTime(Number(cachedMoviesTime));
-            } else {
-                localStorage.setItem('upcoming_movies_data', JSON.stringify(initialUpcomingMovies));
-                const now = Date.now();
-                localStorage.setItem('upcoming_movies_time', String(now));
-                setUpcomingMoviesTime(now);
-            }
-        } else {
-            localStorage.setItem('upcoming_movies_data', JSON.stringify(initialUpcomingMovies));
-            const now = Date.now();
-            localStorage.setItem('upcoming_movies_time', String(now));
-            setUpcomingMoviesTime(now);
-        }
-
-        const cachedShows = localStorage.getItem('upcoming_shows_data');
-        const cachedShowsTime = localStorage.getItem('upcoming_shows_time');
-        if (cachedShows && cachedShowsTime) {
-            const age = Date.now() - Number(cachedShowsTime);
-            if (age < 12 * 60 * 60 * 1000) {
-                setUpcomingShows(JSON.parse(cachedShows));
-                setUpcomingShowsTime(Number(cachedShowsTime));
-            } else {
-                localStorage.setItem('upcoming_shows_data', JSON.stringify(initialUpcomingShows));
-                const now = Date.now();
-                localStorage.setItem('upcoming_shows_time', String(now));
-                setUpcomingShowsTime(now);
-            }
-        } else {
-            localStorage.setItem('upcoming_shows_data', JSON.stringify(initialUpcomingShows));
-            const now = Date.now();
-            localStorage.setItem('upcoming_shows_time', String(now));
-            setUpcomingShowsTime(now);
-        }
-    }, [initialUpcomingMovies, initialUpcomingShows]);
-
-    // Interval checks for auto-updates every 60 seconds
-    useEffect(() => {
-        const interval = setInterval(() => {
-            const moviesTime = localStorage.getItem('upcoming_movies_time');
-            if (moviesTime && Date.now() - Number(moviesTime) >= 12 * 60 * 60 * 1000) {
-                triggerMoviesUpdate();
-            }
-            const showsTime = localStorage.getItem('upcoming_shows_time');
-            if (showsTime && Date.now() - Number(showsTime) >= 12 * 60 * 60 * 1000) {
-                triggerShowsUpdate();
-            }
-        }, 60000);
-
-        return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [globalRegion, locale]);
-
-    const triggerMoviesUpdate = async () => {
-        setIsUpdatingMovies(true);
-        try {
-            const data = await getUpcomingMoviesAction(globalRegion, locale);
-            const enriched = enrichClientRTScores(data.slice(0, 10));
-            setUpcomingMovies(enriched);
-            const now = Date.now();
-            localStorage.setItem('upcoming_movies_data', JSON.stringify(enriched));
-            localStorage.setItem('upcoming_movies_time', String(now));
-            setUpcomingMoviesTime(now);
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setIsUpdatingMovies(false);
-        }
-    };
-
-    const triggerShowsUpdate = async () => {
-        setIsUpdatingShows(true);
-        try {
-            const data = await getUpcomingTVShowsAction(globalRegion, locale);
-            const enriched = enrichClientRTScores(data.slice(0, 10));
-            setUpcomingShows(enriched);
-            const now = Date.now();
-            localStorage.setItem('upcoming_shows_data', JSON.stringify(enriched));
-            localStorage.setItem('upcoming_shows_time', String(now));
-            setUpcomingShowsTime(now);
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setIsUpdatingShows(false);
-        }
-    };
-
-    // ----------------------------------------------------
-    // Section 5: Free content randomized pagination updates (Strict 15-item quota)
+    // Free content randomized pagination updates (Strict 15-item quota)
     // ----------------------------------------------------
     const triggerFreeUpdate = async () => {
         setIsLoadingFree(true);
@@ -488,34 +301,25 @@ export function HomeRedesign({
         setGlobalRegion(newRegion);
         setIsLoadingTrending(true);
         setIsLoadingTrailers(true);
-        setIsLoadingCinemas(true);
-        setIsLoadingUpcomingMovies(true);
-        setIsLoadingUpcomingShows(true);
         setIsLoadingFree(true);
 
         try {
             const [
                 trendingMovies,
                 trendingShows,
-                nowPlaying,
                 popularTrailersData,
                 streamingTrailersData,
                 rentTrailersData,
                 theaterTrailersData,
-                upcomingMoviesData,
-                upcomingShowsData,
                 freeMoviesData,
                 freeShowsData,
             ] = await Promise.all([
                 getTrendingAction('movie', 'day', newRegion, locale),
                 getTrendingAction('tv', 'day', newRegion, locale),
-                getNowPlayingAction(newRegion, locale),
                 getCategoryMediaAction('/movie/popular', 1, newRegion, locale),
                 discoverMediaAction('movie', { with_watch_monetization_types: 'flatrate', watch_region: newRegion, sort_by: 'popularity.desc', language: locale === 'zh-TW' ? 'zh-TW' : 'en-US' }),
                 discoverMediaAction('movie', { with_watch_monetization_types: 'rent', watch_region: newRegion, sort_by: 'popularity.desc', language: locale === 'zh-TW' ? 'zh-TW' : 'en-US' }),
                 getCategoryMediaAction('/movie/now_playing', 1, newRegion, locale),
-                getUpcomingWithTrailersAction('movie', newRegion, locale),
-                getUpcomingWithTrailersAction('tv', newRegion, locale),
                 getStrictlyFreeQuotaAction('movie', 1, newRegion, locale),
                 getStrictlyFreeQuotaAction('tv', 1, newRegion, locale),
             ]);
@@ -529,33 +333,12 @@ export function HomeRedesign({
             setTrendingMedia(enrichClientRTScores(mix));
             setIsLoadingTrending(false);
 
-            // In Cinemas
-            setNowPlayingMovies(enrichClientRTScores(nowPlaying));
-            setIsLoadingCinemas(false);
-
             // Trailers Categories
             setPopularTrailers(popularTrailersData.results || []);
             setStreamingTrailers(streamingTrailersData.results || []);
             setRentTrailers(rentTrailersData.results || []);
             setTheaterTrailers(theaterTrailersData.results || []);
             setIsLoadingTrailers(false);
-
-            // Upcoming Movies
-            const enrichedUpcomingMovies = enrichClientRTScores(upcomingMoviesData.slice(0, 10));
-            setUpcomingMovies(enrichedUpcomingMovies);
-            const now = Date.now();
-            localStorage.setItem('upcoming_movies_data', JSON.stringify(enrichedUpcomingMovies));
-            localStorage.setItem('upcoming_movies_time', String(now));
-            setUpcomingMoviesTime(now);
-            setIsLoadingUpcomingMovies(false);
-
-            // Upcoming Shows
-            const enrichedUpcomingShows = enrichClientRTScores(upcomingShowsData.slice(0, 10));
-            setUpcomingShows(enrichedUpcomingShows);
-            localStorage.setItem('upcoming_shows_data', JSON.stringify(enrichedUpcomingShows));
-            localStorage.setItem('upcoming_shows_time', String(now));
-            setUpcomingShowsTime(now);
-            setIsLoadingUpcomingShows(false);
 
             // Free to watch
             setFreeMovies(enrichClientRTScores(freeMoviesData));
@@ -565,26 +348,11 @@ export function HomeRedesign({
             console.error('Failed to change global region:', e);
             setIsLoadingTrending(false);
             setIsLoadingTrailers(false);
-            setIsLoadingCinemas(false);
-            setIsLoadingUpcomingMovies(false);
-            setIsLoadingUpcomingShows(false);
             setIsLoadingFree(false);
         }
     };
 
-    // Dynamic mixed list for "Upcoming" trailers
-    const upcomingTrailers: TMDBTrendingResult[] = [];
-    for (let i = 0; i < 6; i++) {
-        if (upcomingMovies[i]) {
-            upcomingTrailers.push({ ...upcomingMovies[i], media_type: 'movie' });
-        }
-        if (upcomingShows[i]) {
-            upcomingTrailers.push({ ...upcomingShows[i], media_type: 'tv' });
-        }
-    }
-
     const currentTrailers =
-        trailerTab === 'upcoming' ? upcomingTrailers :
         trailerTab === 'popular' ? popularTrailers :
         trailerTab === 'streaming' ? streamingTrailers :
         trailerTab === 'rent' ? rentTrailers :
@@ -596,26 +364,28 @@ export function HomeRedesign({
 
     return (
         <div className="relative -mt-16 sm:-mt-20">
+            {/* First-time onboarding gateway */}
+            <OnboardingGate />
+
             {/* ====================================================
                 SECTION 0: DYNAMIC MULTI-ITEM HERO CAROUSEL
                ==================================================== */}
-            <div className="relative min-h-[540px]">
-                {isLoadingTrending ? (
-                    <div className="absolute inset-0 z-30 flex items-center justify-center bg-background/60 backdrop-blur-sm">
-                        <Loader2 className="h-8 w-8 animate-spin text-foreground-muted" />
+            <div className="relative">
+                {isLoadingTrending && (
+                    <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/50 backdrop-blur-sm">
+                        <Loader2 className="h-8 w-8 animate-spin text-accent" />
                     </div>
-                ) : null}
-                <HeroCarousel
-                    movies={trendingMedia}
-                    onPlayTrailer={(item) => handleTrailerClick(item)}
-                />
+                )}
+                <HeroCarousel movies={trendingMedia} onPlayTrailer={handleTrailerClick} />
             </div>
 
-            {/* Main Editorial Content Area */}
-            <div className="relative z-20 mx-auto max-w-7xl space-y-16 px-4 pb-24 pt-14 sm:px-6 sm:space-y-20 lg:px-8">
+            {/* ====================================================
+                MAIN CONTENT CONTAINER
+               ==================================================== */}
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-16 py-12">
 
                 {/* ====================================================
-                    SECTION 0.5: PERSONAL CINEMA COMPANION & MOOD
+                    COMPANION SHELVES & MOOD MATCHER
                    ==================================================== */}
                 <div className="space-y-12">
                     <MoodMatcherBar
@@ -683,10 +453,9 @@ export function HomeRedesign({
                         actionLabel={t('seeMore') || 'See More'}
                     >
                         <div className="flex flex-nowrap items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-hide md:overflow-visible">
-                            {(['upcoming', 'popular', 'streaming', 'rent', 'theaters'] as const).map((tab) => {
+                            {(['popular', 'streaming', 'rent', 'theaters'] as const).map((tab) => {
                                 const getTabLabel = () => {
                                     switch (tab) {
-                                        case 'upcoming': return tNowShowing('upcoming');
                                         case 'popular': return tNowShowing('popular');
                                         case 'streaming': return tNowShowing('onTv');
                                         case 'rent': return tNowShowing('forRent');
@@ -761,7 +530,7 @@ export function HomeRedesign({
                                             {item.title || item.name}
                                         </h3>
                                         <p className="text-[11px] text-foreground-muted">
-                                            {item.release_date || item.first_air_date || t('upcomingMovies') || 'Coming Soon'}
+                                            {item.release_date || item.first_air_date || t('viewDetails') || 'Discover'}
                                         </p>
                                     </div>
                                 </div>
@@ -771,176 +540,7 @@ export function HomeRedesign({
                 </section>
 
                 {/* ====================================================
-                    SECTION 2: IN CINEMAS
-                   ==================================================== */}
-                <section className="space-y-5">
-                    <SectionHeader
-                        eyebrow="Theatrical"
-                        title={t('inCinemas') || 'In Cinemas'}
-                        actionHref={`/movies?category=now_playing&region=${globalRegion}`}
-                        actionLabel={t('seeMore') || 'See More'}
-                    >
-                        <span className="inline-flex items-center gap-1.5 text-xs text-foreground-muted">
-                            <MapPin className="h-3.5 w-3.5" />
-                            {tNowShowing('inTheaters') || 'Showing in Theaters'}
-                        </span>
-                        <button
-                            onClick={triggerCinemasUpdate}
-                            disabled={isLoadingCinemas}
-                            className="inline-flex items-center gap-2 rounded-lg border border-border bg-background-elevated px-3.5 py-2 text-xs font-semibold text-foreground transition-colors hover:border-border-hover hover:bg-background-highlight disabled:opacity-50"
-                        >
-                            {isLoadingCinemas ? (
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                                <RotateCw className="h-3.5 w-3.5" />
-                            )}
-                            {t('updateBtn') || 'Update'}
-                        </button>
-                    </SectionHeader>
-
-                    <div className="relative">
-                        {isLoadingCinemas && (
-                            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-background/50 backdrop-blur-sm">
-                                <Loader2 className="h-7 w-7 animate-spin text-foreground-muted" />
-                            </div>
-                        )}
-                        <div className="media-rail -mx-4 px-4 sm:mx-0 sm:px-0">
-                            {nowPlayingMovies.map((movie: TMDBTrendingResult) => (
-                                <div key={movie.id} className="w-36 md:w-44 fade-in">
-                                    <MovieCard
-                                        id={movie.id}
-                                        title={movie.title || movie.name || ''}
-                                        posterPath={movie.poster_path}
-                                        voteAverage={movie.vote_average}
-                                        releaseDate={movie.release_date || movie.first_air_date}
-                                        mediaType="movie"
-                                        rtScore={movie.rtScore}
-                                        rtStatus={movie.rtStatus}
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </section>
-
-                {/* ====================================================
-                    SECTION 3: UPCOMING MOVIES
-                   ==================================================== */}
-                <section className="space-y-5">
-                    <SectionHeader
-                        eyebrow="Coming Soon"
-                        title={t('upcomingMovies') || 'Upcoming Movies'}
-                        actionHref="/movies?category=upcoming"
-                        actionLabel={t('seeMore') || 'See More'}
-                    >
-                        <span className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-foreground-subtle">
-                            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" />
-                            {tNowShowing('lastUpdated') || 'Last updated'}:
-                            <span className="font-medium normal-case">
-                                {upcomingMoviesTime > 0
-                                    ? new Date(upcomingMoviesTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                                    : 'Updating...'}
-                            </span>
-                        </span>
-                        <button
-                            onClick={triggerMoviesUpdate}
-                            disabled={isUpdatingMovies}
-                            className="inline-flex items-center gap-2 rounded-lg border border-border bg-background-elevated px-3.5 py-2 text-xs font-semibold text-foreground transition-colors hover:border-border-hover hover:bg-background-highlight disabled:opacity-50"
-                        >
-                            {isUpdatingMovies ? (
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                                <RotateCw className="h-3.5 w-3.5" />
-                            )}
-                            {t('updateBtn') || 'Update'}
-                        </button>
-                    </SectionHeader>
-
-                    <div className="relative">
-                        {isLoadingUpcomingMovies && (
-                            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-background/50 backdrop-blur-sm">
-                                <Loader2 className="h-7 w-7 animate-spin text-foreground-muted" />
-                            </div>
-                        )}
-                        <div className="media-rail -mx-4 px-4 sm:mx-0 sm:px-0">
-                            {upcomingMovies.map((movie: TMDBTrendingResult) => (
-                                <div key={movie.id} className="w-36 md:w-44">
-                                    <MovieCard
-                                        id={movie.id}
-                                        title={movie.title || movie.name || ''}
-                                        posterPath={movie.poster_path}
-                                        voteAverage={movie.vote_average}
-                                        releaseDate={movie.release_date || movie.first_air_date}
-                                        mediaType="movie"
-                                        rtScore={movie.rtScore}
-                                        rtStatus={movie.rtStatus}
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </section>
-
-                {/* ====================================================
-                    SECTION 4: UPCOMING TV SHOWS
-                   ==================================================== */}
-                <section className="space-y-5">
-                    <SectionHeader
-                        eyebrow="Coming Soon"
-                        title={t('upcomingTvShows') || 'Upcoming TV Shows'}
-                        actionHref="/tv-shows?category=upcoming"
-                        actionLabel={t('seeMore') || 'See More'}
-                    >
-                        <span className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-foreground-subtle">
-                            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-info" />
-                            {tNowShowing('lastUpdated') || 'Last updated'}:
-                            <span className="font-medium normal-case">
-                                {upcomingShowsTime > 0
-                                    ? new Date(upcomingShowsTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                                    : 'Updating...'}
-                            </span>
-                        </span>
-                        <button
-                            onClick={triggerShowsUpdate}
-                            disabled={isUpdatingShows}
-                            className="inline-flex items-center gap-2 rounded-lg border border-border bg-background-elevated px-3.5 py-2 text-xs font-semibold text-foreground transition-colors hover:border-border-hover hover:bg-background-highlight disabled:opacity-50"
-                        >
-                            {isUpdatingShows ? (
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                                <RotateCw className="h-3.5 w-3.5" />
-                            )}
-                            {t('updateBtn') || 'Update'}
-                        </button>
-                    </SectionHeader>
-
-                    <div className="relative">
-                        {isLoadingUpcomingShows && (
-                            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-background/50 backdrop-blur-sm">
-                                <Loader2 className="h-7 w-7 animate-spin text-foreground-muted" />
-                            </div>
-                        )}
-                        <div className="media-rail -mx-4 px-4 sm:mx-0 sm:px-0">
-                            {upcomingShows.map((show: TMDBTrendingResult) => (
-                                <div key={show.id} className="w-36 md:w-44">
-                                    <MovieCard
-                                        id={show.id}
-                                        title={show.title || show.name || ''}
-                                        posterPath={show.poster_path}
-                                        voteAverage={show.vote_average}
-                                        releaseDate={show.release_date || show.first_air_date}
-                                        mediaType="tv"
-                                        rtScore={show.rtScore}
-                                        rtStatus={show.rtStatus}
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </section>
-
-                {/* ====================================================
-                    SECTION 5: FREE TO WATCH (100% FREE ONLY)
+                    SECTION 2: FREE TO WATCH (100% FREE ONLY)
                    ==================================================== */}
                 <section className="space-y-5">
                     <SectionHeader
@@ -1025,7 +625,7 @@ export function HomeRedesign({
                 </section>
 
                 {/* ====================================================
-                    SECTION 6: FOOTER REGION FILTER
+                    SECTION 3: FOOTER REGION FILTER
                    ==================================================== */}
                 <section className="flex flex-col items-center justify-center gap-4 border-t border-border/40 pt-10">
                     <div className="flex flex-col items-center gap-1 text-center">
@@ -1044,7 +644,7 @@ export function HomeRedesign({
                             aria-label={t('globalRegionFilter') || 'Global Region Filter'}
                             className="min-w-[220px] cursor-pointer appearance-none rounded-lg border border-border bg-background-elevated py-2.5 pl-4 pr-10 text-center text-xs font-bold text-foreground transition-colors hover:border-border-hover focus:border-border-active focus:outline-none"
                         >
-                            {CINEMA_COUNTRIES.map((c) => (
+                            {AVAILABLE_COUNTRIES.map((c) => (
                                 <option key={c.code} value={c.code} className="bg-background-elevated text-left">
                                     {t(`region${c.code}`) || c.name} ({c.code})
                                 </option>
@@ -1055,7 +655,7 @@ export function HomeRedesign({
                 </section>
 
                 {/* ====================================================
-                    SECTION 1 MODAL: TRAILER VIDEO LIGHTBOX
+                    SECTION MODAL: TRAILER VIDEO LIGHTBOX
                    ==================================================== */}
                 {activeTrailer ? (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -1100,7 +700,7 @@ export function HomeRedesign({
                 ) : null}
 
                 {/* ====================================================
-                    SECTION 5 MODAL: FREE STREAMING WATCH PROVIDERS
+                    SECTION MODAL: FREE STREAMING WATCH PROVIDERS
                    ==================================================== */}
                 {activeFreeItem ? (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
