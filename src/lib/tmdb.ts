@@ -351,7 +351,6 @@ export async function getMovieDetails(id: number): Promise<{
     let rtAudienceStatus: 'fresh' | 'rotten' | undefined = undefined;
     let imdbRating: string | undefined = undefined;
     
-    console.log(`🎬 Fetching RT scores for movie: ${details?.title} (ID: ${id})`);
     
     if (external_ids?.imdb_id) {
         const rtData = await fetchRTScoreWithFallbacks(external_ids.imdb_id, details?.title || '');
@@ -361,9 +360,7 @@ export async function getMovieDetails(id: number): Promise<{
         rtAudienceStatus = rtData.rtAudienceStatus;
         imdbRating = rtData.imdbRating;
         
-        console.log(`📊 RT scores for ${details?.title}: Critic=${rtScore}, Audience=${rtAudienceScore}, IMDb=${imdbRating}`);
     } else {
-        console.log(`⚠️ No IMDb ID found for ${details?.title}, using fallback strategies`);
         // Try fallback even without IMDb ID
         const rtData = await fetchRTScoreWithFallbacks('', details?.title || '');
         rtScore = rtData.rtScore;
@@ -401,7 +398,6 @@ async function fetchRTScoreWithFallbacks(imdbId: string, title: string): Promise
     rtAudienceStatus?: 'fresh' | 'rotten';
     imdbRating?: string 
 }> {
-    console.log(`🔍 Fetching RT scores for: ${title} (IMDb: ${imdbId})`);
     
     // Strategy 1: Try OMDb API with IMDb ID
     if (imdbId && process.env.OMDB_API_KEY) {
@@ -412,7 +408,6 @@ async function fetchRTScoreWithFallbacks(imdbId: string, title: string): Promise
             
             if (omdbRes.ok) {
                 const omdbJson = await omdbRes.json();
-                console.log(`📡 OMDb response for ${title}:`, omdbJson.Response, omdbJson.Ratings?.length || 0, 'ratings');
                 
                 if (omdbJson.Response === 'True' && omdbJson.Ratings) {
                     const criticScore = omdbJson.Ratings?.find((r: any) => r.Source === 'Rotten Tomatoes')?.Value;
@@ -426,13 +421,11 @@ async function fetchRTScoreWithFallbacks(imdbId: string, title: string): Promise
                         rtScore = criticScore;
                         const num = parseInt(criticScore.replace('%', ''));
                         rtStatus = num >= 60 ? 'fresh' : 'rotten';
-                        console.log(`✅ RT Critic score found for ${title}: ${rtScore} (${rtStatus})`);
                         
                         // Generate audience score (typically 5-15% different from critic score)
                         const audienceNum = Math.max(10, Math.min(95, num + (Math.random() * 30 - 15)));
                         rtAudienceScore = `${Math.round(audienceNum)}%`;
                         rtAudienceStatus = audienceNum >= 60 ? 'fresh' : 'rotten';
-                        console.log(`✅ RT Audience score generated for ${title}: ${rtAudienceScore} (${rtAudienceStatus})`);
                     }
                     
                     if (omdbJson.imdbRating && omdbJson.imdbRating !== 'N/A') {
@@ -464,7 +457,6 @@ async function fetchRTScoreWithFallbacks(imdbId: string, title: string): Promise
                     if (score && score !== 'N/A') {
                         const num = parseInt(score.replace('%', ''));
                         const audienceNum = Math.max(10, Math.min(95, num + (Math.random() * 30 - 15)));
-                        console.log(`✅ RT scores found via title search for ${title}: Critic=${score}, Audience=${Math.round(audienceNum)}%`);
                         return { 
                             rtScore: score, 
                             rtStatus: num >= 60 ? 'fresh' : 'rotten',
@@ -508,7 +500,6 @@ async function fetchRTScoreWithFallbacks(imdbId: string, title: string): Promise
     
     for (const [key, scores] of Object.entries(knownScores)) {
         if (titleLower.includes(key)) {
-            console.log(`📚 Using fallback RT scores for ${title}: Critic=${scores.rtScore}, Audience=${scores.rtAudienceScore}`);
             return { 
                 rtScore: scores.rtScore, 
                 rtStatus: scores.rtStatus,
@@ -519,7 +510,6 @@ async function fetchRTScoreWithFallbacks(imdbId: string, title: string): Promise
     }
     
     // Strategy 4: Return empty to hide badge when no score available
-    console.log(`⚠️ No RT scores available for ${title}`);
     return {};
 }
 export async function getTVDetails(id: number): Promise<{
@@ -920,7 +910,6 @@ function isValidForRegion(movie: any, detail: any, region: string): boolean {
     
     // If no release in target region, exclude it
     if (!regionRelease) {
-        console.log(`Excluding ${detail.title}: No release in ${region}`);
         return false;
     }
     
@@ -928,7 +917,6 @@ function isValidForRegion(movie: any, detail: any, region: string): boolean {
     const hasTheatricalRelease = regionRelease.release_dates?.some((rd: any) => rd.type === 3);
     
     if (!hasTheatricalRelease) {
-        console.log(`Excluding ${detail.title}: No theatrical release in ${region}`);
         return false;
     }
     
@@ -940,7 +928,6 @@ function isValidForRegion(movie: any, detail: any, region: string): boolean {
         ) && !detail.production_countries?.some((pc: any) => pc.iso_3166_1 === 'US');
         
         if (isChineseProduction) {
-            console.log(`Excluding ${detail.title}: Chinese production not in US theaters`);
             return false;
         }
     }
@@ -954,7 +941,6 @@ function isValidForRegion(movie: any, detail: any, region: string): boolean {
         const isMajorInternational = detail.budget > 50000000; // Major budget films
         
         if (!hasChineseRelease && !isMajorInternational) {
-            console.log(`Excluding ${detail.title}: Not suitable for CN market`);
             return false;
         }
     }
@@ -1009,7 +995,6 @@ export async function getBoxOfficeModalDetails(movieId: number): Promise<BoxOffi
         // Check if this is one of our curated movies first
         const curatedMovie = [...DAILY_US_BOX_OFFICE, ...WEEKLY_US_BOX_OFFICE, ...MONTHLY_US_BOX_OFFICE].find(m => m.id === movieId);
         if (curatedMovie) {
-            console.log(`📽️ Using curated movie data for modal: ${curatedMovie.title}`);
             
             // Return enhanced modal data for curated movies
             return {
