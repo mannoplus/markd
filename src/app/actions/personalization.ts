@@ -4,7 +4,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { calculateUserTasteProfile, calculateMatchScore, type UserTasteProfile, type MovieDnaTrait } from '@/lib/taste-engine';
 import { buildRecommendationReason, type StructuredReason } from '@/lib/personalization/reasons';
-import { discoverMedia } from '@/lib/tmdb';
+import { discoverMedia, getCategoryMedia } from '@/lib/tmdb';
 import type { InteractionSignal } from '@/lib/personalization/signals';
 
 export interface PersonalizedShelfItem {
@@ -266,13 +266,38 @@ export async function getPersonalizedHomeShelvesAction(
 
   const allCandidates = Array.from(candidateMap.values());
 
-  // Rank Because You Loved candidates
+  // Rank Because You Loved candidates dynamically based on user's top favorite / highest rated media
   let becauseYouLoved: PersonalizedShelvesResult['becauseYouLoved'] = undefined;
-  const topFavorite = mediaItems.find((i) => (i.rating && i.rating >= 8) || i.status === 'completed');
+  const sortedFavorites = [...mediaItems]
+    .filter((i) => (i.rating && i.rating >= 7) || i.status === 'completed')
+    .sort((a, b) => (b.rating || 8) - (a.rating || 8));
+
+  const topFavorite = sortedFavorites[0] || mediaItems[0];
 
   if (topFavorite) {
-    const similarItems: PersonalizedShelfItem[] = allCandidates
-      .filter((m) => m.id !== topFavorite.tmdb_id)
+    let favoriteRecs: any[] = [];
+    try {
+      const type = topFavorite.media_type || 'movie';
+      const [recData, simData] = await Promise.all([
+        getCategoryMedia(`/${type}/${topFavorite.tmdb_id}/recommendations`, 1, region, targetLang).catch(() => ({ results: [] })),
+        getCategoryMedia(`/${type}/${topFavorite.tmdb_id}/similar`, 1, region, targetLang).catch(() => ({ results: [] })),
+      ]);
+      favoriteRecs = [...(recData?.results || []), ...(simData?.results || [])];
+    } catch (e) {
+      console.warn('Failed to fetch specific recommendations for favorite:', e);
+    }
+
+    // Combine specific recommendations with candidate pool
+    const combinedBecauseCandidates = [...favoriteRecs, ...allCandidates];
+    const seenIds = new Set<number>([topFavorite.tmdb_id]);
+
+    const similarItems: PersonalizedShelfItem[] = combinedBecauseCandidates
+      .filter((m) => {
+        if (!m || !m.id || seenIds.has(m.id)) return false;
+        if (profile.dismissedTmdbIds.has(m.id) || profile.notMyTypeIds.has(m.id)) return false;
+        seenIds.add(m.id);
+        return true;
+      })
       .map((m) => {
         const struct = buildRecommendationReason(m, profile, mediaItems, undefined, locale);
         return {
@@ -288,7 +313,8 @@ export async function getPersonalizedHomeShelvesAction(
           structuredReason: struct,
         };
       })
-      .slice(0, 8);
+      .sort((a, b) => b.matchScore - a.matchScore)
+      .slice(0, 10);
 
     if (similarItems.length > 0) {
       becauseYouLoved = {

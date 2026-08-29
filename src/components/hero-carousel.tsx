@@ -24,7 +24,7 @@ export function HeroCarousel({ movies, onPlayTrailer }: HeroCarouselProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [watchlistMap, setWatchlistMap] = useState<Record<number, boolean>>({});
 
-  const slideCount = Math.min(movies.length, 6);
+  const slideCount = Math.min(movies.length, 10);
   const activeMovies = movies.slice(0, slideCount);
 
   const nextSlide = useCallback(() => {

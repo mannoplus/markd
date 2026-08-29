@@ -18,19 +18,28 @@ export default async function Home({
   const region = typeof resolvedParams.region === 'string' ? resolvedParams.region : 'TW';
 
   // Fetch Now Playing / In Theaters for the hero carousel, localized by region
-  const [nowPlayingMovies, nowPlayingShows] = await Promise.all([
+  const [nowPlayingMovies, nowPlayingShows, discover2026TV] = await Promise.all([
     getNowPlaying(region).catch(() => []),
     getCategoryMedia('/tv/popular', 1, region).catch(() => ({ results: [] })),
+    discoverMedia('tv', { first_air_date_year: '2026', sort_by: 'popularity.desc', watch_region: region }).catch(() => ({ results: [], total_pages: 0, total_results: 0 })),
   ]);
 
-  // Filter TV shows: current year only, exclude news programs
-  const currentYear = new Date().getFullYear();
-  const newsBlacklist = ['tagesschau', 'nachrichten', 'news', 'xnachrichten'];
-  const filteredPopularTV = (nowPlayingShows.results || []).filter((s: any) => {
+  // Filter TV shows: current year (2026) only, popular, exclude news/talk shows
+  const currentYear = 2026;
+  const newsBlacklist = ['tagesschau', 'nachrichten', 'news', 'xnachrichten', 'daily', 'tonight show'];
+  const rawTVList = [
+    ...(nowPlayingShows.results || []),
+    ...(discover2026TV.results || []),
+  ];
+  
+  const seenTV = new Set<number>();
+  const filteredPopularTV = rawTVList.filter((s: any) => {
+    if (!s || !s.id || seenTV.has(s.id)) return false;
     const year = (s.first_air_date || '').substring(0, 4);
     const title = (s.name || '').toLowerCase();
     if (year !== String(currentYear)) return false;
     if (newsBlacklist.some(kw => title.includes(kw))) return false;
+    seenTV.add(s.id);
     return true;
   });
 

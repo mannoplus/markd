@@ -6,7 +6,8 @@ import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import {
     X, Send, Trash2, Minimize2,
-    ExternalLink, ThumbsDown, SlidersHorizontal
+    ExternalLink, ThumbsDown, Play, Sparkles, Film, Tv, Video, Clapperboard,
+    TvMinimalPlay, Check, Plus
 } from 'lucide-react';
 import { MarkdLogoIcon } from '@/components/MarkdLogoIcon';
 import { AiMarkdownMessage } from '@/components/AiMarkdownMessage';
@@ -14,7 +15,8 @@ import { Link } from '@/i18n/routing';
 import { upsertMediaItem, submitTasteFeedbackAction } from '@/app/actions';
 import { IMAGE_SIZES } from '@/lib/tmdb';
 import { MediaActionButtons } from '@/components/media-action-buttons';
-import type { AiChatMessage, AiRecommendationItem } from '@/lib/ai/types';
+import { useRegion } from '@/context/RegionContext';
+import type { AiChatMessage, AiRecommendationItem, AiMediaPoster, AiMediaVideo, AiWatchProvidersData } from '@/lib/ai/types';
 
 interface AiChatBoxProps {
     mediaId?: number;
@@ -32,6 +34,15 @@ export function AiChatBox({
     const t = useTranslations('AiChat');
     const tCommon = useTranslations('Common');
     
+    // Safely retrieve region context
+    let currentRegion = 'US';
+    try {
+        const { region } = useRegion();
+        if (region) currentRegion = region;
+    } catch {
+        // Fallback if not inside RegionProvider
+    }
+
     const [isMinimized, setIsMinimized] = useState(false);
     const [messages, setMessages] = useState<AiChatMessage[]>([]);
     const [inputValue, setInputValue] = useState('');
@@ -39,6 +50,7 @@ export function AiChatBox({
     const [suggestions, setSuggestions] = useState<string[]>([]);
     const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
+    const [activeTrailerKey, setActiveTrailerKey] = useState<string | null>(null);
 
     // State for tracking inline actions
     const [addedIds, setAddedIds] = useState<Record<number, 'watchlist' | 'watched'>>({});
@@ -48,6 +60,19 @@ export function AiChatBox({
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const savedScrollTop = useRef<number>(0);
+
+    const isZh = locale === 'zh-TW' || locale.startsWith('zh');
+
+    // Standard Quick Query Chips
+    const STANDARD_CHIPS = [
+        { label: isZh ? '✨ 免費看' : '✨ Free to watch', query: isZh ? '有什麼免費線上看的內容？' : 'What is free to watch?' },
+        { label: isZh ? '核心主題' : 'Core themes', query: title ? (isZh ? `《${title}》的核心主題是什麼？` : `What are the core themes of ${title}?`) : (isZh ? '什麼是這部作品的核心主題？' : 'What are the core themes?') },
+        { label: isZh ? '結局解析' : 'Explain ending', query: title ? (isZh ? `解析《${title}》的結局涵義` : `Explain the ending of ${title}`) : (isZh ? '解析這個結局' : 'Explain the ending') },
+        { label: isZh ? '導演是誰' : 'Director', query: title ? (isZh ? `《${title}》的導演是誰？` : `Who is the director of ${title}?`) : (isZh ? '導演是誰？' : 'Who is the director?') },
+        { label: isZh ? '主演陣容' : 'Cast', query: title ? (isZh ? `《${title}》的主演有哪些？` : `Who is in the cast of ${title}?`) : (isZh ? '主演有哪些演員？' : 'Who is in the cast?') },
+        { label: isZh ? '播放平台' : 'Where to stream', query: title ? (isZh ? `在哪裡可以線上觀看《${title}》？` : `Where can I stream ${title}?`) : (isZh ? '線上哪裡可以看？' : 'Where can I stream this?') },
+        { label: isZh ? '看預告片' : 'Show trailer', query: title ? (isZh ? `播放《${title}》的預告片` : `Show me the trailer for ${title}`) : (isZh ? '播放預告片' : 'Show me the trailer') },
+    ];
 
     // Fetch context suggestions
     const fetchSuggestions = useCallback(async (currentMessages: AiChatMessage[]) => {
@@ -60,7 +85,8 @@ export function AiChatBox({
                     isSuggestions: true,
                     messages: currentMessages,
                     language: locale,
-                    contextInfo: mediaId ? { id: mediaId, type: mediaType, title, overview } : undefined,
+                    region: currentRegion,
+                    contextInfo: mediaId ? { id: mediaId, type: mediaType, title, overview, region: currentRegion } : undefined,
                 }),
             });
             if (res.ok) {
@@ -82,7 +108,7 @@ export function AiChatBox({
         } finally {
             setIsLoadingSuggestions(false);
         }
-    }, [mediaId, mediaType, title, overview, locale]);
+    }, [mediaId, mediaType, title, overview, locale, currentRegion]);
 
     // Initial suggestions on mount
     useEffect(() => {
@@ -147,7 +173,8 @@ export function AiChatBox({
                 body: JSON.stringify({
                     messages: updatedMessages,
                     language: locale,
-                    contextInfo: mediaId ? { id: mediaId, type: mediaType, title, overview } : undefined,
+                    region: currentRegion,
+                    contextInfo: mediaId ? { id: mediaId, type: mediaType, title, overview, region: currentRegion } : undefined,
                 }),
             });
 
@@ -161,6 +188,11 @@ export function AiChatBox({
                 role: 'assistant', 
                 content: data.text || '',
                 recommendations: data.recommendations,
+                posters: data.posters,
+                videos: data.videos,
+                watchProviders: data.watchProviders,
+                provider: data.provider,
+                tier: data.tier,
             };
             const nextMessages = [...updatedMessages, assistantMsg];
             setMessages(nextMessages);
@@ -179,40 +211,41 @@ export function AiChatBox({
         setMessages([]);
         setSuggestions([]);
         setErrorMsg(null);
+        setActiveTrailerKey(null);
         fetchSuggestions([]);
     };
 
-    const handleAddToWatchlist = async (rec: AiRecommendationItem) => {
+    const handleAddToWatchlist = async (item: { id: number; title: string; mediaType: 'movie' | 'tv'; posterPath?: string | null }) => {
         try {
             await upsertMediaItem({
-                tmdb_id: rec.id,
-                media_type: rec.mediaType || 'movie',
-                title: rec.title,
-                poster_path: rec.posterPath || null,
+                tmdb_id: item.id,
+                media_type: item.mediaType || 'movie',
+                title: item.title,
+                poster_path: item.posterPath || null,
                 status: 'plan_to_watch',
                 rating: null,
                 season_progress: null,
                 episode_progress: null,
             });
-            setAddedIds((prev) => ({ ...prev, [rec.id]: 'watchlist' }));
+            setAddedIds((prev) => ({ ...prev, [item.id]: 'watchlist' }));
         } catch (e) {
             console.error('Failed to add to watchlist:', e);
         }
     };
 
-    const handleMarkWatched = async (rec: AiRecommendationItem) => {
+    const handleMarkWatched = async (item: { id: number; title: string; mediaType: 'movie' | 'tv'; posterPath?: string | null }) => {
         try {
             await upsertMediaItem({
-                tmdb_id: rec.id,
-                media_type: rec.mediaType || 'movie',
-                title: rec.title,
-                poster_path: rec.posterPath || null,
+                tmdb_id: item.id,
+                media_type: item.mediaType || 'movie',
+                title: item.title,
+                poster_path: item.posterPath || null,
                 status: 'completed',
                 rating: 8,
                 season_progress: null,
                 episode_progress: null,
             });
-            setAddedIds((prev) => ({ ...prev, [rec.id]: 'watched' }));
+            setAddedIds((prev) => ({ ...prev, [item.id]: 'watched' }));
         } catch (e) {
             console.error('Failed to mark watched:', e);
         }
@@ -266,13 +299,41 @@ export function AiChatBox({
 
     const activeSuggestions = suggestions.length > 0 ? suggestions : defaultSuggestions;
 
+    const renderTierBadge = (provider?: string, tier?: number) => {
+        if (provider === 'direct-api' || tier === 1) {
+            return (
+                <span className="inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                    <Sparkles className="h-2.5 w-2.5" />
+                    {isZh ? 'Tier 1 • TMDB 直連 (0 費用)' : 'Tier 1 • TMDB Direct (Zero Cost)'}
+                </span>
+            );
+        }
+        if (provider === 'openrouter' || tier === 2) {
+            return (
+                <span className="inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-400 border border-cyan-500/30">
+                    <Sparkles className="h-2.5 w-2.5" />
+                    {isZh ? 'Tier 2 • OpenRouter 免費模型' : 'Tier 2 • OpenRouter Free AI'}
+                </span>
+            );
+        }
+        if (provider === 'gemini' || tier === 3) {
+            return (
+                <span className="inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-400 border border-purple-500/30">
+                    <Sparkles className="h-2.5 w-2.5" />
+                    {isZh ? 'Tier 3 • Gemini 備援模型' : 'Tier 3 • Gemini Fallback AI'}
+                </span>
+            );
+        }
+        return null;
+    };
+
     return (
         <div 
             ref={chatRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="ai-chat-title"
-            className="fixed bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] right-2 left-2 z-50 h-[min(65dvh,580px)] max-w-[420px] rounded-3xl bg-[#0a0a10]/95 backdrop-blur-xl border border-border/40 shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-300 font-sans select-none md:bottom-6 md:left-auto md:right-6 md:h-[580px]"
+            className="fixed bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] right-2 left-2 z-50 h-[min(72dvh,640px)] max-w-[440px] rounded-3xl bg-[#0a0a10]/95 backdrop-blur-2xl border border-border/40 shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-300 font-sans select-none md:bottom-6 md:left-auto md:right-6 md:h-[640px]"
         >
             {/* Header: Pure, Cinematic & Balanced */}
             <div className="px-5 py-3.5 border-b border-border/20 bg-background-elevated/40 flex items-center justify-between">
@@ -324,12 +385,12 @@ export function AiChatBox({
                 className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin select-text"
             >
                 {messages.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-4 my-auto">
-                        <div className="h-16 w-16 rounded-3xl bg-accent/10 border border-accent/25 flex items-center justify-center text-accent shadow-xl">
-                            <MarkdLogoIcon className="h-8 w-8 animate-pulse" />
+                    <div className="h-full flex flex-col items-center justify-center text-center p-4 space-y-4 my-auto">
+                        <div className="h-14 w-14 rounded-3xl bg-accent/10 border border-accent/25 flex items-center justify-center text-accent shadow-xl">
+                            <MarkdLogoIcon className="h-7 w-7 animate-pulse" />
                         </div>
                         <div className="space-y-1 max-w-xs">
-                            <h3 className="text-base font-extrabold text-foreground">
+                            <h3 className="text-sm font-extrabold text-foreground">
                                 {title ? t('emptyContextHeading', { title }) : t('emptyHeading')}
                             </h3>
                             <p className="text-xs text-foreground-muted leading-relaxed">
@@ -338,15 +399,15 @@ export function AiChatBox({
                         </div>
 
                         {/* Initial Quick Suggestion Chips */}
-                        <div className="w-full pt-2 flex flex-col gap-2">
-                            {activeSuggestions.slice(0, 3).map((prompt, idx) => (
+                        <div className="w-full pt-1 flex flex-col gap-1.5">
+                            {STANDARD_CHIPS.slice(0, 4).map((chip, idx) => (
                                 <button
                                     key={idx}
-                                    onClick={() => handleSend(prompt)}
-                                    className="w-full text-left px-3.5 py-2.5 rounded-2xl bg-background-elevated/60 hover:bg-accent/15 border border-border/30 hover:border-accent/40 text-xs text-foreground-muted hover:text-foreground transition-all cursor-pointer shadow-sm group flex items-center justify-between"
+                                    onClick={() => handleSend(chip.query)}
+                                    className="w-full text-left px-3.5 py-2 rounded-2xl bg-background-elevated/60 hover:bg-accent/15 border border-border/30 hover:border-accent/40 text-xs text-foreground-muted hover:text-foreground transition-all cursor-pointer shadow-sm group flex items-center justify-between"
                                 >
-                                    <span className="truncate">{prompt}</span>
-                                    <MarkdLogoIcon className="h-3 w-3 text-accent/60 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-1.5" />
+                                    <span className="truncate">{chip.label} — <span className="text-[10px] text-foreground-subtle">{chip.query}</span></span>
+                                    <Sparkles className="h-3 w-3 text-accent/60 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-1.5" />
                                 </button>
                             ))}
                         </div>
@@ -357,22 +418,147 @@ export function AiChatBox({
                             key={idx} 
                             className={`flex flex-col space-y-2 ${m.role === 'user' ? 'items-end' : 'items-start'}`}
                         >
-                            <span className="text-[9px] font-bold text-foreground-muted uppercase tracking-wider px-1">
-                                {m.role === 'user' ? 'You' : t('assistantName')}
-                            </span>
+                            <div className="flex items-center gap-2 px-1">
+                                <span className="text-[9px] font-bold text-foreground-muted uppercase tracking-wider">
+                                    {m.role === 'user' ? 'You' : t('assistantName')}
+                                </span>
+                                {m.role === 'assistant' && renderTierBadge(m.provider, m.tier)}
+                            </div>
                             
                             {/* Message Text Bubble */}
-                            <div 
-                                className={`rounded-2xl px-4.5 py-3.5 text-xs leading-relaxed max-w-[92%] border shadow-md transition-all ${
-                                    m.role === 'user' 
-                                        ? 'bg-accent/15 border-accent/30 text-foreground font-medium' 
-                                        : 'bg-background-elevated/80 border-border/30 text-foreground/90 backdrop-blur-sm'
-                                }`}
-                            >
-                                <AiMarkdownMessage content={m.content} role={m.role} />
-                            </div>
+                            {m.content && (
+                                <div 
+                                    className={`rounded-2xl px-4 py-3 text-xs leading-relaxed max-w-[94%] border shadow-md transition-all ${
+                                        m.role === 'user' 
+                                            ? 'bg-accent/15 border-accent/30 text-foreground font-medium' 
+                                            : 'bg-background-elevated/80 border-border/30 text-foreground/90 backdrop-blur-sm'
+                                    }`}
+                                >
+                                    <AiMarkdownMessage content={m.content} role={m.role} />
+                                </div>
+                            )}
 
-                            {/* Structured Recommendation Cards */}
+                            {/* Embedded Trailer / Video Previews */}
+                            {m.videos && m.videos.length > 0 && (
+                                <div className="w-full space-y-2 pt-1">
+                                    {m.videos.map((vid, vidIdx) => (
+                                        <div 
+                                            key={vidIdx} 
+                                            className="rounded-2xl overflow-hidden border border-border/40 bg-background-elevated/90 shadow-xl"
+                                        >
+                                            <div className="px-3.5 py-2 border-b border-border/20 flex items-center justify-between bg-black/40">
+                                                <div className="flex items-center gap-2">
+                                                    <Clapperboard className="h-3.5 w-3.5 text-accent" />
+                                                    <span className="text-xs font-bold text-foreground truncate max-w-[220px]">
+                                                        {vid.name || 'Trailer'}
+                                                    </span>
+                                                </div>
+                                                <span className="text-[9px] uppercase font-bold text-foreground-muted px-2 py-0.5 rounded-full bg-white/5">
+                                                    {vid.site}
+                                                </span>
+                                            </div>
+
+                                            <div className="relative aspect-video w-full bg-black">
+                                                <iframe
+                                                    src={`https://www.youtube-nocookie.com/embed/${vid.key}?rel=0&modestbranding=1`}
+                                                    title={vid.name}
+                                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                    allowFullScreen
+                                                    className="w-full h-full border-0"
+                                                />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Direct Media Poster Cards (e.g. Free to Watch or Factual Direct Lookups) */}
+                            {m.posters && m.posters.length > 0 && (
+                                <div className="w-full space-y-2 pt-1">
+                                    <div className="text-[10px] font-bold uppercase tracking-wider text-foreground-muted flex items-center gap-1.5 px-1">
+                                        <TvMinimalPlay className="h-3.5 w-3.5 text-emerald-400" />
+                                        <span>{isZh ? '精選片單' : 'Featured Titles'} ({m.posters.length})</span>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {m.posters.map((poster) => {
+                                            const isSaved = addedIds[poster.id];
+                                            return (
+                                                <div 
+                                                    key={poster.id}
+                                                    className="p-2 rounded-xl bg-[#11111a]/95 border border-border/40 hover:border-accent/40 transition-all flex flex-col justify-between space-y-2 shadow-md group"
+                                                >
+                                                    <div className="space-y-1.5">
+                                                        <div className="relative aspect-[2/3] w-full rounded-lg overflow-hidden bg-background-elevated border border-border/20">
+                                                            {poster.posterPath ? (
+                                                                <Image
+                                                                    src={`${IMAGE_SIZES.poster.medium}${poster.posterPath}`}
+                                                                    alt={poster.title}
+                                                                    fill
+                                                                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                                                />
+                                                            ) : (
+                                                                <div className="flex h-full w-full items-center justify-center text-[10px] text-foreground-muted text-center p-1">
+                                                                    {poster.title}
+                                                                </div>
+                                                            )}
+                                                            {poster.rating && (
+                                                                <div className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-md bg-black/80 backdrop-blur-md text-[9px] font-bold text-amber-400 border border-amber-400/30">
+                                                                    ★ {poster.rating.toFixed(1)}
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        <div>
+                                                            <h5 className="text-[11px] font-bold text-foreground truncate" title={poster.title}>
+                                                                {poster.title}
+                                                            </h5>
+                                                            <p className="text-[9px] text-foreground-muted">
+                                                                {poster.year || ''} • <span className="capitalize">{poster.mediaType}</span>
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center justify-between pt-1 border-t border-border/15">
+                                                        <button
+                                                            onClick={() => handleAddToWatchlist(poster)}
+                                                            disabled={Boolean(isSaved)}
+                                                            className={`text-[9px] font-bold px-2 py-1 rounded-lg border transition-all flex items-center gap-1 ${
+                                                                isSaved === 'watchlist'
+                                                                    ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
+                                                                    : 'bg-white/5 hover:bg-white/15 text-foreground border-white/10'
+                                                            }`}
+                                                        >
+                                                            {isSaved === 'watchlist' ? (
+                                                                <>
+                                                                    <Check className="h-2.5 w-2.5" />
+                                                                    {t('addedToWatchlist')}
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Plus className="h-2.5 w-2.5" />
+                                                                    {t('addToWatchlist')}
+                                                                </>
+                                                            )}
+                                                        </button>
+
+                                                        <Link
+                                                            href={`/${poster.mediaType || 'movie'}/${poster.id}`}
+                                                            target="_blank"
+                                                            className="p-1 rounded-lg text-foreground-muted hover:text-accent hover:bg-accent/10 transition-colors"
+                                                            title={t('viewDetails')}
+                                                        >
+                                                            <ExternalLink className="h-3 w-3" />
+                                                        </Link>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Structured AI Recommendation Cards */}
                             {m.recommendations && m.recommendations.length > 0 && (
                                 <div className="w-full space-y-2.5 pt-2">
                                     {m.recommendations.map((rec) => {
@@ -504,20 +690,29 @@ export function AiChatBox({
 
             {/* Suggestions & Input Area */}
             <div className="p-3.5 border-t border-border/20 bg-[#0c0c14]/90 backdrop-blur-md space-y-2.5">
-                {/* Interactive Suggestion Chips */}
-                {messages.length > 0 && activeSuggestions.length > 0 && !isLoadingSuggestions && (
-                    <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1 snap-x">
-                        {activeSuggestions.map((q, idx) => (
-                            <button
-                                key={idx}
-                                onClick={() => handleSend(q)}
-                                className="shrink-0 snap-start px-3 py-1 rounded-full bg-background-elevated/80 border border-border/30 text-[10px] text-foreground-muted hover:text-accent hover:border-accent/40 hover:bg-background-elevated transition-all cursor-pointer font-medium"
-                            >
-                                {q}
-                            </button>
-                        ))}
-                    </div>
-                )}
+                {/* Horizontal Scrolling Suggested Query Chips */}
+                <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1 snap-x">
+                    {/* Always-available Fast Query Chips */}
+                    {STANDARD_CHIPS.map((chip, idx) => (
+                        <button
+                            key={`std-${idx}`}
+                            onClick={() => handleSend(chip.query)}
+                            className="shrink-0 snap-start px-3 py-1 rounded-full bg-background-elevated/80 border border-border/30 text-[10px] text-foreground-muted hover:text-accent hover:border-accent/40 hover:bg-background-elevated transition-all cursor-pointer font-medium flex items-center gap-1"
+                        >
+                            <span>{chip.label}</span>
+                        </button>
+                    ))}
+                    {/* Dynamic Contextual Suggestions */}
+                    {activeSuggestions.map((q, idx) => (
+                        <button
+                            key={`dyn-${idx}`}
+                            onClick={() => handleSend(q)}
+                            className="shrink-0 snap-start px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-[10px] text-accent/90 hover:text-accent hover:border-accent/40 hover:bg-accent/20 transition-all cursor-pointer font-medium"
+                        >
+                            {q}
+                        </button>
+                    ))}
+                </div>
 
                 {/* Input Form */}
                 <form 
