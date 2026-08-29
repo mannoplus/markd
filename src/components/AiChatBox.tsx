@@ -16,7 +16,7 @@ import { upsertMediaItem, submitTasteFeedbackAction } from '@/app/actions';
 import { IMAGE_SIZES } from '@/lib/tmdb';
 import { MediaActionButtons } from '@/components/media-action-buttons';
 import { useRegion } from '@/context/RegionContext';
-import type { AiChatMessage } from '@/lib/ai/types';
+import type { AiChatMessage, AiRecommendationItem } from '@/lib/ai/types';
 
 interface AiChatBoxProps {
     mediaId?: number;
@@ -197,7 +197,6 @@ export function AiChatBox({
         setMessages([]);
         setSuggestions([]);
         setErrorMsg(null);
-        setActiveTrailerKey(null);
         fetchSuggestions([]);
     };
 
