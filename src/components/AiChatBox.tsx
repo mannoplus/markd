@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import {
     X, Send, Trash2, Minimize2,
-    ExternalLink, ThumbsDown, Play, Sparkles, Film, Tv, Video, Clapperboard,
+    ExternalLink, ThumbsDown, Sparkles, Clapperboard,
     TvMinimalPlay, Check, Plus
 } from 'lucide-react';
 import { MarkdLogoIcon } from '@/components/MarkdLogoIcon';
@@ -16,7 +16,7 @@ import { upsertMediaItem, submitTasteFeedbackAction } from '@/app/actions';
 import { IMAGE_SIZES } from '@/lib/tmdb';
 import { MediaActionButtons } from '@/components/media-action-buttons';
 import { useRegion } from '@/context/RegionContext';
-import type { AiChatMessage, AiRecommendationItem, AiMediaPoster, AiMediaVideo, AiWatchProvidersData } from '@/lib/ai/types';
+import type { AiChatMessage } from '@/lib/ai/types';
 
 interface AiChatBoxProps {
     mediaId?: number;
@@ -32,25 +32,14 @@ export function AiChatBox({
     mediaId, mediaType = 'movie', title, overview, locale, isOpen, setIsOpen 
 }: AiChatBoxProps) {
     const t = useTranslations('AiChat');
-    const tCommon = useTranslations('Common');
-    
-    // Safely retrieve region context
-    let currentRegion = 'US';
-    try {
-        const { region } = useRegion();
-        if (region) currentRegion = region;
-    } catch {
-        // Fallback if not inside RegionProvider
-    }
+    const { region: currentRegion = 'US' } = useRegion();
 
     const [isMinimized, setIsMinimized] = useState(false);
     const [messages, setMessages] = useState<AiChatMessage[]>([]);
     const [inputValue, setInputValue] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [suggestions, setSuggestions] = useState<string[]>([]);
-    const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
-    const [activeTrailerKey, setActiveTrailerKey] = useState<string | null>(null);
 
     // State for tracking inline actions
     const [addedIds, setAddedIds] = useState<Record<number, 'watchlist' | 'watched'>>({});
@@ -76,7 +65,6 @@ export function AiChatBox({
 
     // Fetch context suggestions
     const fetchSuggestions = useCallback(async (currentMessages: AiChatMessage[]) => {
-        setIsLoadingSuggestions(true);
         try {
             const res = await fetch('/api/ai', {
                 method: 'POST',
@@ -105,8 +93,6 @@ export function AiChatBox({
             }
         } catch (e) {
             console.error('Failed to load suggestions:', e);
-        } finally {
-            setIsLoadingSuggestions(false);
         }
     }, [mediaId, mediaType, title, overview, locale, currentRegion]);
 
@@ -299,34 +285,6 @@ export function AiChatBox({
 
     const activeSuggestions = suggestions.length > 0 ? suggestions : defaultSuggestions;
 
-    const renderTierBadge = (provider?: string, tier?: number) => {
-        if (provider === 'direct-api' || tier === 1) {
-            return (
-                <span className="inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                    <Sparkles className="h-2.5 w-2.5" />
-                    {isZh ? 'Tier 1 • TMDB 直連 (0 費用)' : 'Tier 1 • TMDB Direct (Zero Cost)'}
-                </span>
-            );
-        }
-        if (provider === 'openrouter' || tier === 2) {
-            return (
-                <span className="inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-400 border border-cyan-500/30">
-                    <Sparkles className="h-2.5 w-2.5" />
-                    {isZh ? 'Tier 2 • OpenRouter 免費模型' : 'Tier 2 • OpenRouter Free AI'}
-                </span>
-            );
-        }
-        if (provider === 'gemini' || tier === 3) {
-            return (
-                <span className="inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-400 border border-purple-500/30">
-                    <Sparkles className="h-2.5 w-2.5" />
-                    {isZh ? 'Tier 3 • Gemini 備援模型' : 'Tier 3 • Gemini Fallback AI'}
-                </span>
-            );
-        }
-        return null;
-    };
-
     return (
         <div 
             ref={chatRef}
@@ -422,7 +380,6 @@ export function AiChatBox({
                                 <span className="text-[9px] font-bold text-foreground-muted uppercase tracking-wider">
                                     {m.role === 'user' ? 'You' : t('assistantName')}
                                 </span>
-                                {m.role === 'assistant' && renderTierBadge(m.provider, m.tier)}
                             </div>
                             
                             {/* Message Text Bubble */}

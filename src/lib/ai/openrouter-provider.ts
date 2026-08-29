@@ -142,6 +142,7 @@ CRITICAL INSTRUCTIONS:
 2. Keep your answers concise, engaging, and directly helpful (typically 2-4 short paragraphs max).
 3. Do not output giant walls of raw text or unstructured lists.
 4. Use clean markdown formatting (bolding, headers, subtle bullet points).
+5. Never mention internal system tiers, API names (e.g. TMDB, OpenRouter), zero cost, or backend routing details.
 ${zhTaiwanCinemaInstructions}`;
 
     const formattedMessages = [

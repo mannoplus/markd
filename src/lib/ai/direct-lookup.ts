@@ -19,15 +19,24 @@ export class DirectLookupEngine {
     // 1. Free to watch queries
     if (
       q.includes('free to watch') ||
+      q.includes('free movie') ||
       q.includes('free movies') ||
+      q.includes('free show') ||
       q.includes('free shows') ||
+      q.includes('free tv') ||
+      q.includes('free stream') ||
       q.includes('what is free') ||
+      q.includes('what are free') ||
+      q.includes('what can i watch for free') ||
+      q.includes('watch for free') ||
+      q.includes('stream for free') ||
       q.includes('free content') ||
       q.includes('免費看') ||
       q.includes('免費電影') ||
       q.includes('免費影集') ||
       q.includes('免費線上看') ||
-      q.includes('有哪些免費')
+      q.includes('有哪些免費') ||
+      q.includes('免費')
     ) {
       return true;
     }
@@ -144,15 +153,24 @@ export class DirectLookupEngine {
     // -------------------------------------------------------------
     if (
       q.includes('free to watch') ||
+      q.includes('free movie') ||
       q.includes('free movies') ||
+      q.includes('free show') ||
       q.includes('free shows') ||
+      q.includes('free tv') ||
+      q.includes('free stream') ||
       q.includes('what is free') ||
+      q.includes('what are free') ||
+      q.includes('what can i watch for free') ||
+      q.includes('watch for free') ||
+      q.includes('stream for free') ||
+      q.includes('free content') ||
       q.includes('免費')
     ) {
       try {
         const [freeMovies, freeShows] = await Promise.all([
-          fetchStrictlyFreeQuota('movie', 1, 6, region).catch(() => []),
-          fetchStrictlyFreeQuota('tv', 1, 4, region).catch(() => []),
+          fetchStrictlyFreeQuota('movie', 1, 6, region, isZh ? 'zh-TW' : 'en-US').catch(() => []),
+          fetchStrictlyFreeQuota('tv', 1, 4, region, isZh ? 'zh-TW' : 'en-US').catch(() => []),
         ]);
 
         const posters: AiMediaPoster[] = [
@@ -178,9 +196,16 @@ export class DirectLookupEngine {
           })),
         ];
 
-        const text = isZh
-          ? `🎬 **為您找到目前在您地區 (${region}) 可免費觀看的精選熱門電影與影集：**\n\n這些內容可直接在支援廣告的免費平台（如 YouTube、Tubi、Pluto TV 等）合法線上觀賞，無須支付訂閱費用。點擊下方海報即可查看完整資訊與片單管理。`
-          : `🎬 **Here are popular free-to-watch movies and TV shows available in your region (${region}):**\n\nThese titles are available to stream with free ad-supported access or no subscription fee. Click any title below to explore details and add to your library.`;
+        const allTitles = posters.map((p) => p.title).filter(Boolean);
+        const listText = allTitles.map((titleStr, idx) => `${idx + 1}. ${titleStr}`).join('\n');
+
+        const greeting = isZh
+          ? '以下為熱門免費觀看的電影與影集：'
+          : 'Here are popular free-to-watch movies and TV shows:';
+
+        const text = allTitles.length > 0
+          ? `${greeting}\n${listText}`
+          : (isZh ? '目前暫無可免費觀看的熱門內容。' : 'No free-to-watch titles found at this moment.');
 
         return {
           text,
@@ -391,13 +416,13 @@ export class DirectLookupEngine {
 
             if (!providerSummary) {
               providerSummary = isZh
-                ? `\n目前在該地區 (${region}) 暫無主要串流平台直播資訊，可點擊詳情確認數位上架管道。`
-                : `\nCurrently no active direct subscription stream listed for region (${region}). Check the title page for rental/digital options.`;
+                ? `\n目前暫無主要串流平台直播資訊，可點擊詳情確認數位上架管道。`
+                : `\nCurrently no active direct subscription stream listed. Check the title page for rental/digital options.`;
             }
 
             const text = isZh
-              ? `📺 **《${title}》在您地區 (${region}) 的觀看管道：**\n${providerSummary}`
-              : `📺 **Where to watch *${title}* in ${region}:**\n${providerSummary}`;
+              ? `📺 **《${title}》的觀看管道：**\n${providerSummary}`
+              : `📺 **Where to watch *${title}*:**\n${providerSummary}`;
 
             return {
               text,
