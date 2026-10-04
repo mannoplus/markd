@@ -47,3 +47,13 @@ next-env.d.ts
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
+
+# python
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.sqlite
+*.sqlite3
+*.db
+.pytest_cache/
