@@ -135,6 +135,18 @@ export interface TMDBWatchProviderResult {
     free?: TMDBWatchProvider[];       // free streaming
 }
 
+export interface CarouselSlideItem {
+    id: string | number;
+    title: string;
+    synopsis: string;
+    posterUrl: string;             // High-resolution static image (LCP fallback)
+    fallbackPosterUrl?: string;    // Low-bandwidth fallback image
+    trailerSources?: {
+        webm?: string;             // Preferred modern format
+        mp4?: string;              // Universal fallback
+    };
+}
+
 export interface TMDBTrendingResult {
     id: number;
     media_type: 'movie' | 'tv';
@@ -150,6 +162,11 @@ export interface TMDBTrendingResult {
     rtScore?: string;
     rtStatus?: 'fresh' | 'rotten';
     trailerKey?: string;
+    trailerSources?: {
+        webm?: string;
+        mp4?: string;
+    };
+    fallbackPosterUrl?: string;
 }
 
 export interface TMDBPersonDetails {
