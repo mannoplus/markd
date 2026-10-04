@@ -87,13 +87,13 @@ export function HeroCarousel({ movies, items, onPlayTrailer }: HeroCarouselProps
   const containerRef = useRef<HTMLElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
-  const [isInViewport, setIsInViewport] = useState(true);
   const [watchlistMap, setWatchlistMap] = useState<Record<string | number, boolean>>({});
 
   const rawList = items && items.length > 0 ? items : (movies || []);
   const slideCount = Math.min(rawList.length, 10);
   const activeSlides = rawList.slice(0, slideCount).map(normalizeSlideItem);
 
+  // Navigation handlers with modulo wrap-around (infinite looping)
   const nextSlide = useCallback(() => {
     setCurrentIndex((prev) => (prev + 1) % slideCount);
   }, [slideCount]);
@@ -102,38 +102,37 @@ export function HeroCarousel({ movies, items, onPlayTrailer }: HeroCarouselProps
     setCurrentIndex((prev) => (prev === 0 ? slideCount - 1 : prev - 1));
   }, [slideCount]);
 
-  // Viewport IntersectionObserver: Pause video when hero visibility drops below 20%
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el || typeof IntersectionObserver === 'undefined') return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (entry) {
-          setIsInViewport(entry.isIntersecting && entry.intersectionRatio >= 0.2);
-        }
-      },
-      {
-        threshold: [0, 0.2, 0.5, 1.0],
-      }
-    );
-
-    observer.observe(el);
-    return () => {
-      observer.disconnect();
-    };
+  const goToSlide = useCallback((index: number) => {
+    setCurrentIndex(index);
   }, []);
 
-  // Auto-play interval with pause-on-hover and reduced-motion respect
+  // =========================================================================
+  // AUTO-ADVANCE CAROUSEL TIMER (8000ms / 8 seconds)
+  // - Starts as soon as slide becomes active (keyed on currentIndex)
+  // - Automatically advances to next slide (nextSlide) with infinite loop
+  // - Manual navigation (Next/Prev/Dot) changes currentIndex, instantly
+  //   cancelling and resetting the 8-second countdown
+  // - Pauses on hover; resumes with fresh 8-second window on mouse leave
+  // - Cleanly clears timeout on unmount to prevent leaks and detached updates
+  // =========================================================================
   useEffect(() => {
-    if (isHovered || slideCount <= 1 || !isInViewport) return;
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // Suppress auto-advance if only 1 slide or if user is hovering
+    if (slideCount <= 1 || isHovered) return;
+
+    // Respect user's reduced-motion OS preference
+    const reduceMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduceMotion) return;
 
-    const timer = setInterval(() => nextSlide(), 8000);
-    return () => clearInterval(timer);
-  }, [isHovered, slideCount, nextSlide, isInViewport]);
+    const timer = setTimeout(() => {
+      nextSlide();
+    }, 8000);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [currentIndex, isHovered, slideCount, nextSlide]);
 
   if (!activeSlides || activeSlides.length === 0) return null;
 
@@ -207,7 +206,6 @@ export function HeroCarousel({ movies, items, onPlayTrailer }: HeroCarouselProps
               fallbackPosterUrl={slide.fallbackPosterUrl}
               title={slide.title}
               isActive={isActive}
-              isInViewport={true}
               trailerSources={slide.trailerSources}
               priority={index === 0}
               isPrefetch={isPrefetch}
@@ -359,7 +357,7 @@ export function HeroCarousel({ movies, items, onPlayTrailer }: HeroCarouselProps
             {activeSlides.map((_, index) => (
               <button
                 key={index}
-                onClick={() => setCurrentIndex(index)}
+                onClick={() => goToSlide(index)}
                 aria-label={t('slideOf', { current: index + 1, total: slideCount })}
                 aria-current={index === currentIndex ? 'true' : undefined}
                 className={`h-1.5 rounded-full transition-all duration-300 ${

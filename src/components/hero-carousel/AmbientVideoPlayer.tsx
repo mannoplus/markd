@@ -17,7 +17,7 @@ export interface AmbientVideoPlayerProps {
   isPrefetch?: boolean;
 }
 
-// STEP 5: High-speed, public, HTTP 200/206 verified video assets (W3C Cloudflare CDN & Wikimedia)
+// High-speed, public, HTTP 200/206 verified video assets (W3C Cloudflare CDN & Wikimedia)
 export const AMBIENT_TRAILER_FALLBACKS: Array<{ webm?: string; mp4?: string }> = [
   {
     mp4: 'https://media.w3.org/2010/05/sintel/trailer.mp4',
@@ -51,6 +51,7 @@ export function AmbientVideoPlayer({
   isPrefetch = false,
 }: AmbientVideoPlayerProps) {
   const [hasImageError, setHasImageError] = useState(false);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
 
   // Initialize with browser preference safely without effect setState
   const [prefersReducedMotion, setPrefersReducedMotion] = useState<boolean>(() => {
@@ -61,8 +62,9 @@ export function AmbientVideoPlayer({
   });
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const graceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // STEP 1: Callback ref to forcibly set defaultMuted & muted immediately on DOM element instantiation
+  // Callback ref to forcibly set defaultMuted & muted immediately on DOM element instantiation
   const setVideoRef = useCallback((el: HTMLVideoElement | null) => {
     videoRef.current = el;
     if (el) {
@@ -85,7 +87,7 @@ export function AmbientVideoPlayer({
     return () => mediaQuery.removeEventListener('change', handler);
   }, []);
 
-  // STEP 1: Forcibly set defaultMuted & muted on mount / active change BEFORE .play()
+  // Forcibly set defaultMuted & muted on mount / active change BEFORE .play()
   useEffect(() => {
     if (videoRef.current) {
       videoRef.current.defaultMuted = true;
@@ -94,56 +96,86 @@ export function AmbientVideoPlayer({
     }
   }, [isActive]);
 
-  // STEP 3 & STEP 4:
-  // - Step 3.2: Removed 600ms grace timer, play immediately on active
-  // - Step 4: Added verbose logging with try/catch and promise handlers
+  // Handle native "playing" event to trigger smooth 800ms crossfade
+  const handlePlaying = useCallback(() => {
+    setIsVideoPlaying(true);
+  }, []);
+
+  // Reset isVideoPlaying state when slide becomes inactive
+  useEffect(() => {
+    if (!isActive) {
+      const timer = setTimeout(() => setIsVideoPlaying(false), 0);
+      return () => clearTimeout(timer);
+    }
+  }, [isActive]);
+
+  // Playback lifecycle: 600ms grace delay + play() + 800ms opacity crossfade
   useEffect(() => {
     if (prefersReducedMotion || !trailerSources) {
       return;
     }
 
     const videoEl = videoRef.current;
-    if (!videoEl) return;
 
+    // Slide Deactivation
     if (!isActive) {
-      videoEl.pause();
-      try {
-        videoEl.currentTime = 0;
-      } catch {
-        // Ignore seek errors on inactive
+      if (graceTimerRef.current) {
+        clearTimeout(graceTimerRef.current);
+        graceTimerRef.current = null;
+      }
+      if (videoEl) {
+        videoEl.pause();
+        try {
+          videoEl.currentTime = 0;
+        } catch {
+          // Ignore seek errors on inactive
+        }
+        videoEl.style.opacity = '0';
       }
       return;
     }
 
-    // Step 1: Guarantee muted state right before calling play()
-    videoEl.defaultMuted = true;
-    videoEl.muted = true;
-    videoEl.volume = 0;
+    // Slide Activation: Start 600ms grace timer to allow viewing key art before video plays
+    graceTimerRef.current = setTimeout(() => {
+      const v = videoRef.current;
+      if (!v) return;
 
-    const videoUrl = trailerSources.mp4 || trailerSources.webm || '';
+      // Ensure muted state right before calling play()
+      v.defaultMuted = true;
+      v.muted = true;
+      v.volume = 0;
 
-    // Step 4: Verbose console logging block
-    console.log('Attempting to play video:', videoUrl);
-    try {
-      const playPromise = videoEl.play();
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            console.log('Video playback started successfully.');
-          })
-          .catch((error: Error) => {
-            console.error('Autoplay blocked or failed:', error.name, error.message);
-          });
+      const videoUrl = trailerSources.mp4 || trailerSources.webm || '';
+      console.log('Attempting to play video:', videoUrl);
+      try {
+        const playPromise = v.play();
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              console.log('Video playback started successfully.');
+            })
+            .catch((error: Error) => {
+              console.error('Autoplay blocked or failed:', error.name, error.message);
+            });
+        }
+      } catch (err) {
+        console.error('Synchronous play error:', err);
       }
-    } catch (err) {
-      console.error('Synchronous play error:', err);
-    }
+    }, 600);
+
+    return () => {
+      if (graceTimerRef.current) {
+        clearTimeout(graceTimerRef.current);
+        graceTimerRef.current = null;
+      }
+    };
   }, [isActive, prefersReducedMotion, trailerSources]);
 
   const hasSources = Boolean(trailerSources && (trailerSources.webm || trailerSources.mp4));
   const shouldMountActiveVideo = !prefersReducedMotion && hasSources && isActive;
   const shouldMountPrefetch = !prefersReducedMotion && hasSources && isPrefetch && !isActive;
 
+  const isVideoVisible = isActive && isVideoPlaying && !prefersReducedMotion;
   const currentPoster = hasImageError && fallbackPosterUrl ? fallbackPosterUrl : posterUrl;
 
   return (
@@ -154,7 +186,7 @@ export function AmbientVideoPlayer({
         pointerEvents: 'none',
       }}
     >
-      {/* 1. Static Poster Image (Largest Contentful Paint element & robust fallback) */}
+      {/* 1. Static Poster Image (Largest Contentful Paint element & robust fallback, CLS = 0) */}
       <Image
         key={currentPoster}
         src={currentPoster}
@@ -166,10 +198,7 @@ export function AmbientVideoPlayer({
         onError={() => setHasImageError(true)}
       />
 
-      {/* 2. Ambient Video Player:
-          - STEP 1 & 2: ref with defaultMuted, autoPlay, muted, loop, playsInline
-          - STEP 3.3: Force opacity: 1 permanently for isolation test
-      */}
+      {/* 2. Ambient Video Player: 600ms grace delay + 800ms smooth crossfade */}
       {shouldMountActiveVideo && (
         <video
           ref={setVideoRef}
@@ -178,17 +207,21 @@ export function AmbientVideoPlayer({
           loop
           playsInline
           preload="auto"
+          onPlaying={handlePlaying}
           onError={(e) => {
             console.error('Video element encountered an error:', e.currentTarget.error);
           }}
-          className="absolute inset-0 h-full w-full object-cover opacity-100"
+          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-800 ease-in-out ${
+            isVideoVisible ? 'opacity-100' : 'opacity-0'
+          }`}
           style={{
             objectFit: 'cover',
             width: '100%',
             height: '100%',
             position: 'absolute',
             inset: 0,
-            opacity: 1, // STEP 3: Forced to opacity: 1 permanently for isolation test
+            opacity: isVideoVisible ? 1 : 0,
+            transition: 'opacity 800ms ease-in-out',
           }}
           aria-hidden="true"
           tabIndex={-1}
