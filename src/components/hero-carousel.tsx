@@ -207,7 +207,7 @@ export function HeroCarousel({ movies, items, onPlayTrailer }: HeroCarouselProps
               fallbackPosterUrl={slide.fallbackPosterUrl}
               title={slide.title}
               isActive={isActive}
-              isInViewport={isInViewport}
+              isInViewport={true}
               trailerSources={slide.trailerSources}
               priority={index === 0}
               isPrefetch={isPrefetch}

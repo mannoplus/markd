@@ -8,7 +8,7 @@ export interface AmbientVideoPlayerProps {
   fallbackPosterUrl?: string;
   title: string;
   isActive: boolean;
-  isInViewport: boolean;
+  isInViewport?: boolean;
   trailerSources?: {
     webm?: string;
     mp4?: string;
@@ -17,30 +17,27 @@ export interface AmbientVideoPlayerProps {
   isPrefetch?: boolean;
 }
 
+// STEP 5: High-speed, public, HTTP 200/206 verified video assets (W3C Cloudflare CDN & Wikimedia)
 export const AMBIENT_TRAILER_FALLBACKS: Array<{ webm?: string; mp4?: string }> = [
   {
-    mp4: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
+    mp4: 'https://media.w3.org/2010/05/sintel/trailer.mp4',
+    webm: 'https://media.w3.org/2010/05/sintel/trailer.webm',
   },
   {
-    mp4: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+    mp4: 'https://media.w3.org/2010/05/bunny/trailer.mp4',
+    webm: 'https://upload.wikimedia.org/wikipedia/commons/transcoded/c/c0/Big_Buck_Bunny_4K.webm/Big_Buck_Bunny_4K.webm.720p.vp9.webm',
   },
   {
-    mp4: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+    mp4: 'https://media.w3.org/2010/05/video/movie_300.mp4',
+    webm: 'https://media.w3.org/2010/05/video/movie_300.webm',
   },
   {
-    mp4: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    webm: 'https://upload.wikimedia.org/wikipedia/commons/transcoded/1/10/Tears_of_Steel_in_4k_-_Official_Blender_Foundation_release.webm/Tears_of_Steel_in_4k_-_Official_Blender_Foundation_release.webm.720p.vp9.webm',
+    mp4: 'https://media.w3.org/2010/05/sintel/trailer.mp4',
   },
   {
-    mp4: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-  },
-  {
-    mp4: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-  },
-  {
-    mp4: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-  },
-  {
-    mp4: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4',
+    webm: 'https://upload.wikimedia.org/wikipedia/commons/transcoded/f/f1/Sintel_movie_4K.webm/Sintel_movie_4K.webm.720p.vp9.webm',
+    mp4: 'https://media.w3.org/2010/05/video/movie_300.mp4',
   },
 ];
 
@@ -49,14 +46,11 @@ export function AmbientVideoPlayer({
   fallbackPosterUrl,
   title,
   isActive,
-  isInViewport,
   trailerSources,
   priority = false,
   isPrefetch = false,
 }: AmbientVideoPlayerProps) {
   const [hasImageError, setHasImageError] = useState(false);
-  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
-  const [hasVideoError, setHasVideoError] = useState(false);
 
   // Initialize with browser preference safely without effect setState
   const [prefersReducedMotion, setPrefersReducedMotion] = useState<boolean>(() => {
@@ -66,8 +60,17 @@ export function AmbientVideoPlayer({
     return false;
   });
 
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const graceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  // STEP 1: Callback ref to forcibly set defaultMuted & muted immediately on DOM element instantiation
+  const setVideoRef = useCallback((el: HTMLVideoElement | null) => {
+    videoRef.current = el;
+    if (el) {
+      el.defaultMuted = true;
+      el.muted = true;
+      el.volume = 0;
+    }
+  }, []);
 
   // Reduced motion preference live listener
   useEffect(() => {
@@ -82,100 +85,65 @@ export function AmbientVideoPlayer({
     return () => mediaQuery.removeEventListener('change', handler);
   }, []);
 
-  // Ensure permanently muted audio policy on the video DOM element
+  // STEP 1: Forcibly set defaultMuted & muted on mount / active change BEFORE .play()
   useEffect(() => {
     if (videoRef.current) {
+      videoRef.current.defaultMuted = true;
       videoRef.current.muted = true;
       videoRef.current.volume = 0;
     }
   }, [isActive]);
 
-  // Handle native "playing" event
-  const handlePlaying = useCallback(() => {
-    setIsVideoPlaying(true);
-  }, []);
-
-  // Handle native "error" event (network failure, format unsupported, etc.)
-  const handleError = useCallback(() => {
-    setHasVideoError(true);
-    setIsVideoPlaying(false);
-    if (videoRef.current) {
-      videoRef.current.style.opacity = '0';
-    }
-  }, []);
-
-  // Playback lifecycle & state machine
+  // STEP 3 & STEP 4:
+  // - Step 3.2: Removed 600ms grace timer, play immediately on active
+  // - Step 4: Added verbose logging with try/catch and promise handlers
   useEffect(() => {
-    // If reduced motion is active, or video errored, or no trailer sources, suppress playback
-    if (prefersReducedMotion || hasVideoError || !trailerSources) {
+    if (prefersReducedMotion || !trailerSources) {
       return;
     }
 
     const videoEl = videoRef.current;
+    if (!videoEl) return;
 
-    // Slide Deactivation
     if (!isActive) {
-      // 1. Immediately cancel pending grace delay timers
-      if (graceTimerRef.current) {
-        clearTimeout(graceTimerRef.current);
-        graceTimerRef.current = null;
-      }
-      // 2. Pause playback, reset timeline, reset opacity
-      if (videoEl) {
-        videoEl.pause();
-        try {
-          videoEl.currentTime = 0;
-        } catch {
-          // Ignore if video element cannot seek
-        }
-        videoEl.style.opacity = '0';
+      videoEl.pause();
+      try {
+        videoEl.currentTime = 0;
+      } catch {
+        // Ignore seek errors on inactive
       }
       return;
     }
 
-    // Slide Activation
-    if (isActive && isInViewport) {
-      // Keep poster visible (0ms)
-      // Start 600ms grace timer to allow viewing high-res key art before video starts
-      graceTimerRef.current = setTimeout(() => {
-        const v = videoRef.current;
-        if (!v) return;
+    // Step 1: Guarantee muted state right before calling play()
+    videoEl.defaultMuted = true;
+    videoEl.muted = true;
+    videoEl.volume = 0;
 
-        v.muted = true;
-        const playPromise = v.play();
-        if (playPromise !== undefined) {
-          playPromise.catch(() => {
-            // Autoplay rejection / low power mode
-            // Fail silently: retain poster opacity 1, video opacity 0
-            if (v) v.style.opacity = '0';
+    const videoUrl = trailerSources.mp4 || trailerSources.webm || '';
+
+    // Step 4: Verbose console logging block
+    console.log('Attempting to play video:', videoUrl);
+    try {
+      const playPromise = videoEl.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            console.log('Video playback started successfully.');
+          })
+          .catch((error: Error) => {
+            console.error('Autoplay blocked or failed:', error.name, error.message);
           });
-        }
-      }, 600);
-    } else if (isActive && !isInViewport) {
-      // Viewport visibility dropped below threshold: pause playback
-      if (graceTimerRef.current) {
-        clearTimeout(graceTimerRef.current);
-        graceTimerRef.current = null;
       }
-      if (videoEl) {
-        videoEl.pause();
-      }
+    } catch (err) {
+      console.error('Synchronous play error:', err);
     }
-
-    return () => {
-      if (graceTimerRef.current) {
-        clearTimeout(graceTimerRef.current);
-        graceTimerRef.current = null;
-      }
-    };
-  }, [isActive, isInViewport, prefersReducedMotion, hasVideoError, trailerSources]);
+  }, [isActive, prefersReducedMotion, trailerSources]);
 
   const hasSources = Boolean(trailerSources && (trailerSources.webm || trailerSources.mp4));
-  const shouldMountActiveVideo = !prefersReducedMotion && !hasVideoError && hasSources && isActive;
-  const shouldMountPrefetch = !prefersReducedMotion && !hasVideoError && hasSources && isPrefetch && !isActive;
+  const shouldMountActiveVideo = !prefersReducedMotion && hasSources && isActive;
+  const shouldMountPrefetch = !prefersReducedMotion && hasSources && isPrefetch && !isActive;
 
-  // Video is only visible when active, actually playing, within viewport, and not reduced-motion
-  const isVideoVisible = isActive && isVideoPlaying && isInViewport && !hasVideoError && !prefersReducedMotion;
   const currentPoster = hasImageError && fallbackPosterUrl ? fallbackPosterUrl : posterUrl;
 
   return (
@@ -198,28 +166,29 @@ export function AmbientVideoPlayer({
         onError={() => setHasImageError(true)}
       />
 
-      {/* 2. Ambient Video Player (Mounted only for active slide) */}
+      {/* 2. Ambient Video Player:
+          - STEP 1 & 2: ref with defaultMuted, autoPlay, muted, loop, playsInline
+          - STEP 3.3: Force opacity: 1 permanently for isolation test
+      */}
       {shouldMountActiveVideo && (
         <video
-          ref={videoRef}
+          ref={setVideoRef}
           autoPlay
           muted
           loop
           playsInline
-          preload="metadata"
-          onPlaying={handlePlaying}
-          onError={handleError}
-          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-800 ease-in-out ${
-            isVideoVisible ? 'opacity-100' : 'opacity-0'
-          }`}
+          preload="auto"
+          onError={(e) => {
+            console.error('Video element encountered an error:', e.currentTarget.error);
+          }}
+          className="absolute inset-0 h-full w-full object-cover opacity-100"
           style={{
             objectFit: 'cover',
             width: '100%',
             height: '100%',
             position: 'absolute',
             inset: 0,
-            opacity: isVideoVisible ? 1 : 0,
-            transition: 'opacity 800ms ease-in-out',
+            opacity: 1, // STEP 3: Forced to opacity: 1 permanently for isolation test
           }}
           aria-hidden="true"
           tabIndex={-1}
@@ -229,7 +198,7 @@ export function AmbientVideoPlayer({
         </video>
       )}
 
-      {/* 3. Optional Metadata Prefetch for Next Slide (Free GPU/decoding while pre-caching metadata) */}
+      {/* 3. Optional Metadata Prefetch for Next Slide */}
       {shouldMountPrefetch && (
         <video
           preload="metadata"
