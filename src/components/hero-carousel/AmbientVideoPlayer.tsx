@@ -8,13 +8,12 @@ export interface AmbientVideoPlayerProps {
   fallbackPosterUrl?: string;
   title: string;
   isActive: boolean;
-  isInViewport?: boolean;
+  isPaused?: boolean;
   trailerSources?: {
     webm?: string;
     mp4?: string;
   };
   priority?: boolean;
-  isPrefetch?: boolean;
   onAdvance?: () => void;
 }
 
@@ -51,9 +50,9 @@ export function AmbientVideoPlayer({
   fallbackPosterUrl,
   title,
   isActive,
+  isPaused = false,
   trailerSources,
   priority = false,
-  isPrefetch = false,
   onAdvance,
 }: AmbientVideoPlayerProps) {
   const [hasImageError, setHasImageError] = useState(false);
@@ -68,8 +67,7 @@ export function AmbientVideoPlayer({
   });
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const graceTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const hasTriggeredAdvanceRef = useRef(false);
+  const hasTriggeredRef = useRef(false);
 
   // Callback ref to forcibly set defaultMuted & muted immediately on DOM element instantiation
   const setVideoRef = useCallback((el: HTMLVideoElement | null) => {
@@ -103,119 +101,136 @@ export function AmbientVideoPlayer({
     }
   }, [isActive]);
 
-  // Handle native "playing" event to trigger smooth 800ms crossfade
+  // Handle native "playing" event to trigger smooth crossfade
   const handlePlaying = useCallback(() => {
     setIsVideoPlaying(true);
   }, []);
 
-  // Reset isVideoPlaying and advance flag when slide becomes active/inactive
-  useEffect(() => {
-    if (!isActive) {
-      const timer = setTimeout(() => setIsVideoPlaying(false), 0);
-      return () => clearTimeout(timer);
-    } else {
-      hasTriggeredAdvanceRef.current = false;
-    }
-  }, [isActive]);
+  // =========================================================================
+  // 3B. PRECISE TRANSITION SEQUENCE (Triggered at 5 seconds or on ended)
+  // 1. Instantly pause the active video.
+  // 2. Set the video's opacity to zero to hide it.
+  // 3. Reset the video's playback time to zero.
+  // 4. Call the slide transition function to advance to the next movie.
+  // =========================================================================
+  const executeTransitionSequence = useCallback(
+    (video: HTMLVideoElement) => {
+      if (hasTriggeredRef.current || !isActive) return;
+      hasTriggeredRef.current = true;
 
-  // 3. FAILSAFE TRIGGER: Video-Driven Advancement (onTimeUpdate >= 8s & onEnded)
-  const handleTimeUpdate = useCallback(
-    (e: React.SyntheticEvent<HTMLVideoElement>) => {
-      const currentPlaybackTime = e.currentTarget.currentTime;
-      // If the video plays for 8 seconds, force the next slide
-      if (isActive && currentPlaybackTime >= 8 && !hasTriggeredAdvanceRef.current) {
-        hasTriggeredAdvanceRef.current = true;
-        e.currentTarget.currentTime = 0;
-        e.currentTarget.pause();
-        if (onAdvance) {
-          onAdvance();
-        }
+      // 1. Instantly pause the active video
+      video.pause();
+
+      // 2. Set the video's opacity to zero to hide it
+      video.style.opacity = '0';
+      setIsVideoPlaying(false);
+
+      // 3. Reset the video's playback time to zero
+      try {
+        video.currentTime = 0;
+      } catch {
+        // Ignore seek error
+      }
+
+      // 4. Call the slide transition function to advance to the next movie
+      if (onAdvance) {
+        onAdvance();
       }
     },
     [isActive, onAdvance]
   );
 
-  const handleEnded = useCallback(() => {
-    if (isActive && !hasTriggeredAdvanceRef.current) {
-      hasTriggeredAdvanceRef.current = true;
-      if (onAdvance) {
-        onAdvance();
+  // Native time-update listener: monitor playback time and trigger at exactly 5 seconds
+  const handleTimeUpdate = useCallback(
+    (e: React.SyntheticEvent<HTMLVideoElement>) => {
+      const video = e.currentTarget;
+      if (isActive && video.currentTime >= 5 && !hasTriggeredRef.current) {
+        executeTransitionSequence(video);
       }
-    }
-  }, [isActive, onAdvance]);
+    },
+    [isActive, executeTransitionSequence]
+  );
 
-  // Playback lifecycle: 600ms grace delay + v.load() + play() + 800ms opacity crossfade
+  // Native ended listener: failsafe if trailer duration is under 5 seconds
+  const handleEnded = useCallback(
+    (e: React.SyntheticEvent<HTMLVideoElement>) => {
+      const video = e.currentTarget;
+      if (isActive && !hasTriggeredRef.current) {
+        executeTransitionSequence(video);
+      }
+    },
+    [isActive, executeTransitionSequence]
+  );
+
+  // 3C. RESOURCE MANAGEMENT: Reset & pause when slide becomes inactive
   useEffect(() => {
-    if (prefersReducedMotion || !trailerSources) {
-      return;
-    }
-
-    const videoEl = videoRef.current;
-
-    // Slide Deactivation
     if (!isActive) {
-      if (graceTimerRef.current) {
-        clearTimeout(graceTimerRef.current);
-        graceTimerRef.current = null;
-      }
-      if (videoEl) {
-        videoEl.pause();
+      hasTriggeredRef.current = false;
+      const v = videoRef.current;
+      if (v) {
+        v.pause();
+        v.style.opacity = '0';
         try {
-          videoEl.currentTime = 0;
+          v.currentTime = 0;
         } catch {
-          // Ignore seek errors on inactive
+          // Ignore
         }
-        videoEl.style.opacity = '0';
       }
+    } else {
+      hasTriggeredRef.current = false;
+    }
+  }, [isActive]);
+
+  // Pause on hover: freezing video playback halts currentTime progression
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || !isActive) return;
+
+    if (isPaused) {
+      v.pause();
+    } else if (isVideoPlaying) {
+      v.play().catch(() => {});
+    }
+  }, [isPaused, isActive, isVideoPlaying]);
+
+  // Start playback when slide becomes active
+  useEffect(() => {
+    if (prefersReducedMotion || !trailerSources || !isActive) {
       return;
     }
 
-    // Slide Activation: Start 600ms grace timer to allow viewing key art before video plays
-    graceTimerRef.current = setTimeout(() => {
-      const v = videoRef.current;
-      if (!v) return;
+    const v = videoRef.current;
+    if (!v) return;
 
-      // 1. Ensure muted state
-      v.defaultMuted = true;
-      v.muted = true;
-      v.volume = 0;
+    v.defaultMuted = true;
+    v.muted = true;
+    v.volume = 0;
 
-      // 2. Explicitly call video.load() to force media pipeline reload on source change
-      try {
-        v.load();
-      } catch (err) {
-        console.warn('Video load error:', err);
-      }
+    // Explicitly reload the media pipeline on mount/source attachment
+    try {
+      v.load();
+    } catch (err) {
+      console.warn('Video load error:', err);
+    }
 
-      const videoUrl = trailerSources.mp4 || trailerSources.webm || '';
-      console.log('Attempting to play video:', videoUrl);
-      try {
-        const playPromise = v.play();
-        if (playPromise !== undefined) {
-          playPromise
-            .then(() => {
-              console.log('Video playback started successfully.');
-            })
-            .catch((error: Error) => {
-              console.error('Autoplay blocked or failed:', error.name, error.message);
-            });
-        }
-      } catch (err) {
-        console.error('Synchronous play error:', err);
-      }
-    }, 600);
+    const videoUrl = trailerSources.mp4 || trailerSources.webm || '';
+    console.log('Initiating event-driven video playback:', videoUrl);
 
-    return () => {
-      if (graceTimerRef.current) {
-        clearTimeout(graceTimerRef.current);
-        graceTimerRef.current = null;
-      }
-    };
+    const playPromise = v.play();
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => {
+          console.log('Video playback started successfully:', videoUrl);
+        })
+        .catch((error: Error) => {
+          console.error('Autoplay blocked or failed:', error.name, error.message);
+        });
+    }
   }, [isActive, prefersReducedMotion, trailerSources]);
 
   const hasSources = Boolean(trailerSources && (trailerSources.webm || trailerSources.mp4));
+  // Strictly mount video ONLY for the active slide to eliminate background leaks
   const shouldMountActiveVideo = !prefersReducedMotion && hasSources && isActive;
-  const shouldMountPrefetch = !prefersReducedMotion && hasSources && isPrefetch && !isActive;
 
   const isVideoVisible = isActive && isVideoPlaying && !prefersReducedMotion;
   const currentPoster = hasImageError && fallbackPosterUrl ? fallbackPosterUrl : posterUrl;
@@ -229,7 +244,7 @@ export function AmbientVideoPlayer({
         pointerEvents: 'none',
       }}
     >
-      {/* 1. Static Poster Image (Largest Contentful Paint element & robust fallback, CLS = 0) */}
+      {/* 1. Static Poster Image (LCP element & robust fallback, CLS = 0) */}
       <Image
         key={currentPoster}
         src={currentPoster}
@@ -241,7 +256,7 @@ export function AmbientVideoPlayer({
         onError={() => setHasImageError(true)}
       />
 
-      {/* 2. Ambient Video Player with unique key, onTimeUpdate & onEnded failsafe triggers */}
+      {/* 2. Ambient Video Player: event-driven 5s onTimeUpdate & onEnded triggers */}
       {shouldMountActiveVideo && (
         <video
           key={videoKey}
@@ -269,21 +284,6 @@ export function AmbientVideoPlayer({
             opacity: isVideoVisible ? 1 : 0,
             transition: 'opacity 800ms ease-in-out',
           }}
-          aria-hidden="true"
-          tabIndex={-1}
-        >
-          {trailerSources?.webm && <source src={trailerSources.webm} type="video/webm" />}
-          {trailerSources?.mp4 && <source src={trailerSources.mp4} type="video/mp4" />}
-        </video>
-      )}
-
-      {/* 3. Optional Metadata Prefetch for Next Slide */}
-      {shouldMountPrefetch && (
-        <video
-          preload="metadata"
-          muted
-          playsInline
-          className="hidden pointer-events-none absolute"
           aria-hidden="true"
           tabIndex={-1}
         >

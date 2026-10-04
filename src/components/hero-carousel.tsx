@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Link } from '@/i18n/routing';
 import { ChevronLeft, ChevronRight, Play, Plus, Check, Star, Calendar, Film } from 'lucide-react';
 import { IMAGE_SIZES } from '@/lib/tmdb';
@@ -91,11 +91,16 @@ export function HeroCarousel({ movies, items, onPlayTrailer }: HeroCarouselProps
   const [isHovered, setIsHovered] = useState(false);
   const [watchlistMap, setWatchlistMap] = useState<Record<string | number, boolean>>({});
 
-  const rawList = items && items.length > 0 ? items : (movies || []);
+  const rawList = useMemo(() => {
+    return items && items.length > 0 ? items : (movies || []);
+  }, [items, movies]);
   const slideCount = Math.min(rawList.length, 10);
-  const activeSlides = rawList.slice(0, slideCount).map(normalizeSlideItem);
 
-  // 4. VERIFY THE DATA ARRAY: Log dataset to console
+  const activeSlides = useMemo(() => {
+    return rawList.slice(0, slideCount).map(normalizeSlideItem);
+  }, [rawList, slideCount]);
+
+  // Log raw data array on mount
   useEffect(() => {
     console.log('HeroCarousel raw data array count:', rawList.length);
     console.log(
@@ -109,7 +114,11 @@ export function HeroCarousel({ movies, items, onPlayTrailer }: HeroCarouselProps
     );
   }, [rawList.length, activeSlides]);
 
-  // 1. FIX STALE STATE CLOSURE: Functional state update (prevIndex => ...)
+  // =========================================================================
+  // 3A. FUNCTIONAL STATE UPDATES (Event-driven slide transitions)
+  // - Guarantees the calculation is based on the freshest previous state (prevIndex)
+  // - Infinite looping via modulo arithmetic ((prevIndex + 1) % slideCount)
+  // =========================================================================
   const nextSlide = useCallback(() => {
     setCurrentIndex((prevIndex) => {
       const newIndex = (prevIndex + 1) % slideCount;
@@ -133,25 +142,6 @@ export function HeroCarousel({ movies, items, onPlayTrailer }: HeroCarouselProps
   const goToSlide = useCallback((index: number) => {
     setCurrentIndex(index);
   }, []);
-
-  // Timer failsafe: resets automatically whenever currentIndex changes
-  useEffect(() => {
-    if (slideCount <= 1 || isHovered) return;
-
-    const reduceMotion =
-      typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduceMotion) return;
-
-    // 8.5s fallback timer in case video buffering causes onTimeUpdate delay
-    const timer = setTimeout(() => {
-      nextSlide();
-    }, 8500);
-
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [currentIndex, isHovered, slideCount, nextSlide]);
 
   if (!activeSlides || activeSlides.length === 0) return null;
 
@@ -200,11 +190,11 @@ export function HeroCarousel({ movies, items, onPlayTrailer }: HeroCarouselProps
       {/* =========================================================================
           LAYER 1: Media Canvas (z-index: 0, pointer-events: none)
           - Strict unique key per slide: key={slide.id}
-          - onAdvance callback wired directly to video onTimeUpdate & onEnded
+          - Auto-advance driven purely by active video's 5s onTimeUpdate & onEnded
+          - Outgoing slides unmount video completely (zero memory leaks or background audio)
          ========================================================================= */}
       {activeSlides.map((slide, index) => {
         const isActive = index === currentIndex;
-        const isPrefetch = index === (currentIndex + 1) % slideCount;
 
         if (!slide.posterUrl) return null;
 
@@ -226,9 +216,9 @@ export function HeroCarousel({ movies, items, onPlayTrailer }: HeroCarouselProps
               fallbackPosterUrl={slide.fallbackPosterUrl}
               title={slide.title}
               isActive={isActive}
+              isPaused={isHovered}
               trailerSources={slide.trailerSources}
               priority={index === 0}
-              isPrefetch={isPrefetch}
               onAdvance={nextSlide}
             />
           </div>
