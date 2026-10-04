@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import Image from 'next/image';
 import { Link } from '@/i18n/routing';
 import { ChevronLeft, ChevronRight, Play, Plus, Check, Star, Calendar, Film } from 'lucide-react';
 import { IMAGE_SIZES } from '@/lib/tmdb';
@@ -9,10 +10,6 @@ import { useTranslations, useLocale } from 'next-intl';
 import { classifyMovieDna, translateDnaTrait, type MovieDnaTrait } from '@/lib/taste-engine';
 import { upsertMediaItem } from '@/app/actions';
 import { createClient } from '@/lib/supabase/client';
-import {
-  AmbientVideoPlayer,
-  AMBIENT_TRAILER_FALLBACKS,
-} from '@/components/hero-carousel/AmbientVideoPlayer';
 
 export interface HeroCarouselProps {
   movies?: (TMDBTrendingResult | CarouselSlideItem)[];
@@ -26,7 +23,6 @@ interface NormalizedSlide {
   synopsis: string;
   posterUrl: string;
   fallbackPosterUrl?: string;
-  trailerSources?: { webm?: string; mp4?: string };
   year?: number | null;
   rating?: string | null;
   mediaType: 'movie' | 'tv';
@@ -35,8 +31,7 @@ interface NormalizedSlide {
 }
 
 function normalizeSlideItem(
-  item: TMDBTrendingResult | CarouselSlideItem,
-  index: number
+  item: TMDBTrendingResult | CarouselSlideItem
 ): NormalizedSlide {
   const isTMDB = 'media_type' in item || 'backdrop_path' in item;
   const tmdb = isTMDB ? (item as TMDBTrendingResult) : undefined;
@@ -55,12 +50,6 @@ function normalizeSlideItem(
     custom?.fallbackPosterUrl ||
     (tmdb?.backdrop_path ? `${IMAGE_SIZES.backdrop.small}${tmdb.backdrop_path}` : undefined);
 
-  // Each slide index receives its own distinct, verified video fallback
-  const trailerSources =
-    item.trailerSources !== undefined
-      ? item.trailerSources
-      : AMBIENT_TRAILER_FALLBACKS[index % AMBIENT_TRAILER_FALLBACKS.length];
-
   const rawDate = tmdb?.release_date || tmdb?.first_air_date;
   const year = rawDate ? new Date(rawDate).getFullYear() : null;
   const rating = tmdb?.vote_average ? tmdb.vote_average.toFixed(1) : null;
@@ -73,13 +62,42 @@ function normalizeSlideItem(
     synopsis,
     posterUrl,
     fallbackPosterUrl,
-    trailerSources,
     year,
     rating,
     mediaType,
     dnaTraits,
     tmdbItem: tmdb,
   };
+}
+
+function SlideBackdrop({
+  posterUrl,
+  fallbackPosterUrl,
+  title,
+  priority,
+}: {
+  posterUrl: string;
+  fallbackPosterUrl?: string;
+  title: string;
+  priority: boolean;
+}) {
+  const [src, setSrc] = useState(posterUrl);
+
+  return (
+    <Image
+      src={src}
+      alt={title}
+      fill
+      priority={priority}
+      sizes="100vw"
+      className="object-cover object-center"
+      onError={() => {
+        if (fallbackPosterUrl && src !== fallbackPosterUrl) {
+          setSrc(fallbackPosterUrl);
+        }
+      }}
+    />
+  );
 }
 
 export function HeroCarousel({ movies, items, onPlayTrailer }: HeroCarouselProps) {
@@ -100,40 +118,10 @@ export function HeroCarousel({ movies, items, onPlayTrailer }: HeroCarouselProps
     return rawList.slice(0, slideCount).map(normalizeSlideItem);
   }, [rawList, slideCount]);
 
-  // Log raw data array on mount
-  useEffect(() => {
-    console.log('HeroCarousel raw data array count:', rawList.length);
-    console.log(
-      'Active carousel slides:',
-      activeSlides.map((s, idx) => ({
-        index: idx,
-        id: s.id,
-        title: s.title,
-        videoUrl: s.trailerSources?.mp4 || s.trailerSources?.webm,
-      }))
-    );
-  }, [rawList.length, activeSlides]);
-
-  // =========================================================================
-  // 3A. FUNCTIONAL STATE UPDATES (Event-driven slide transitions)
-  // - Guarantees the calculation is based on the freshest previous state (prevIndex)
-  // - Infinite looping via modulo arithmetic ((prevIndex + 1) % slideCount)
-  // =========================================================================
+  // Slide navigation with functional state updates (prevents stale closures)
   const nextSlide = useCallback(() => {
-    setCurrentIndex((prevIndex) => {
-      const newIndex = (prevIndex + 1) % slideCount;
-      const nextSlideData = activeSlides[newIndex];
-      const newVideoUrl =
-        nextSlideData?.trailerSources?.mp4 || nextSlideData?.trailerSources?.webm || '';
-      console.log(
-        'Forcing transition to slide index:',
-        newIndex,
-        'Next Video:',
-        newVideoUrl
-      );
-      return newIndex;
-    });
-  }, [slideCount, activeSlides]);
+    setCurrentIndex((prevIndex) => (prevIndex + 1) % slideCount);
+  }, [slideCount]);
 
   const prevSlide = useCallback(() => {
     setCurrentIndex((prevIndex) => (prevIndex === 0 ? slideCount - 1 : prevIndex - 1));
@@ -142,6 +130,24 @@ export function HeroCarousel({ movies, items, onPlayTrailer }: HeroCarouselProps
   const goToSlide = useCallback((index: number) => {
     setCurrentIndex(index);
   }, []);
+
+  // Standard 5-second auto-advance loop with pause-on-hover & reduced-motion respect
+  useEffect(() => {
+    if (slideCount <= 1 || isHovered) return;
+
+    const reduceMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion) return;
+
+    const timer = setInterval(() => {
+      nextSlide();
+    }, 5000);
+
+    return () => {
+      clearInterval(timer);
+    };
+  }, [currentIndex, isHovered, slideCount, nextSlide]);
 
   if (!activeSlides || activeSlides.length === 0) return null;
 
@@ -188,10 +194,7 @@ export function HeroCarousel({ movies, items, onPlayTrailer }: HeroCarouselProps
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* =========================================================================
-          LAYER 1: Media Canvas (z-index: 0, pointer-events: none)
-          - Strict unique key per slide: key={slide.id}
-          - Auto-advance driven purely by active video's 5s onTimeUpdate & onEnded
-          - Outgoing slides unmount video completely (zero memory leaks or background audio)
+          LAYER 1: Static Image Backdrops with Crossfade (z-index: 0, pointer-events: none)
          ========================================================================= */}
       {activeSlides.map((slide, index) => {
         const isActive = index === currentIndex;
@@ -210,16 +213,11 @@ export function HeroCarousel({ movies, items, onPlayTrailer }: HeroCarouselProps
               pointerEvents: 'none',
             }}
           >
-            <AmbientVideoPlayer
-              key={slide.id}
+            <SlideBackdrop
               posterUrl={slide.posterUrl}
               fallbackPosterUrl={slide.fallbackPosterUrl}
               title={slide.title}
-              isActive={isActive}
-              isPaused={isHovered}
-              trailerSources={slide.trailerSources}
               priority={index === 0}
-              onAdvance={nextSlide}
             />
           </div>
         );
