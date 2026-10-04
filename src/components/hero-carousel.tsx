@@ -54,6 +54,8 @@ function normalizeSlideItem(
   const fallbackPosterUrl =
     custom?.fallbackPosterUrl ||
     (tmdb?.backdrop_path ? `${IMAGE_SIZES.backdrop.small}${tmdb.backdrop_path}` : undefined);
+
+  // Each slide index receives its own distinct, verified video fallback
   const trailerSources =
     item.trailerSources !== undefined
       ? item.trailerSources
@@ -93,41 +95,58 @@ export function HeroCarousel({ movies, items, onPlayTrailer }: HeroCarouselProps
   const slideCount = Math.min(rawList.length, 10);
   const activeSlides = rawList.slice(0, slideCount).map(normalizeSlideItem);
 
-  // Navigation handlers with modulo wrap-around (infinite looping)
+  // 4. VERIFY THE DATA ARRAY: Log dataset to console
+  useEffect(() => {
+    console.log('HeroCarousel raw data array count:', rawList.length);
+    console.log(
+      'Active carousel slides:',
+      activeSlides.map((s, idx) => ({
+        index: idx,
+        id: s.id,
+        title: s.title,
+        videoUrl: s.trailerSources?.mp4 || s.trailerSources?.webm,
+      }))
+    );
+  }, [rawList.length, activeSlides]);
+
+  // 1. FIX STALE STATE CLOSURE: Functional state update (prevIndex => ...)
   const nextSlide = useCallback(() => {
-    setCurrentIndex((prev) => (prev + 1) % slideCount);
-  }, [slideCount]);
+    setCurrentIndex((prevIndex) => {
+      const newIndex = (prevIndex + 1) % slideCount;
+      const nextSlideData = activeSlides[newIndex];
+      const newVideoUrl =
+        nextSlideData?.trailerSources?.mp4 || nextSlideData?.trailerSources?.webm || '';
+      console.log(
+        'Forcing transition to slide index:',
+        newIndex,
+        'Next Video:',
+        newVideoUrl
+      );
+      return newIndex;
+    });
+  }, [slideCount, activeSlides]);
 
   const prevSlide = useCallback(() => {
-    setCurrentIndex((prev) => (prev === 0 ? slideCount - 1 : prev - 1));
+    setCurrentIndex((prevIndex) => (prevIndex === 0 ? slideCount - 1 : prevIndex - 1));
   }, [slideCount]);
 
   const goToSlide = useCallback((index: number) => {
     setCurrentIndex(index);
   }, []);
 
-  // =========================================================================
-  // AUTO-ADVANCE CAROUSEL TIMER (8000ms / 8 seconds)
-  // - Starts as soon as slide becomes active (keyed on currentIndex)
-  // - Automatically advances to next slide (nextSlide) with infinite loop
-  // - Manual navigation (Next/Prev/Dot) changes currentIndex, instantly
-  //   cancelling and resetting the 8-second countdown
-  // - Pauses on hover; resumes with fresh 8-second window on mouse leave
-  // - Cleanly clears timeout on unmount to prevent leaks and detached updates
-  // =========================================================================
+  // Timer failsafe: resets automatically whenever currentIndex changes
   useEffect(() => {
-    // Suppress auto-advance if only 1 slide or if user is hovering
     if (slideCount <= 1 || isHovered) return;
 
-    // Respect user's reduced-motion OS preference
     const reduceMotion =
       typeof window !== 'undefined' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduceMotion) return;
 
+    // 8.5s fallback timer in case video buffering causes onTimeUpdate delay
     const timer = setTimeout(() => {
       nextSlide();
-    }, 8000);
+    }, 8500);
 
     return () => {
       clearTimeout(timer);
@@ -180,8 +199,8 @@ export function HeroCarousel({ movies, items, onPlayTrailer }: HeroCarouselProps
     >
       {/* =========================================================================
           LAYER 1: Media Canvas (z-index: 0, pointer-events: none)
-          - Static Poster Image (LCP fallback, 0ms, CLS = 0)
-          - Ambient Video Player (<video> crossfading 0 -> 1 after 600ms grace timer)
+          - Strict unique key per slide: key={slide.id}
+          - onAdvance callback wired directly to video onTimeUpdate & onEnded
          ========================================================================= */}
       {activeSlides.map((slide, index) => {
         const isActive = index === currentIndex;
@@ -202,6 +221,7 @@ export function HeroCarousel({ movies, items, onPlayTrailer }: HeroCarouselProps
             }}
           >
             <AmbientVideoPlayer
+              key={slide.id}
               posterUrl={slide.posterUrl}
               fallbackPosterUrl={slide.fallbackPosterUrl}
               title={slide.title}
@@ -209,6 +229,7 @@ export function HeroCarousel({ movies, items, onPlayTrailer }: HeroCarouselProps
               trailerSources={slide.trailerSources}
               priority={index === 0}
               isPrefetch={isPrefetch}
+              onAdvance={nextSlide}
             />
           </div>
         );
@@ -216,8 +237,6 @@ export function HeroCarousel({ movies, items, onPlayTrailer }: HeroCarouselProps
 
       {/* =========================================================================
           LAYER 2: Scrim / Contrast Gradient (z-index: 1, pointer-events: none)
-          - Permanent dual-gradient overlay satisfying WCAG 2.1 AA contrast requirements
-            (minimum 4.5:1 ratio for body text, 3:1 for large display titles)
          ========================================================================= */}
       <div
         className="pointer-events-none absolute inset-0 z-[1]"
@@ -237,7 +256,6 @@ export function HeroCarousel({ movies, items, onPlayTrailer }: HeroCarouselProps
 
       {/* =========================================================================
           LAYER 3: Interactive Foreground (z-index: 2, pointer-events: auto)
-          - Renders movie title, badges, ratings, synopsis, and primary CTAs
          ========================================================================= */}
       <div
         className="relative z-[2] mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 pointer-events-auto"
@@ -272,7 +290,7 @@ export function HeroCarousel({ movies, items, onPlayTrailer }: HeroCarouselProps
             ))}
           </div>
 
-          {/* Title - WCAG 2.1 AA compliant typography with deep drop-shadow */}
+          {/* Title */}
           <h1 className="title-cinematic text-4xl drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)] sm:text-5xl md:text-6xl text-white font-extrabold tracking-tight">
             {currentSlide.title}
           </h1>

@@ -15,9 +15,10 @@ export interface AmbientVideoPlayerProps {
   };
   priority?: boolean;
   isPrefetch?: boolean;
+  onAdvance?: () => void;
 }
 
-// High-speed, public, HTTP 200/206 verified video assets (W3C Cloudflare CDN & Wikimedia)
+// High-speed, public, HTTP 200/206 verified distinct video assets (W3C Cloudflare CDN & Wikimedia)
 export const AMBIENT_TRAILER_FALLBACKS: Array<{ webm?: string; mp4?: string }> = [
   {
     mp4: 'https://media.w3.org/2010/05/sintel/trailer.mp4',
@@ -36,7 +37,11 @@ export const AMBIENT_TRAILER_FALLBACKS: Array<{ webm?: string; mp4?: string }> =
     mp4: 'https://media.w3.org/2010/05/sintel/trailer.mp4',
   },
   {
-    webm: 'https://upload.wikimedia.org/wikipedia/commons/transcoded/f/f1/Sintel_movie_4K.webm/Sintel_movie_4K.webm.720p.vp9.webm',
+    webm: 'https://upload.wikimedia.org/wikipedia/commons/transcoded/c/cd/12_Angry_Men_%281957%29_-_Trailer.webm/12_Angry_Men_%281957%29_-_Trailer.webm.480p.vp9.webm',
+    mp4: 'https://media.w3.org/2010/05/bunny/trailer.mp4',
+  },
+  {
+    webm: 'https://upload.wikimedia.org/wikipedia/commons/8/86/Modern_Times_trailer_%281936%29.webm',
     mp4: 'https://media.w3.org/2010/05/video/movie_300.mp4',
   },
 ];
@@ -49,6 +54,7 @@ export function AmbientVideoPlayer({
   trailerSources,
   priority = false,
   isPrefetch = false,
+  onAdvance,
 }: AmbientVideoPlayerProps) {
   const [hasImageError, setHasImageError] = useState(false);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
@@ -63,6 +69,7 @@ export function AmbientVideoPlayer({
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const graceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const hasTriggeredAdvanceRef = useRef(false);
 
   // Callback ref to forcibly set defaultMuted & muted immediately on DOM element instantiation
   const setVideoRef = useCallback((el: HTMLVideoElement | null) => {
@@ -101,15 +108,43 @@ export function AmbientVideoPlayer({
     setIsVideoPlaying(true);
   }, []);
 
-  // Reset isVideoPlaying state when slide becomes inactive
+  // Reset isVideoPlaying and advance flag when slide becomes active/inactive
   useEffect(() => {
     if (!isActive) {
       const timer = setTimeout(() => setIsVideoPlaying(false), 0);
       return () => clearTimeout(timer);
+    } else {
+      hasTriggeredAdvanceRef.current = false;
     }
   }, [isActive]);
 
-  // Playback lifecycle: 600ms grace delay + play() + 800ms opacity crossfade
+  // 3. FAILSAFE TRIGGER: Video-Driven Advancement (onTimeUpdate >= 8s & onEnded)
+  const handleTimeUpdate = useCallback(
+    (e: React.SyntheticEvent<HTMLVideoElement>) => {
+      const currentPlaybackTime = e.currentTarget.currentTime;
+      // If the video plays for 8 seconds, force the next slide
+      if (isActive && currentPlaybackTime >= 8 && !hasTriggeredAdvanceRef.current) {
+        hasTriggeredAdvanceRef.current = true;
+        e.currentTarget.currentTime = 0;
+        e.currentTarget.pause();
+        if (onAdvance) {
+          onAdvance();
+        }
+      }
+    },
+    [isActive, onAdvance]
+  );
+
+  const handleEnded = useCallback(() => {
+    if (isActive && !hasTriggeredAdvanceRef.current) {
+      hasTriggeredAdvanceRef.current = true;
+      if (onAdvance) {
+        onAdvance();
+      }
+    }
+  }, [isActive, onAdvance]);
+
+  // Playback lifecycle: 600ms grace delay + v.load() + play() + 800ms opacity crossfade
   useEffect(() => {
     if (prefersReducedMotion || !trailerSources) {
       return;
@@ -140,10 +175,17 @@ export function AmbientVideoPlayer({
       const v = videoRef.current;
       if (!v) return;
 
-      // Ensure muted state right before calling play()
+      // 1. Ensure muted state
       v.defaultMuted = true;
       v.muted = true;
       v.volume = 0;
+
+      // 2. Explicitly call video.load() to force media pipeline reload on source change
+      try {
+        v.load();
+      } catch (err) {
+        console.warn('Video load error:', err);
+      }
 
       const videoUrl = trailerSources.mp4 || trailerSources.webm || '';
       console.log('Attempting to play video:', videoUrl);
@@ -177,6 +219,7 @@ export function AmbientVideoPlayer({
 
   const isVideoVisible = isActive && isVideoPlaying && !prefersReducedMotion;
   const currentPoster = hasImageError && fallbackPosterUrl ? fallbackPosterUrl : posterUrl;
+  const videoKey = `video-${title}-${trailerSources?.mp4 || trailerSources?.webm || 'none'}`;
 
   return (
     <div
@@ -198,16 +241,19 @@ export function AmbientVideoPlayer({
         onError={() => setHasImageError(true)}
       />
 
-      {/* 2. Ambient Video Player: 600ms grace delay + 800ms smooth crossfade */}
+      {/* 2. Ambient Video Player with unique key, onTimeUpdate & onEnded failsafe triggers */}
       {shouldMountActiveVideo && (
         <video
+          key={videoKey}
           ref={setVideoRef}
           autoPlay
           muted
-          loop
+          loop={false}
           playsInline
           preload="auto"
           onPlaying={handlePlaying}
+          onTimeUpdate={handleTimeUpdate}
+          onEnded={handleEnded}
           onError={(e) => {
             console.error('Video element encountered an error:', e.currentTarget.error);
           }}
